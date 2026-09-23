@@ -2,419 +2,1784 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>健身饮食规划 · 三大营养素计算与食谱生成</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>🌰饮食</title>
 <style>
   :root{
-    --bg:#f5f6f8; --card:#ffffff; --border:#e5e7eb; --text:#1f2329;
-    --sub:#6b7280; --primary:#2f7df6; --primary-dark:#1f5fd0;
-    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --purple:#8b5cf6;
+    --brand:#26215C;
+    --brand-deep:#1B1747;
+    --brand-2:#4A3FA8;
+    --brand-soft:#EEEDFE;
+    --brand-mid:#CECBF6;
+    --accent:#F59E0B;
+    --bg:#F6F7FB;
+    --card:#ffffff;
+    --text:#1f2329;
+    --sub:#6b7280;
+    --border:#E6E8F0;
+    --shadow-sm:0 1px 2px rgba(23,25,35,.04), 0 2px 8px rgba(23,25,35,.05);
+    --shadow-md:0 4px 12px rgba(23,25,35,.06), 0 12px 32px rgba(38,33,92,.12);
+    --radius:18px;
   }
-  *{box-sizing:border-box; margin:0; padding:0;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
   body{
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
     background:var(--bg); color:var(--text); line-height:1.6;
-    padding:24px 16px 60px;
+    -webkit-font-smoothing:antialiased;
   }
-  .wrap{max-width:1080px; margin:0 auto;}
-  header{text-align:center; margin-bottom:28px;}
-  header h1{font-size:26px; font-weight:700;}
-  header p{color:var(--sub); font-size:14px; margin-top:6px;}
-
-  nav{display:flex; gap:8px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;}
-  nav button{
-    padding:9px 18px; border:1px solid var(--border); background:var(--card);
-    border-radius:20px; cursor:pointer; font-size:14px; color:var(--text); font-weight:500;
-    transition:.15s;
+  button{font-family:inherit;}
+  .page{
+    max-width:680px; margin:0 auto; min-height:100vh;
+    display:flex; flex-direction:column;
   }
-  nav button.active{background:var(--primary); color:#fff; border-color:var(--primary);}
 
-  .panel{display:none; background:var(--card); border:1px solid var(--border);
-    border-radius:16px; padding:28px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
-  .panel.active{display:block; animation:fade .2s;}
-  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1}}
-
-  h2{font-size:19px; margin-bottom:4px;}
-  .hint{color:var(--sub); font-size:13px; margin-bottom:20px;}
-
-  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px;}
-  .field label{display:block; font-size:13px; color:var(--sub); margin-bottom:5px; font-weight:500;}
-  .field input,.field select{
-    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px;
-    font-size:15px; background:#fff; color:var(--text);
+  /* ===== 顶部导航（首页用） ===== */
+  .navbar{
+    padding:22px 28px 14px;
+    display:flex; align-items:center; justify-content:space-between;
   }
-  .field input:focus,.field select:focus{outline:none; border-color:var(--primary);}
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .logo{
+    width:38px; height:38px; border-radius:12px;
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
+    display:flex; align-items:center; justify-content:center; font-size:19px;
+    box-shadow:0 4px 12px rgba(38,33,92,.28);
+  }
+  .brand .name{font-size:17px; font-weight:700; letter-spacing:.2px;}
+  .me-btn{
+    width:38px; height:38px; border-radius:50%;
+    border:1px solid var(--border); background:var(--card);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:.15s; box-shadow:var(--shadow-sm);
+  }
+  .me-btn:hover{border-color:var(--brand); transform:translateY(-1px);}
+  .me-btn svg{width:19px; height:19px;}
 
+  /* ===== 页面切换 ===== */
+  .screen{display:none;}
+  .screen.active{display:block; animation:fade .18s;}
+  @keyframes fade{from{opacity:0; transform:translateY(4px)} to{opacity:1}}
+
+  /* ===== 首页 ===== */
+  .main{
+    flex:1; display:flex; flex-direction:column; justify-content:center;
+    padding:36px 28px 48px;
+  }
+  .hero{text-align:center; margin-bottom:30px;}
+  .hero h1{font-size:26px; font-weight:700; line-height:1.3; color:var(--text);}
+  .hero p{font-size:13px; color:var(--sub); margin-top:8px;}
+
+  /* 当前选择方案卡片 */
+  .current-card{
+    border-radius:var(--radius); padding:18px 20px; margin-bottom:20px;
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
+    color:#fff; cursor:pointer; position:relative; overflow:hidden;
+    box-shadow:var(--shadow-md); transition:.18s;
+  }
+  .current-card:hover{transform:translateY(-2px);}
+  .current-card::after{
+    content:""; position:absolute; right:-40px; top:-40px; width:140px; height:140px;
+    border-radius:50%; background:rgba(255,255,255,.12);
+  }
+  .current-card .cc-label{
+    font-size:11px; letter-spacing:1px; opacity:.85; margin-bottom:6px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .current-card .cc-label .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 3px rgba(245,158,11,.3);
+  }
+  .current-card .cc-name{font-size:19px; font-weight:700; margin-bottom:3px; position:relative; z-index:1;}
+  .current-card .cc-sub{font-size:12px; opacity:.9; position:relative; z-index:1;}
+  .current-card .cc-arrow{
+    position:absolute; right:18px; top:50%; transform:translateY(-50%); z-index:1;
+  }
+  .current-card .cc-arrow svg{width:20px; height:20px;}
+
+  .current-empty{
+    border:1.5px dashed var(--brand-mid); border-radius:var(--radius);
+    padding:18px 20px; margin-bottom:20px; background:var(--card);
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    cursor:pointer; transition:.15s;
+  }
+  .current-empty:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .current-empty .ce-t{font-size:14px; font-weight:600; color:var(--text);}
+  .current-empty .ce-d{font-size:12px; color:var(--sub); margin-top:2px;}
+  .current-empty .ce-arrow{color:var(--brand); flex-shrink:0;}
+  .current-empty .ce-arrow svg{width:18px; height:18px;}
+
+  .entries{display:grid; gap:14px;}
+  .entry{
+    border-radius:var(--radius); padding:22px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    cursor:pointer; text-align:left; transition:.16s;
+  }
+  .entry .t{font-size:17px; font-weight:700; margin-bottom:6px;}
+  .entry .d{font-size:13px; line-height:1.6;}
+  .entry .arrow{
+    width:48px; height:48px; border-radius:14px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .entry .arrow svg{width:22px; height:22px;}
+
+  .entry.recommend{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%); color:#fff; border:none;
+    box-shadow:var(--shadow-md);}
+  .entry.recommend:hover{transform:translateY(-2px);}
+  .entry.recommend .d{color:var(--brand-mid);}
+  .entry.recommend .arrow{background:rgba(255,255,255,.16);}
+
+  .entry.browse{background:var(--card); border:1px solid var(--border); color:var(--text);
+    box-shadow:var(--shadow-sm);}
+  .entry.browse:hover{border-color:var(--brand); transform:translateY(-2px);}
+  .entry.browse .d{color:var(--sub);}
+  .entry.browse .arrow{background:var(--brand-soft);}
+
+  .foot{text-align:center; color:#a6acb8; font-size:12px; padding:0 28px 28px;}
+
+  /* ===== 列表页 ===== */
+  .list-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .back-btn{
+    width:34px; height:34px; border-radius:10px;
+    border:1px solid var(--border); background:var(--card);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0;
+    transition:.15s; box-shadow:var(--shadow-sm);
+  }
+  .back-btn:hover{border-color:var(--brand);}
+  .back-btn svg{width:18px; height:18px;}
+  .list-head .title{font-size:16px; font-weight:700;}
+
+  .filters{padding:16px 28px 6px; display:flex; gap:8px; flex-wrap:wrap;}
+  .filter{
+    font-size:13px; padding:7px 16px; border-radius:18px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card); color:var(--sub);
+    transition:.15s; font-weight:500;
+  }
+  .filter.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;
+    box-shadow:0 4px 10px rgba(38,33,92,.25);}
+
+  .plan-list{padding:14px 28px 100px; display:grid; gap:14px;}
+  .plan-card{
+    border:1px solid var(--border); border-radius:var(--radius); padding:20px;
+    background:var(--card); cursor:pointer; transition:.16s; box-shadow:var(--shadow-sm); position:relative;
+  }
+  .plan-card:hover{border-color:var(--brand); transform:translateY(-2px); box-shadow:var(--shadow-md);}
+  .plan-card .top{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px;}
+  .plan-card .name{font-size:17px; font-weight:700;}
+  .plan-card.sel{border-color:var(--brand); background:var(--brand-soft);}
+  .plan-card .chk{
+    position:absolute; right:16px; top:16px; width:22px; height:22px; border-radius:7px;
+    border:1.5px solid var(--border); background:var(--card); display:flex; align-items:center;
+    justify-content:center; transition:.15s; flex-shrink:0; cursor:pointer;
+  }
+  .plan-card .chk.on{background:var(--brand); border-color:var(--brand);}
+  .plan-card .chk svg{width:13px; height:13px; opacity:0; transition:.1s;}
+  .plan-card .chk.on svg{opacity:1;}
+
+  /* 底部对比栏 */
+  .compare-bar{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:40;
+    width:calc(100% - 56px); max-width:624px; border-radius:16px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    box-shadow:0 8px 24px rgba(38,33,92,.32);
+  }
+  .compare-bar .info{font-size:13px; font-weight:500;}
+  .compare-bar .info .cnt{font-weight:800; font-size:15px;}
+  .compare-bar button{
+    padding:9px 20px; border-radius:11px; border:none; background:#fff; color:var(--brand);
+    font-size:14px; font-weight:700; cursor:pointer; flex-shrink:0; transition:.15s;
+  }
+  .compare-bar button:disabled{opacity:.45; cursor:not-allowed;}
+  .compare-bar button:not(:disabled):hover{transform:translateY(-1px);}
+  .plan-card .desc{font-size:13px; color:var(--sub); line-height:1.6; margin-bottom:12px;}
+  .plan-card .tags{display:flex; gap:6px; flex-wrap:wrap;}
+  .chip{font-size:11px; padding:3px 9px; border-radius:7px; background:var(--brand-soft); color:var(--brand); font-weight:500;}
+  .tag{font-size:11px; padding:3px 9px; border-radius:7px; background:#f3f4f6; color:var(--sub); border:1px solid var(--border);}
+  .badge{font-size:11px; padding:3px 10px; border-radius:7px; white-space:nowrap; margin-left:10px; flex-shrink:0; font-weight:600;}
+  .source{font-size:11px; color:var(--sub); display:inline-flex; align-items:center; gap:4px;}
+
+  /* ===== 方案详情页 ===== */
+  .detail-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .detail-body{padding:24px 28px 40px;}
+  .detail-hero{margin-bottom:24px;}
+  .detail-hero .name{font-size:23px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;}
+  .detail-hero .target{
+    font-size:13px; color:var(--brand-deep); background:var(--brand-soft);
+    padding:7px 14px; border-radius:10px; display:inline-block; margin-top:8px; font-weight:500;
+  }
+  .detail-sec{margin-bottom:26px;}
+  .detail-sec .h{
+    font-size:15px; font-weight:700; margin-bottom:12px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .detail-sec .h::before{
+    content:""; width:4px; height:15px; border-radius:2px;
+    background:linear-gradient(180deg,var(--brand),var(--brand-2)); display:inline-block;
+  }
+  .detail-sec .p{font-size:14px; line-height:1.8; color:var(--text);}
+  .detail-sec ul{list-style:none; padding:0;}
+  .detail-sec li{
+    font-size:14px; line-height:1.7; color:var(--text);
+    padding:7px 0 7px 20px; position:relative;
+  }
+  .detail-sec li::before{
+    content:""; position:absolute; left:2px; top:16px;
+    width:7px; height:7px; border-radius:50%;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  }
+  .param-row{
+    display:flex; gap:10px; padding:12px 0; border-bottom:1px solid var(--border);
+  }
+  .param-row:last-child{border-bottom:none;}
+  .param-row .k{font-size:13px; color:var(--sub); width:84px; flex-shrink:0; font-weight:500;}
+  .param-row .v{font-size:14px; color:var(--text); line-height:1.6;}
+  .detail-cta{
+    position:sticky; bottom:0; padding:14px 28px;
+    background:linear-gradient(to top, var(--bg) 70%, rgba(246,247,251,0));
+  }
+  .detail-cta button{
+    width:100%; padding:15px; border-radius:14px; border:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+    transition:.15s; box-shadow:var(--shadow-md);
+  }
+  .detail-cta button:hover{transform:translateY(-1px);}
+  .detail-cta .cta-sub{
+    display:block; text-align:center; margin-top:10px; font-size:13px; color:var(--brand);
+    cursor:pointer; font-weight:600;
+  }
+  .detail-cta .cta-sub:hover{opacity:.7;}
+
+  /* 适合人群判断提示 */
+  .fit-hint{
+    display:flex; align-items:flex-start; gap:10px; border-radius:14px;
+    padding:14px 16px; margin-bottom:6px; font-size:13px; line-height:1.6;
+  }
+  .fit-hint .fh-ic{font-size:16px; flex-shrink:0; line-height:1.4;}
+  .fit-hint.ok{background:var(--color-background-success); color:#0F6E56;}
+  .fit-hint.warn{background:#FFF7E6; color:#A16207;}
+  .fit-hint.none{background:var(--brand-soft); color:var(--brand-deep);}
+  .fit-hint b{font-weight:700;}
+  .compare-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .compare-body{padding:20px 28px 40px; overflow-x:auto;}
+  .compare-table{
+    width:100%; border-collapse:separate; border-spacing:0; min-width:440px;
+    font-size:13px;
+  }
+  .compare-table th, .compare-table td{
+    padding:12px 14px; text-align:left; vertical-align:top;
+    border-bottom:1px solid var(--border);
+  }
+  .compare-table thead th{
+    position:sticky; top:0; background:var(--card); z-index:1; font-size:14px;
+  }
+  .compare-table thead th .pname{font-weight:700; font-size:14px; color:var(--text);}
+  .compare-table thead th .psrc{font-size:11px; color:var(--sub); font-weight:400; margin-top:2px;}
+  .compare-table tbody th{
+    color:var(--sub); font-weight:600; white-space:nowrap; width:92px;
+    background:var(--bg); position:sticky; left:0;
+  }
+  .compare-table td{color:var(--text); line-height:1.6;}
+  .compare-table tr:last-child th, .compare-table tr:last-child td{border-bottom:none;}
+  .compare-goal-badges{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px;}
+  .compare-goal-badges .badge{margin-left:0;}
+  .compare-cta{
+    position:sticky; bottom:0; padding:14px 28px;
+    background:linear-gradient(to top, var(--bg) 70%, rgba(246,247,251,0));
+  }
+  .compare-cta .btn-row{display:flex; gap:12px;}
+  .compare-cta button{
+    flex:1; padding:14px; border-radius:14px; border:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-size:15px; font-weight:700; cursor:pointer;
+    transition:.15s; box-shadow:var(--shadow-md);
+  }
+  .compare-cta button:hover{transform:translateY(-1px);}
+
+  /* ===== 计算页 ===== */
+  .calc-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .calc-body{padding:24px 28px 40px;}
+  .calc-plan-name{font-size:22px; font-weight:800; margin-bottom:4px;}
+  .calc-plan-source{font-size:12px; color:var(--sub); margin-bottom:20px;}
+
+  .form-group{margin-bottom:18px;}
+  .form-group label{font-size:13px; color:var(--sub); display:block; margin-bottom:8px;}
+  .form-group label b{color:var(--text); font-weight:600;}
+  .form-input{
+    width:100%; padding:13px 15px; border-radius:12px;
+    border:1px solid var(--border); background:var(--card);
+    font-size:15px; color:var(--text); outline:none; transition:.15s;
+  }
+  .form-input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(38,33,92,.12);}
+  .form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .seg{display:flex; gap:8px; flex-wrap:wrap;}
-  .seg button{padding:8px 16px; border:1px solid var(--border); background:#fff; border-radius:10px; cursor:pointer; font-size:14px;}
-  .seg button.on{background:var(--primary); color:#fff; border-color:var(--primary);}
-
-  .btn{
-    display:inline-block; padding:12px 28px; background:var(--primary); color:#fff;
-    border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; transition:.15s;
+  .seg-item{
+    padding:10px 16px; border-radius:11px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card); color:var(--sub);
+    font-size:13px; transition:.15s; font-weight:500;
   }
-  .btn:hover{background:var(--primary-dark);}
-  .btn.ghost{background:#fff; color:var(--primary); border:1px solid var(--primary);}
-  .btn.small{padding:6px 14px; font-size:13px; border-radius:8px;}
+  .seg-item.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;
+    box-shadow:0 4px 10px rgba(38,33,92,.25);}
 
-  .result{margin-top:20px; display:none;}
-  .result.show{display:block;}
+  .profile-tip{
+    background:var(--brand-soft); border-radius:14px; padding:14px 18px;
+    font-size:13px; color:var(--text); margin-bottom:20px; line-height:1.6;
+    border:1px solid var(--brand-mid);
+  }
+  .profile-tip a{color:var(--brand); font-weight:600; cursor:pointer; text-decoration:none;}
 
-  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px;}
-  .stat{background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center;}
-  .stat .v{font-size:24px; font-weight:700;}
-  .stat .k{font-size:12px; color:var(--sub); margin-top:2px;}
-  .stat.p .v{color:var(--red);} .stat.c .v{color:var(--green);} .stat.f .v{color:var(--amber);} .stat.cal .v{color:var(--purple);}
+  .result-card{
+    border:1px solid var(--border); border-radius:var(--radius); padding:22px; margin-bottom:14px;
+    background:var(--card); box-shadow:var(--shadow-sm);
+  }
+  .result-card .rc-title{font-size:13px; color:var(--sub); margin-bottom:14px; font-weight:600;}
+  .result-macro{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:10px;}
+  .macro-item{
+    text-align:center; padding:16px 8px; border-radius:14px;
+    background:linear-gradient(180deg,var(--brand-soft) 0%,#fff 100%);
+    border:1px solid var(--brand-mid);
+  }
+  .macro-item .num{font-size:26px; font-weight:800; color:var(--brand-deep);}
+  .macro-item .unit{font-size:11px; color:var(--sub);}
+  .macro-item .lbl{font-size:12px; color:var(--text); margin-top:3px; font-weight:500;}
 
-  .bar-wrap{margin:6px 0 4px; background:#eef0f3; border-radius:6px; height:10px; overflow:hidden;}
-  .bar{height:100%; border-radius:6px; transition:.4s;}
+  /* ===== 问卷页 ===== */
+  .quiz-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .quiz-body{padding:24px 28px 40px;}
+  .quiz-progress{
+    height:6px; border-radius:3px; background:var(--border); margin-bottom:28px; overflow:hidden;
+  }
+  .quiz-progress .bar{height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2)); border-radius:3px; transition:.3s;}
+  .quiz-q{font-size:21px; font-weight:700; line-height:1.4; margin-bottom:24px;}
+  .quiz-opts{display:grid; gap:12px;}
+  .quiz-opt{
+    border:1px solid var(--border); border-radius:15px; padding:17px 20px;
+    cursor:pointer; transition:.15s; font-size:15px; line-height:1.5;
+    background:var(--card); box-shadow:var(--shadow-sm);
+  }
+  .quiz-opt:hover{border-color:var(--brand); background:var(--brand-soft); transform:translateY(-1px);}
 
-  table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14px;}
-  th,td{padding:9px 10px; text-align:left; border-bottom:1px solid var(--border);}
-  th{color:var(--sub); font-weight:600; font-size:12px; background:#f8fafc;}
-  tr:hover td{background:#fafbfc;}
+  .quiz-result{text-align:center; padding:20px 0;}
+  .quiz-result .big{font-size:24px; font-weight:800; margin-bottom:12px;}
+  .quiz-result .why{font-size:13px; color:var(--sub); line-height:1.7; margin-bottom:28px; text-align:left;
+    background:var(--brand-soft); border-radius:14px; padding:16px 18px; border:1px solid var(--brand-mid);}
+  .quiz-result .why b{color:var(--text);}
 
-  .search{margin-bottom:16px; display:flex; gap:10px;}
-  .search input{flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:10px; font-size:15px;}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
-  .chip{padding:5px 13px; border:1px solid var(--border); border-radius:16px; cursor:pointer; font-size:13px; background:#fff;}
-  .chip.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+  /* 备选方案 */
+  .quiz-alt{margin:18px 0 24px; text-align:left;}
+  .quiz-alt .alt-title{font-size:13px; color:var(--sub); font-weight:600; margin-bottom:10px;}
+  .alt-card{
+    border:1px solid var(--border); border-radius:13px; padding:13px 15px;
+    margin-bottom:8px; cursor:pointer; transition:.15s; background:var(--card);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .alt-card:hover{border-color:var(--brand);}
+  .alt-card .ac-name{font-size:14px; font-weight:600; color:var(--text);}
+  .alt-card .ac-desc{font-size:12px; color:var(--sub); margin-top:2px; line-height:1.5;}
+  .alt-card .ac-arrow{color:var(--brand); flex-shrink:0; font-weight:600;}
 
-  .meal{background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;}
-  .meal h4{font-size:15px; margin-bottom:6px;}
-  .meal .mmeta{font-size:12px; color:var(--sub); margin-bottom:10px;}
-  .meal table{margin-top:6px;}
+  /* ===== 我的面板 ===== */
+  .me-head{
+    padding:16px 28px; border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+  }
+  .me-body{padding:24px 28px 40px; max-width:560px; margin:0 auto;}
 
-  .note{background:#fff8e6; border:1px solid #f5e6b8; border-radius:10px; padding:14px 16px; font-size:13px; color:#8a6d1a; margin-top:16px;}
+  .me-section{margin-bottom:26px;}
+  .me-section .st{font-size:13px; font-weight:600; color:var(--sub); margin-bottom:10px; padding-left:2px;}
+  .me-card{
+    background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden;
+  }
+  .me-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:15px 18px; font-size:15px;
+  }
+  .me-row + .me-row{border-top:1px solid var(--border);}
+  .me-row .ic{
+    width:32px; height:32px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--brand-soft);
+  }
+  .me-row .ic svg{width:18px; height:18px;}
+  .me-row .lbl{color:var(--text); flex:1; text-align:left; display:flex; align-items:center; gap:11px;}
+  .me-row .val{color:var(--sub); font-size:14px; max-width:60%; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .me-row .act{color:var(--brand); font-size:14px; cursor:pointer; flex-shrink:0; font-weight:500;}
+  .me-row .act:hover{opacity:.7;}
+  .me-tip{font-size:12px; color:var(--sub); line-height:1.6; margin-top:8px; padding:0 4px;}
+  .me-danger{color:#DC2626;}
 
-  .foot{margin-top:28px; text-align:center; color:#9aa0a6; font-size:12px;}
-  .foot a{color:#9aa0a6;}
-  .inline-bar{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub);}
-  .tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; background:#eef2ff; color:#5b4dd6;}
+  .btn-primary{
+    width:100%; padding:14px; border-radius:13px; border:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    font-size:15px; font-weight:700; cursor:pointer; transition:.15s;
+    box-shadow:var(--shadow-md);
+  }
+  .btn-primary:hover{transform:translateY(-1px);}
+
+  /* ===== 手机窄屏 ===== */
+  @media (max-width:480px){
+    .navbar{padding:16px 18px 12px;}
+    .brand .logo{width:34px; height:34px; border-radius:11px; font-size:17px;}
+    .me-btn{width:34px; height:34px;}
+    .main{padding:28px 18px 40px; justify-content:flex-start;}
+    .hero{margin-bottom:24px;}
+    .hero h1{font-size:24px;}
+    .entry{padding:20px;}
+    .entry .t{font-size:16px;}
+    .entry .arrow{width:44px; height:44px; border-radius:13px;}
+    .list-head{padding:14px 18px;}
+    .filters{padding:14px 18px 4px;}
+    .plan-list{padding:12px 18px 24px;}
+    .detail-head{padding:14px 18px;}
+    .detail-body{padding:20px 18px 32px;}
+    .detail-cta{padding:12px 18px;}
+    .quiz-head{padding:14px 18px;}
+    .quiz-body{padding:20px 18px 32px;}
+    .me-head{padding:14px 18px;}
+    .me-body{padding:20px 18px 32px;}
+    .current-card{padding:16px 18px;}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>💪 健身饮食规划</h1>
-    <p>计算三大营养素 · 生成食谱 · 查询食物热量</p>
-  </header>
+<div class="page">
 
-  <nav>
-    <button data-tab="calc" class="active">计算营养需求</button>
-    <button data-tab="food">食物热量库</button>
-    <button data-tab="meal">生成食谱</button>
-  </nav>
+  <!-- ============ 首页 ============ -->
+  <div class="screen active" id="screen-home">
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo">🌰</div>
+        <div class="name">🌰饮食</div>
+      </div>
+      <button class="me-btn" onclick="showMe()" aria-label="我的">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="#26215C" stroke-width="1.8"/>
+          <path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5" stroke="#26215C" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </header>
 
-  <!-- ============ 计算 ============ -->
-  <section id="calc" class="panel active">
-    <h2>计算你的每日营养需求</h2>
-    <p class="hint">基于 Mifflin-St Jeor 公式（1990）计算基础代谢，再按活动量与目标调整。</p>
-    <div class="grid">
-      <div class="field"><label>性别</label>
-        <div class="seg" id="segGender">
-          <button data-v="male" class="on">男</button><button data-v="female">女</button>
+    <main class="main">
+      <div class="hero">
+        <h1>好好吃饭，多多喝水</h1>
+        <p>选择适合你的饮食方案，按体重精准计算三大营养素</p>
+      </div>
+
+      <div id="currentPlanBox"></div>
+
+      <div class="entries">
+        <div class="entry recommend" onclick="goRecommend()">
+          <div>
+            <div class="t">我还没想好，帮我推荐</div>
+            <div class="d">30 秒回答几个问题，推荐最适合你的方案</div>
+          </div>
+          <div class="arrow">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </div>
+
+        <div class="entry browse" onclick="go('list')">
+          <div>
+            <div class="t">我有想执行的方案</div>
+            <div class="d">直接浏览方案，选一个进入计算</div>
+          </div>
+          <div class="arrow">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
         </div>
       </div>
-      <div class="field"><label>年龄（岁）</label><input type="number" id="age" value="28" min="12" max="90"></div>
-      <div class="field"><label>身高（cm）</label><input type="number" id="height" value="175" min="100" max="230"></div>
-      <div class="field"><label>体重（kg）</label><input type="number" id="weight" value="70" min="30" max="250"></div>
-    </div>
-    <div class="field" style="margin-bottom:20px;">
-      <label>活动量</label>
-      <div class="seg" id="segActivity">
-        <button data-v="1.2">久坐</button>
-        <button data-v="1.375">轻度(1-3次/周)</button>
-        <button data-v="1.55" class="on">中度(3-5次/周)</button>
-        <button data-v="1.725">高度(6-7次/周)</button>
-        <button data-v="1.9">极高(体力劳动)</button>
-      </div>
-    </div>
-    <div class="field" style="margin-bottom:20px;">
-      <label>目标</label>
-      <div class="seg" id="segGoal">
-        <button data-v="cut" class="on">减脂</button>
-        <button data-v="maintain">维持</button>
-        <button data-v="bulk">增肌</button>
-      </div>
-    </div>
-    <button class="btn" onclick="calculate()">计算我的需求</button>
+    </main>
 
-    <div class="result" id="calcResult">
-      <div class="cards" id="calcCards"></div>
-      <h3 style="font-size:15px; margin-bottom:8px;">三大营养素分布</h3>
-      <div id="macroBars"></div>
-      <div class="note" id="calcAdvice"></div>
-    </div>
-  </section>
-
-  <!-- ============ 食物库 ============ -->
-  <section id="food" class="panel">
-    <h2>食物热量查询</h2>
-    <p class="hint">每 100g 可食部营养含量。数据参考《中国食物成分表》与 USDA，仅供规划参考。</p>
-    <div class="search">
-      <input type="text" id="foodSearch" placeholder="搜索食物名称，如「鸡胸」" oninput="renderFood()">
-    </div>
-    <div class="chips" id="foodChips"></div>
-    <div style="overflow-x:auto;">
-      <table id="foodTable">
-        <thead><tr><th>名称</th><th>分类</th><th>热量(kcal)</th><th>蛋白质(g)</th><th>碳水(g)</th><th>脂肪(g)</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </div>
-    <div class="note">💡 支持本地录入自定义食物：在浏览器控制台或后续版本中可添加。当前为内置示例库。</div>
-  </section>
-
-  <!-- ============ 食谱 ============ -->
-  <section id="meal" class="panel">
-    <h2>一键生成食谱</h2>
-    <p class="hint">根据上方「计算营养需求」的结果，自动搭配一日三餐，贴近目标热量与蛋白质。</p>
-    <div class="field" style="margin-bottom:16px;">
-      <label>目标热量（kcal，默认取你的计算结果）</label>
-      <input type="number" id="mealTarget" placeholder="留空则用计算结果" min="800" max="6000">
-    </div>
-    <button class="btn" onclick="genMeal()">生成食谱</button>
-    <div class="result" id="mealResult"></div>
-  </section>
-
-  <div class="foot">
-    数据与公式仅供膳食规划参考，不构成医疗建议。减脂/增肌前请咨询专业人士。<br>
-    公式依据：Mifflin et al. <i>Am J Clin Nutr</i> 1990; ISSN 2017; FAO/WHO/UNU 2001。
+    <div class="foot">数据仅供膳食规划参考，不构成医疗建议</div>
   </div>
+
+  <!-- ============ 方案列表页 ============ -->
+  <div class="screen" id="screen-list">
+    <header class="list-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">选择饮食方案</div>
+    </header>
+
+    <div class="filters" id="filters"></div>
+    <div class="plan-list" id="planList"></div>
+    <div class="compare-bar" id="compareBar" style="display:none;">
+      <div class="info">已选 <span class="cnt" id="compareCnt">0</span> 个方案</div>
+      <button id="compareBtn" onclick="openCompare()" disabled>对比</button>
+    </div>
+  </div>
+
+  <!-- ============ 方案对比页 ============ -->
+  <div class="screen" id="screen-compare">
+    <header class="compare-head">
+      <button class="back-btn" onclick="go('list')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">方案对比</div>
+    </header>
+    <div class="compare-body" id="compareBody"></div>
+    <div class="compare-cta" id="compareCta"></div>
+  </div>
+
+  <!-- ============ 方案详情页 ============ -->
+  <div class="screen" id="screen-detail">
+    <header class="detail-head">
+      <button class="back-btn" onclick="go('list')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">方案详情</div>
+    </header>
+    <div class="detail-body" id="detailBody"></div>
+    <div class="detail-cta">
+      <button onclick="startPlan()">按此方案开始计算</button>
+      <span class="cta-sub" id="detailCompareLink" onclick="quickCompare()">↔ 与其他方案对比</span>
+    </div>
+  </div>
+
+  <!-- ============ 计算页 ============ -->
+  <div class="screen" id="screen-calc">
+    <header class="calc-head">
+      <button class="back-btn" onclick="go('detail')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">按方案计算</div>
+    </header>
+    <div class="calc-body" id="calcBody"></div>
+  </div>
+
+  <!-- ============ 问卷推荐页 ============ -->
+  <div class="screen" id="screen-quiz">
+    <header class="quiz-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">帮我推荐方案</div>
+    </header>
+    <div class="quiz-body" id="quizBody"></div>
+  </div>
+
+  <!-- ============ 我的面板 ============ -->
+  <div class="screen" id="screen-me">
+    <header class="me-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">我的</div>
+    </header>
+    <div class="me-body" id="meBody"></div>
+  </div>
+
 </div>
 
-<script src="foods.js"></script>
 <script>
-/* ===== 状态 ===== */
-let gender = "male", activity = 1.55, goal = "cut";
-let currentPlan = null; // 最近一次计算结果
+/* ===== 方案数据（6 个可执行方案） =====
+   goal 目标标签：增肌 / 减脂 / 日常健康 */
+const PLANS = [
+  {
+    id:"month3",
+    name:"三个月减脂计划",
+    source:"谭成义",
+    desc:"训练要求低，照着模板吃，每 10 天调一次碳水，稳稳掉秤。",
+    goal:"减脂",
+    tags:["训练要求低","饮食为主·训练辅助"],
+    chips:["碳水 2.5–3.5g/kg","蛋白 1.2–2g/kg"],
+    compare:{carb:"2.5–3.5 g/kg",protein:"1.2–2 g/kg",fat:"0.6–0.8 g/kg",training:"低",duration:"10 天一周期"},
+    detail:{
+      logic:"从当前体重出发，算出每日碳水、蛋白质、脂肪的克数，吃够 10 天看体重和腰围变化，每次只调整碳水，蛋白质和脂肪基本不动。用 10 天为一个周期逐步逼近适合自己的饮食量。",
+      params:{
+        "碳水化合物":"2.5–3.5 g/kg（训练量大取高值，训练量小取低值）",
+        "蛋白质":"1.2–2 g/kg（新手从 1.5g/kg 起步）",
+        "脂肪":"0.6–0.8 g/kg（含蛋黄、坚果、食用油）",
+        "蔬菜":"每天 500–800g"
+      },
+      meals:[
+        "早餐：燕麦约 70g + 全蛋 3 个 + 蓝莓/南瓜子少量",
+        "午餐：生米约 93g + 蛋白质（龙利鱼/鸡胸/虾仁等）+ 蔬菜 200–300g + 油约 25g",
+        "晚餐：薯类 300g + 牛肉约 180g + 坚果 20g + 油约 25g + 蔬菜 200–300g"
+      ],
+      adjust:[
+        "稳定执行 10 天，记录 7 天平均体重 + 腰围对比照",
+        "正常速度：每周下降约体重 0.5%–1%",
+        "掉太快（10 天 2–3kg）：碳水加 20–30g",
+        "不掉秤：碳水减 20–30g，先检查油/酱料/坚果是否漏算",
+        "每次只动碳水，蛋白质和脂肪基本不动",
+        "体重下降后用新体重重新计算三大营养素"
+      ],
+      who:"减脂新手、零基础入门者；想要完整模板照着吃；每周能规律训练 2–6 小时的人。",
+      target:"减脂，稳扎稳打地掉秤"
+    }
+  },
+  {
+    id:"triple-carb",
+    name:"三倍碳水法",
+    source:"谭成义",
+    desc:"训练要求高，靠高碳水提状态，边吃边减脂。",
+    goal:"减脂",
+    tags:["训练要求高","必须力量训练"],
+    chips:["碳水 3g/kg","蛋白 1.6g/kg"],
+    compare:{carb:"3 g/kg",protein:"1.6 g/kg",fat:"0.8 g/kg",training:"高",duration:"需先练代谢能力"},
+    detail:{
+      logic:"「三倍碳水」不是机械吃 3 倍碳水，而是先培养出能处理 3 倍碳水的代谢能力——用高碳水支撑高强度训练，再用不断提升的训练水平去消耗这些碳水，甚至制造额外缺口。前提不是「吃」而是「练」。",
+      params:{
+        "碳水":"3 g/kg（如 75kg 男性每天 225g）",
+        "蛋白质":"1.6 g/kg（如 75kg 男性每天 120g）",
+        "脂肪":"0.8 g/kg（如 75kg 男性每天 60g）",
+        "总热量":"约 1800–1900 大卡（配合训练制造缺口）"
+      },
+      meals:[
+        "快碳只在力量训练后吃，日常/非训练时段用慢碳（燕麦、薯类）",
+        "能量守恒不变：保 3 倍碳水 + 1.6 倍蛋白的同时保热量缺口",
+        "热量缺口靠运动制造，一定要加入力量训练",
+        "碳水升高时蛋白质可稍降，脂肪基本不动"
+      ],
+      adjust:[
+        "新手别直接套 3 倍，先从 2.5 倍开始，逐步提升训练能力后再往 3 倍走",
+        "吃不下别硬塞，看自己消化情况"
+      ],
+      who:"有 1 年以上训练基础、肌肉量较好的人；每周训练 4 次以上、强度高的人；之前低碳减脂但状态差、肌肉掉得多的人。",
+      target:"高碳水支撑高强度训练，边吃边减脂、保留肌肉"
+    }
+  },
+  {
+    id:"carb-descend",
+    name:"碳水渐降法",
+    source:"谭成义",
+    desc:"训练要求低–中，减脂卡在平台期，长期可持续、不反弹。",
+    goal:"减脂",
+    tags:["训练要求低–中","搭配低强度训练"],
+    chips:["碳水 2.5–3g 起步","每 10 天渐降"],
+    inputs:[
+      {key:"version", label:"计划版本", type:"seg", options:[
+        {v:"dyn", label:"三个月动态版（90 天）"},
+        {v:"sprint", label:"40 天冲刺版"}
+      ]}
+    ],
+    compare:{carb:"2.5–3 g/kg 起步",protein:"1.5–1.8 g/kg",fat:"0.6–0.8 g/kg",training:"低–中",duration:"每 10 天复盘渐降"},
+    detail:{
+      logic:"不一开始就把碳水压得很低，而是从较高的碳水水平开始，每 10 天复盘一次，根据体重反馈逐步降碳，给身体足够适应时间，避免突然低碳导致的代谢下降和平台期。中间穿插高碳阶段，让身体「缓一缓」。",
+      params:{
+        "碳水":"2.5–3 g/kg 起步，逐步降低",
+        "蛋白质":"1.5–1.8 g/kg（渐升）",
+        "脂肪":"0.6–0.8 g/kg"
+      },
+      meals:[
+        "三个月动态版（90 天）：每 10 天复盘体重，根据变化自动调整降碳节奏",
+        "40 天冲刺版：预设固定阶段表（逐步降碳→建立基线→提高蛋白→安排高碳）"
+      ],
+      adjust:[
+        "选档位：按训练量选起始碳水系数，算出三大营养素克数",
+        "稳定执行 7–10 天，每天记录晨重，前 10 天体重不变甚至略涨属正常",
+        "第 10 天复盘：体重没涨就不改，继续吃 10 天",
+        "体重连续不降或上涨时，开始小幅降碳（每次减 20–30g），蛋白可稍提",
+        "穿插高碳阶段，让身体对营养的利用状态恢复",
+        "体重降后用新体重重新计算",
+        "循环「吃 10 天→复盘→微调」直到达标"
+      ],
+      who:"减脂遇到平台期的人；不喜欢极端节食、想长期可持续减脂的人；之前低碳但代谢下降、易反弹的人；有明确时间节点（如过年前）要冲刺的人。",
+      target:"长期可持续、不反弹地减脂"
+    }
+  },
+  {
+    id:"five32",
+    name:"532 碳水渐降法",
+    source:"努力的橙子",
+    desc:"训练要求低，按 5:3:2 精确计算，前期以饮食为主。",
+    goal:"减脂",
+    tags:["训练要求低","前期饮食为主"],
+    chips:["碳:蛋:脂 5:3:2","每周复盘"],
+    inputs:[
+      {key:"base", label:"基数档位（决定缺口）", type:"seg", options:[
+        {v:"big", label:"大基数（缺口 500 大卡）", deficit:500},
+        {v:"small", label:"小基数（缺口 300 大卡）", deficit:300}
+      ]}
+    ],
+    compare:{carb:"3–2 g/kg",protein:"1.5 g/kg",fat:"0.8 g/kg",training:"低",duration:"每周复盘"},
+    detail:{
+      logic:"「532」指全天热量按 碳水 50% : 蛋白质 30% : 脂肪 20% 分配。先算每日总消耗、制造合理缺口，再按 5:3:2 分配三大营养素。随体重下降只逐步降碳水，蛋白质脂肪不变，用碳水作「开关」精准控制减脂节奏。",
+      params:{
+        "碳水":"3–2 g/kg（起步 3g/kg 逐步降到 2g/kg，训练高者可从 4g/kg 起步，最低不低于 1g/kg）",
+        "蛋白质":"1.5 g/kg（女性 1.3–1.5g/kg，全程不变）",
+        "脂肪":"0.8 g/kg（训练高者可降到 0.5g/kg，全程不变）"
+      },
+      meals:[
+        "早餐：优质碳水+蛋白质（燕麦、全麦面包、鸡蛋、无糖酸奶）",
+        "午餐：正常碳水（米饭/红薯）+ 足量肉和蔬菜",
+        "练后餐：香蕉+土豆/米饭+去皮鸡腿，补快碳",
+        "晚餐：碳水减半，多吃肉和蔬菜，少油少盐",
+        "夜宵（可选）：补齐当日蛋白质缺口"
+      ],
+      adjust:[
+        "算总消耗（基础代谢+日常活动+运动），再定摄入热量（大基数减 500 大卡、小基数减 300 大卡）",
+        "按 5:3:2 分配：碳水=总热量×50%÷4，蛋白=总热量×30%÷4，脂肪=总热量×20%÷9",
+        "第一周雷打不动，记录每天空腹体重",
+        "每周复盘：掉 0.5%–1% 正常；掉超 1% 碳水加 15–30g；没降碳水减 15–30g",
+        "每两周或掉一定体重安排一次高碳日",
+        "碳水底线不低于 1g/kg"
+      ],
+      who:"大基数减脂人群（尤其新手）；想温和可持续减脂、按数字精确执行的人；前期不想做有氧、只靠饮食调整的人。",
+      target:"按 5:3:2 精确计算，稳住肌肉、只减脂肪"
+    }
+  },
+  {
+    id:"kai-carb-cycle",
+    name:"凯圣王碳循环法",
+    source:"凯圣王",
+    desc:"需有训练安排，突破平台期，高中低碳日配合训练。",
+    goal:"减脂",
+    tags:["需配合训练","高低强度日·含低强度有氧"],
+    chips:["高/中/低碳日","内胚2g/外胚3g"],
+    inputs:[
+      {key:"bodyType", label:"体型", type:"seg", options:[
+        {v:"endo", label:"内胚型（易胖，碳水 2g/kg、脂肪 0.8g/kg）", carb:2, fat:0.8},
+        {v:"ecto", label:"外胚型（难长肉，碳水 3g/kg、脂肪 1g/kg）", carb:3, fat:1.0}
+      ]}
+    ],
+    compare:{carb:"内胚2 / 外胚3 g/kg",protein:"0.8–1.5 g/kg",fat:"随碳水反向",training:"需配合训练",duration:"高/中/低碳日循环"},
+    detail:{
+      logic:"碳水循环不是「碳水在波动」，而是碳水和脂肪一起按周期波动，同时保证每天总热量基本一致。一周分高碳日、中碳日、低碳日，配合不同强度训练：高碳日练大肌群、低碳日休息或低强度有氧。核心是先让身体产生适应性，再在适应的基础上微调。",
+      params:{
+        "碳水":"内胚型 2g/kg；外胚型 3g/kg（起跳点，再按晨脉/体重/腰围/臂围微调）",
+        "脂肪":"内胚型 0.8g/kg；外胚型 1~1.2g/kg（随碳水反向波动）",
+        "蛋白质":"0.8~1.5g/kg（训练水平低 0.8–1g，较高 1.2–1.5g）"
+      },
+      meals:[
+        "高碳日（2 天）：碳水=周总量50%÷2，脂肪=周总量15%÷2（低脂），吃细粮、碳水后置",
+        "中碳日（3 天）：碳水=周总量35%÷3，脂肪=周总量35%÷3",
+        "低碳日（2 天）：碳水=周总量15%÷2，脂肪=周总量50%÷2（高脂），吃粗纤维碳水",
+        "蛋白质每天不变，分餐 4–5 次、单次 20–40g"
+      ],
+      adjust:[
+        "以起跳点为模板，根据晨脉（高于均值 8~12 表示皮质醇高）、体重、腰围、臂围增减",
+        "每周减重别超过 0.5–1.5kg",
+        "没有运动习惯的人可去掉高碳日，日常多按中碳日数值吃"
+      ],
+      who:"增肌、减脂都适用、想突破平台期的人；有训练安排（能区分高低强度日）的健身爱好者；想生活化、不极端节食的人。",
+      target:"突破平台期，高中低碳日配合训练实现增肌减脂"
+    }
+  },
+  {
+    id:"dietary-guideline",
+    name:"中国居民膳食指南",
+    source:"中国营养学会",
+    desc:"无训练门槛，建立日常营养底子，适合所有人。",
+    goal:"日常健康",
+    tags:["无训练门槛","日常营养底子"],
+    chips:["碳 50–65%","蛋白 10–15%","脂肪 20–30%"],
+    compare:{carb:"50–65% 供能",protein:"10–15% 供能",fat:"20–30% 供能",training:"无门槛",duration:"长期日常"},
+    detail:{
+      logic:"以「平衡膳食、食物多样」为原则，从供能比例而非体重系数规划三大营养素，强调谷物为主、蔬果奶豆搭配。官方依据《中国居民膳食指南（2022）》，适用于 2 岁以上所有健康人群，是最通用的健康膳食基线。",
+      params:{
+        "碳水化合物":"占每日总能量 50%–65%",
+        "蛋白质":"占每日总能量 10%–15%",
+        "脂肪":"占每日总能量 20%–30%"
+      },
+      meals:[
+        "谷类 200–300g（全谷物+杂豆 50–150g），薯类 50–100g",
+        "蔬菜 ≥300g（深色占 1/2），水果 200–350g",
+        "鱼禽肉蛋 120–200g，奶及奶制品 ≥300g",
+        "大豆及坚果 25–35g，烹调油 25–30g，盐 <5g，水 ≥1500ml",
+        "平均每天 12 种以上食物、每周 25 种以上"
+      ],
+      adjust:[
+        "这是面向大众的健康基线，不是减脂冲刺方案",
+        "减脂需在此基础上适度控制总热量、增加运动",
+        "三大营养素供能比是框架，具体克数按个人能量需求换算"
+      ],
+      who:"所有追求健康饮食的人群（2 岁以上）；减脂/增肌的通用营养底子；没有特殊训练需求、只想吃得健康的人。",
+      target:"吃得健康，建立日常营养底子"
+    }
+  },
+  {
+    id:"zengji-jianzhi",
+    name:"增肌减脂同步法",
+    source:"谭成义",
+    desc:"训练要求高，小缺口+保强度，边增肌边减脂、不挨饿不掉肌肉。",
+    goal:"增肌",
+    goals:["增肌","减脂"],
+    tags:["训练要求高","必须力量训练"],
+    chips:["碳水 2.5–3.5g/kg","蛋白 1.2–2g/kg","缺口 200–300 大卡"],
+    compare:{carb:"2.5–3.5 g/kg",protein:"1.2–2 g/kg",fat:"0.6–0.8 g/kg",training:"高",duration:"小缺口 200–300 大卡"},
+    detail:{
+      logic:"打破两个大众误区：增肌不靠猛吃（靠训练带来的机械张力，力量在涨肌肉就在长），减脂不靠饿肚子（靠小缺口+激素稳定，缺口太大反而压激素、掉代谢、提前平台期）。用 200–300 大卡的小缺口保留合成信号又持续供能，同时维持甚至提高训练强度，实现增肌减脂同步。",
+      params:{
+        "热量缺口":"200–300 大卡（约一碗米饭），既保留合成信号又持续供能",
+        "碳水":"2.5–3.5 g/kg（训练量大取高值）",
+        "蛋白质":"1.2–2 g/kg",
+        "脂肪":"0.6–0.8 g/kg（含蛋黄、坚果、食用油）",
+        "有氧":"一周 3–4 次，每次半小时出头，体能好了再加"
+      },
+      meals:[
+        "不追求热量盈余，吃够蛋白质保住肌肉合成信号",
+        "碳水按训练量给足，支撑力量训练强度不下降",
+        "脂肪按 0.6–0.8g/kg 稳步摄入，维持激素稳定",
+        "有氧每周 3–4 次、每次半小时出头，配合力量训练"
+      ],
+      adjust:[
+        "保持 200–300 大卡小缺口 + 维持甚至提高训练强度",
+        "核心看力量数据：力量在涨，肌肉就在长",
+        "小缺口不影响训练状态、不压激素、不降代谢",
+        "激素稳定后线粒体活性加强，后期缺口极小也能继续减脂",
+        "不要做大缺口节食，否则皮质醇升、睾酮降、状态越来越差"
+      ],
+      who:"有半年以上训练基础的健身爱好者；不想经历增肌期→减脂期反复切换、想同步进行的人；之前节食减脂遇平台期、状态差、肌肉掉得多的人；想长期保持低体脂同时拥有好力量状态的人。",
+      target:"增肌减脂同步，边增边减、不挨饿不丢肌肉"
+    }
+  }
+];
 
-/* ===== 分段选择器 ===== */
-document.querySelectorAll(".seg").forEach(seg => {
-  seg.addEventListener("click", e => {
-    const b = e.target.closest("button"); if(!b) return;
-    seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on");
-    const id = seg.id;
-    if(id==="segGender") gender = b.dataset.v;
-    else if(id==="segActivity") activity = parseFloat(b.dataset.v);
-    else if(id==="segGoal") goal = b.dataset.v;
-  });
-});
+/* 目标标签配色 */
+const GOAL_STYLE = {
+  "增肌":    { color:"#A32D2D", bg:"var(--color-background-danger)" },
+  "减脂":    { color:"#0F6E56", bg:"var(--color-background-success)" },
+  "日常健康": { color:"#185FA5", bg:"var(--color-background-info)" }
+};
 
-/* ===== Tab 切换 ===== */
-document.querySelectorAll("nav button").forEach(btn=>{
-  btn.addEventListener("click", ()=>{
-    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
-    document.getElementById(btn.dataset.tab).classList.add("active");
+/* ===== 页面切换 ===== */
+function go(name){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+name).classList.add("active");
+  window.scrollTo(0,0);
+  if(name==="list") renderFilters();
+  if(name==="home") renderCurrentPlan();
+}
+
+/* ===== 当前选择方案 ===== */
+const CURRENT_PLAN_KEY = "lizi_current_plan";
+function getCurrentPlanId(){
+  try{ return localStorage.getItem(CURRENT_PLAN_KEY) || ""; }catch(e){ return ""; }
+}
+function setCurrentPlan(id){
+  try{ localStorage.setItem(CURRENT_PLAN_KEY, id); }catch(e){}
+}
+
+function renderCurrentPlan(){
+  const box = document.getElementById("currentPlanBox");
+  const id = getCurrentPlanId();
+  const p = PLANS.find(x=>x.id===id);
+  const g = p ? (GOAL_STYLE[p.goal]||GOAL_STYLE["减脂"]) : null;
+
+  if(p){
+    box.innerHTML = `
+      <div class="current-card" onclick="openPlan('${p.id}')">
+        <div class="cc-label"><span class="dot"></span>当前选择方案</div>
+        <div class="cc-name">${p.name}</div>
+        <div class="cc-sub">${p.desc}</div>
+        <div class="cc-arrow">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>`;
+  } else {
+    box.innerHTML = `
+      <div class="current-empty" onclick="go('list')">
+        <div>
+          <div class="ce-t">还没有选择方案</div>
+          <div class="ce-d">去选一个适合自己的饮食方案吧</div>
+        </div>
+        <div class="ce-arrow">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      </div>`;
+  }
+}
+
+/* ===== 筛选 ===== */
+let curFilter = "全部";
+const FILTERS = ["全部","增肌","减脂","日常健康"];
+
+function renderFilters(){
+  const box = document.getElementById("filters");
+  box.innerHTML = FILTERS.map(f=>
+    `<span class="filter ${f===curFilter?'on':''}" onclick="setFilter('${f}')">${f}</span>`
+  ).join("");
+  renderPlans();
+}
+function setFilter(f){ curFilter = f; renderFilters(); }
+
+/* ===== 方案对比选择状态 ===== */
+let compareSel = [];  // 当前勾选的方案 id（最多 3 个）
+const COMPARE_MAX = 3;
+
+function toggleCompare(id, e){
+  e.stopPropagation();  // 阻止触发卡片点击
+  const idx = compareSel.indexOf(id);
+  if(idx>=0){
+    compareSel.splice(idx,1);
+  } else {
+    if(compareSel.length>=COMPARE_MAX){
+      alert(`最多对比 ${COMPARE_MAX} 个方案`);
+      return;
+    }
+    compareSel.push(id);
+  }
+  renderPlans();
+  renderCompareBar();
+}
+
+function renderCompareBar(){
+  const bar = document.getElementById("compareBar");
+  const cnt = document.getElementById("compareCnt");
+  const btn = document.getElementById("compareBtn");
+  cnt.textContent = compareSel.length;
+  bar.style.display = compareSel.length>0 ? "flex" : "none";
+  btn.disabled = compareSel.length<2;
+}
+
+/* ===== 渲染方案卡片 ===== */
+function renderPlans(){
+  const box = document.getElementById("planList");
+  const list = PLANS.filter(p=>{
+    if(curFilter==="全部") return true;
+    const goals = p.goals || [p.goal];
+    return goals.includes(curFilter);
   });
-});
+  if(list.length===0){
+    box.innerHTML = `<div style="text-align:center;color:#9aa0a6;font-size:13px;padding:40px 0;">暂无「${curFilter}」方案，敬请期待</div>`;
+    return;
+  }
+  box.innerHTML = list.map(p=>{
+    const g = GOAL_STYLE[p.goal] || GOAL_STYLE["减脂"];
+    const badges = (p.goals || [p.goal]).map(gk=>{
+      const gs = GOAL_STYLE[gk] || GOAL_STYLE["减脂"];
+      return `<span class="badge" style="color:${gs.color};background:${gs.bg};margin-left:4px;">${gk}</span>`;
+    }).join("");
+    const isSel = compareSel.includes(p.id);
+    return `
+    <div class="plan-card ${isSel?'sel':''}" onclick="openPlan('${p.id}')">
+      <div class="chk ${isSel?'on':''}" onclick="toggleCompare('${p.id}',event)">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="top">
+        <div class="name">${p.name}</div>
+        <span style="display:flex;flex-shrink:0;padding-right:28px;">${badges}</span>
+      </div>
+      <div class="source" style="margin-bottom:6px;">参考来源：${p.source}</div>
+      <div class="desc">${p.desc}</div>
+      <div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+      <div class="tags" style="margin-top:8px;">${p.chips.map(c=>`<span class="chip">${c}</span>`).join("")}</div>
+    </div>`;
+  }).join("");
+  renderCompareBar();
+}
+
+/* ===== 方案对比页 ===== */
+function openCompare(){
+  const plans = compareSel.map(id=>PLANS.find(x=>x.id===id)).filter(Boolean);
+  if(plans.length<2){
+    alert("请至少选择 2 个方案进行对比");
+    return;
+  }
+  renderCompare(plans);
+  go('compare');
+}
+
+function renderCompare(plans){
+  // 对比维度定义
+  const rows = [
+    {k:"目标",       get:p=>p.detail.target},
+    {k:"碳水",       get:p=>p.compare.carb},
+    {k:"蛋白质",     get:p=>p.compare.protein},
+    {k:"脂肪",       get:p=>p.compare.fat},
+    {k:"训练要求",   get:p=>p.compare.training},
+    {k:"执行节奏",   get:p=>p.compare.duration},
+    {k:"适合人群",   get:p=>p.detail.who},
+  ];
+
+  const thead = `<tr><th></th>${plans.map(p=>`
+    <th>
+      <div class="pname">${p.name}</div>
+      <div class="psrc">参考来源：${p.source}</div>
+      <div class="compare-goal-badges" style="margin-top:6px;">${(p.goals||[p.goal]).map(gk=>{
+        const gs=GOAL_STYLE[gk]||GOAL_STYLE["减脂"];
+        return `<span class="badge" style="color:${gs.color};background:${gs.bg};">${gk}</span>`;
+      }).join("")}</div>
+    </th>`).join("")}</tr>`;
+
+  const tbody = rows.map(r=>`
+    <tr>
+      <th>${r.k}</th>
+      ${plans.map(p=>`<td>${r.get(p)}</td>`).join("")}
+    </tr>`).join("");
+
+  document.getElementById("compareBody").innerHTML = `
+    <table class="compare-table">
+      <thead>${thead}</thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+
+  // 底部：选中某方案开始计算（默认第一个高亮）
+  document.getElementById("compareCta").innerHTML = plans.map((p,i)=>`
+    <button onclick="compareStart('${p.id}')">${i===0?'✓ ':''}用「${p.name}」开始计算</button>
+  `).join("");
+}
+
+function compareStart(id){
+  compareSel = [id];       // 清空对比选择，保留选中这个
+  renderCompareBar();
+  openPlan(id);
+}
+
+/* 详情页「与其他方案对比」：以当前方案为基准，自动带上同目标的其他方案 */
+function quickCompare(){
+  const base = PLANS.find(x=>x.id===curPlanId);
+  if(!base) return;
+  const baseGoals = base.goals || [base.goal];
+  // 优先选同主目标的其他方案，凑满 2-3 个
+  const others = PLANS.filter(x=>x.id!==base.id && (x.goals||[x.goal]).some(g=>baseGoals.includes(g)));
+  compareSel = [base.id, ...others.slice(0,2).map(x=>x.id)];
+  renderPlans();
+  openCompare();
+}
+
+/* ===== 方案详情页 ===== */
+let curPlanId = null;
+
+function openPlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p) return;
+  curPlanId = id;
+  const g = GOAL_STYLE[p.goal] || GOAL_STYLE["减脂"];
+  const d = p.detail;
+
+  const paramRows = Object.entries(d.params).map(([k,v])=>
+    `<div class="param-row"><div class="k">${k}</div><div class="v">${v}</div></div>`
+  ).join("");
+
+  const mealList = d.meals.map(m=>`<li>${m}</li>`).join("");
+  const adjustList = d.adjust.map(a=>`<li>${a}</li>`).join("");
+
+  const badges = (p.goals || [p.goal]).map(gk=>{
+    const gs = GOAL_STYLE[gk] || GOAL_STYLE["减脂"];
+    return `<span class="badge" style="color:${gs.color};background:${gs.bg};margin-left:6px;">${gk}</span>`;
+  }).join("");
+
+  // 适合人群判断：基于用户活动水平 vs 方案训练要求
+  const fitHtml = buildFitHint(p);
+
+  document.getElementById("detailBody").innerHTML = `
+    <div class="detail-hero">
+      <div class="name">${p.name}${badges}
+      </div>
+      <div class="source" style="margin-bottom:8px;">参考来源：${p.source}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+      <div class="target">🎯 目标：${d.target}</div>
+    </div>
+
+    <div class="detail-sec">
+      <div class="h">核心逻辑</div>
+      <div class="p">${d.logic}</div>
+    </div>
+
+    <div class="detail-sec">
+      <div class="h">营养参数</div>
+      <div>${paramRows}</div>
+    </div>
+
+    <div class="detail-sec">
+      <div class="h">三餐 / 执行细节</div>
+      <ul>${mealList}</ul>
+    </div>
+
+    <div class="detail-sec">
+      <div class="h">调整规则</div>
+      <ul>${adjustList}</ul>
+    </div>
+
+    <div class="detail-sec">
+      <div class="h">适合人群</div>
+      ${fitHtml}
+      <div class="p">${d.who}</div>
+    </div>
+  `;
+  go('detail');
+}
+
+/* 适合人群判断：方案训练要求 vs 用户活动水平 */
+function buildFitHint(p){
+  const profile = loadProfile();
+  const act = profile.actLevel;
+  const train = (p.compare && p.compare.training) || "";
+
+  // 训练要求 → 建议最低活动水平
+  const trainMap = {
+    "无门槛": "sed",
+    "低": "light",
+    "低–中": "light",
+    "需配合训练": "mod",
+    "高": "high"
+  };
+  const needLevel = trainMap[train];
+
+  if(!act){
+    return `<div class="fit-hint none"><span class="fh-ic">💡</span><div>还没填写你的活动水平。<a onclick="go('me')" style="color:var(--brand);font-weight:600;">去「我的」完善个人信息</a>，我会帮你判断这个方案适不适合你。</div></div>`;
+  }
+
+  const lv = {sed:0, light:1, mod:2, high:3};
+  const cur = lv[act] ?? 0;
+  const need = lv[needLevel] ?? 0;
+
+  if(cur >= need){
+    return `<div class="fit-hint ok"><span class="fh-ic">✓</span><div><b>适合你。</b>你的活动水平「${ACT_DESC[act]}」达到这个方案的训练要求（${train}）。</div></div>`;
+  } else {
+    return `<div class="fit-hint warn"><span class="fh-ic">⚠️</span><div><b>训练要求可能偏高。</b>这个方案需要「${train}」训练量，你目前是「${ACT_DESC[act]}」。若训练跟不上，效果会打折。</div></div>`;
+  }
+}
+
+/* ===== 个人信息（全局一份，localStorage） ===== */
+const PROFILE_KEY = "lizi_profile";
+function loadProfile(){
+  try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; }
+  catch(e){ return {}; }
+}
+function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+
+// 基础个人信息字段定义
+const PROFILE_FIELDS = [
+  {key:"gender", label:"性别", type:"seg", options:[{v:"male",label:"男"},{v:"female",label:"女"}]},
+  {key:"age", label:"年龄", type:"num", unit:"岁"},
+  {key:"height", label:"身高", type:"num", unit:"cm"},
+  {key:"weight", label:"体重", type:"num", unit:"kg"},
+  {key:"actLevel", label:"活动水平（训练量 / 日常活动）", type:"seg", options:[
+    {v:"sed",   label:"久坐·几乎不练"},
+    {v:"light", label:"轻度·每周 1–2 练"},
+    {v:"mod",   label:"中度·每周 3–4 练"},
+    {v:"high",  label:"高强度·每周 5 练以上"}
+  ]}
+];
+
+// 活动水平 → 各方案碳水系数映射（三个月/碳水渐降/三倍碳水）
+const ACT_CARB = {
+  "month3":       { sed:2.2, light:2.5, mod:2.8, high:3.0 },
+  "carb-descend": { sed:2.5, light:2.6, mod:2.8, high:3.0 },
+  "triple-carb":  { sed:2.5, light:2.7, mod:2.8, high:3.0 },  // 三倍碳水：新手2.5→练高3.0
+  "zengji-jianzhi": { sed:2.5, light:2.8, mod:3.0, high:3.5 }  // 增肌减脂：训练量高取高值
+};
+// 活动水平 → 活动系数（算 TDEE，532/膳食指南用）
+const ACT_FACTOR = { sed:1.2, light:1.375, mod:1.55, high:1.725 };
+const ACT_DESC = { sed:"久坐·几乎不练", light:"轻度·每周1–2练", mod:"中度·每周3–4练", high:"高强度·每周5练以上" };
+
+/* ===== 计算页 ===== */
+function startPlan(){
+  const p = PLANS.find(x=>x.id===curPlanId);
+  if(!p) return;
+  setCurrentPlan(p.id);   // 记为用户当前选择方案
+  renderCalc(p);
+  go('calc');
+}
+
+function renderCalc(p){
+  const profile = loadProfile();
+  const d = p.detail;
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
+
+  // 个人信息区块
+  let profileHtml = "";
+  if(!hasProfile){
+    profileHtml = `
+      <div class="profile-tip">
+        请先完善你的个人信息（只需填一次，之后切换方案会自动带出）：
+        <div style="margin-top:12px;">${renderProfileForm(profile)}</div>
+        <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">保存个人信息</button>
+      </div>`;
+  } else {
+    const al = profile.actLevel ? ACT_DESC[profile.actLevel] : "";
+    profileHtml = `
+      <div class="profile-tip">
+        个人信息：${profile.gender==="male"?"男":"女"} · ${profile.age}岁 · ${profile.height}cm · ${profile.weight}kg${al?" · 活动水平"+al:""}
+        <a onclick="editProfile()"> 修改</a>
+      </div>`;
+  }
+
+  // 方案专属输入区块
+  let inputHtml = "";
+  if(p.inputs && p.inputs.length>0){
+    inputHtml = p.inputs.map(inp=>{
+      if(inp.type==="seg"){
+        return `
+          <div class="form-group">
+            <label><b>${inp.label}</b></label>
+            <div class="seg">
+              ${inp.options.map((o,i)=>`<div class="seg-item" id="seg_${inp.key}_${o.v}" onclick="pickSeg('${inp.key}','${o.v}')">${o.label}</div>`).join("")}
+            </div>
+          </div>`;
+      }
+      return "";
+    }).join("");
+  }
+
+  document.getElementById("calcBody").innerHTML = `
+    <div class="calc-plan-name">${p.name}</div>
+    <div class="calc-plan-source">参考来源：${p.source}</div>
+    ${profileHtml}
+    ${inputHtml}
+    <button class="btn-primary" onclick="calcResult('${p.id}')">计算我的营养素</button>
+    <div id="calcResult"></div>
+  `;
+}
+
+function renderProfileForm(profile){
+  return PROFILE_FIELDS.map(f=>{
+    if(f.type==="seg"){
+      return `
+        <div class="form-group">
+          <label><b>${f.label}</b></label>
+          <div class="seg">
+            ${f.options.map(o=>`<div class="seg-item ${profile[f.key]===o.v?"on":""}" onclick="pickProfileSeg('${f.key}','${o.v}')">${o.label}</div>`).join("")}
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="form-group">
+        <label><b>${f.label}</b></label>
+        <input class="form-input" type="number" id="profile_${f.key}" value="${profile[f.key]||""}" placeholder="${f.unit}" />
+      </div>`;
+  }).join("");
+}
+
+function pickProfileSeg(key, v){
+  const p = loadProfile();
+  p[key] = v;
+  saveProfile(p);
+  renderCalc(PLANS.find(x=>x.id===curPlanId));
+}
+
+function saveProfileForm(){
+  const p = loadProfile();
+  PROFILE_FIELDS.forEach(f=>{
+    if(f.type==="num"){
+      const v = document.getElementById("profile_"+f.key).value;
+      if(v) p[f.key] = parseFloat(v);
+    }
+  });
+  saveProfile(p);
+  renderCalc(PLANS.find(x=>x.id===curPlanId));
+}
+
+function editProfile(){
+  const p = loadProfile();
+  const box = document.getElementById("calcBody");
+  // 直接把个人信息改成可编辑表单
+  const plan = PLANS.find(x=>x.id===curPlanId);
+  box.querySelector(".profile-tip").innerHTML = `
+    请修改你的个人信息：
+    <div style="margin-top:12px;">${renderProfileForm(p)}</div>
+    <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">保存</button>`;
+}
+
+/* 方案专属 seg 选择状态（本次会话内记忆） */
+const segState = {};
+function pickSeg(key, v){
+  segState[key] = v;
+  document.querySelectorAll(`[id^="seg_${key}_"]`).forEach(el=>el.classList.remove("on"));
+  document.getElementById(`seg_${key}_${v}`).classList.add("on");
+}
 
 /* ===== 计算逻辑 ===== */
-function calcBMR(g, age, h, w){
-  // Mifflin-St Jeor (1990)
-  const base = 10*w + 6.25*h - 5*age;
-  return g==="male" ? base + 5 : base - 161;
-}
+function calcResult(id){
+  const p = PLANS.find(x=>x.id===id);
+  const profile = loadProfile();
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
 
-function calculate(){
-  const age = +document.getElementById("age").value;
-  const h = +document.getElementById("height").value;
-  const w = +document.getElementById("weight").value;
-  if(!age || !h || !w){ alert("请完整填写年龄、身高、体重"); return; }
-  if(w < 20 || w > 300 || h < 80 || age < 10){ alert("输入数值异常，请检查"); return; }
-
-  const bmr = calcBMR(gender, age, h, w);
-  const tdee = bmr * activity;
-
-  // 目标热量调整
-  let targetCal;
-  if(goal==="cut") targetCal = tdee - 500;      // 约减 0.5kg/周
-  else if(goal==="bulk") targetCal = tdee + 300;
-  else targetCal = tdee;
-  targetCal = Math.max(1200, Math.round(targetCal));
-
-  // 蛋白质：按体重 g/kg（ISSN 2017 / Morton 2018）
-  let proteinPerKg;
-  if(goal==="cut") proteinPerKg = 2.0;       // 减脂期保肌肉
-  else if(goal==="bulk") proteinPerKg = 1.8; // 增肌期
-  else proteinPerKg = 1.6;
-  const protein = Math.round(w * proteinPerKg);
-
-  // 脂肪：占总热量 25%（减脂 20%）
-  const fatPct = goal==="cut" ? 0.20 : 0.25;
-  const fat = Math.round((targetCal * fatPct) / 9);
-
-  // 碳水：剩余热量
-  const carb = Math.round((targetCal - protein*4 - fat*9) / 4);
-
-  currentPlan = { gender, age, h, w, bmr, tdee, targetCal, protein, fat, carb, goal, activity };
-
-  // 渲染
-  const goalTxt = {cut:"减脂", maintain:"维持", bulk:"增肌"}[goal];
-  document.getElementById("calcCards").innerHTML = `
-    <div class="stat cal"><div class="v">${targetCal}</div><div class="k">目标热量 kcal/日</div></div>
-    <div class="stat"><div class="v">${bmr.toFixed(0)}</div><div class="k">基础代谢 BMR</div></div>
-    <div class="stat"><div class="v">${tdee.toFixed(0)}</div><div class="k">总消耗 TDEE</div></div>
-    <div class="stat p"><div class="v">${protein}g</div><div class="k">蛋白质</div></div>
-    <div class="stat c"><div class="v">${carb}g</div><div class="k">碳水</div></div>
-    <div class="stat f"><div class="v">${fat}g</div><div class="k">脂肪</div></div>
-  `;
-
-  const pPct = Math.round(protein*4/targetCal*100);
-  const cPct = Math.round(carb*4/targetCal*100);
-  const fPct = 100 - pPct - cPct;
-  document.getElementById("macroBars").innerHTML = `
-    <div class="inline-bar"><span style="width:52px;">蛋白质</span>
-      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${pPct}%;background:var(--red);"></div></div><span>${pPct}%</span></div>
-    <div class="inline-bar"><span style="width:52px;">碳水</span>
-      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${cPct}%;background:var(--green);"></div></div><span>${cPct}%</span></div>
-    <div class="inline-bar"><span style="width:52px;">脂肪</span>
-      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${fPct}%;background:var(--amber);"></div></div><span>${fPct}%</span></div>
-  `;
-
-  document.getElementById("calcAdvice").innerHTML = adviceText(goal, protein, proteinPerKg);
-  document.getElementById("calcResult").classList.add("show");
-  document.getElementById("mealTarget").placeholder = targetCal;
-
-  // 存本地
-  savePlan(currentPlan);
-  document.getElementById("calcResult").scrollIntoView({behavior:"smooth", block:"start"});
-}
-
-function adviceText(goal, protein, perKg){
-  const lines = [];
-  if(goal==="cut"){
-    lines.push("🎯 <b>减脂期</b>：热量缺口约 500 kcal/日，理论上每周约减 0.5 kg。");
-    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定（${protein}g/日），有助于在热量缺口下保留肌肉（ISSN 2017）。`);
-    lines.push("🍽 建议把蛋白质均匀分配到 3-5 餐，每餐约 20-40g。");
-  } else if(goal==="bulk"){
-    lines.push("🎯 <b>增肌期</b>：热量盈余约 300 kcal/日，配合抗阻训练促进肌肉增长。");
-    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定（${protein}g/日），处于 ISSN 推荐的 1.6–2.2 g/kg 区间。`);
-    lines.push("⚠️ 盈余不宜过大，避免过多脂肪堆积。");
-  } else {
-    lines.push("🎯 <b>维持期</b>：热量接近 TDEE，保持当前体重与体成分。");
-    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定，维持肌肉量。`);
+  if(!hasProfile){
+    alert("请先完善个人信息");
+    return;
   }
-  lines.push("💧 记得保证充足饮水（约 30-35 ml/kg 体重）。");
-  return lines.join("<br>");
-}
 
-/* ===== 本地存储 ===== */
-const STORE_KEY = "fitdiet_plans";
-function savePlan(p){
-  try{
-    const arr = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
-    arr.unshift({date:new Date().toISOString(), ...p});
-    localStorage.setItem(STORE_KEY, JSON.stringify(arr.slice(0,20)));
-  }catch(e){}
-}
-function loadPlan(){
-  try{ return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); }catch(e){ return []; }
-}
+  const w = profile.weight; // 体重 kg
+  let carb=0, protein=0, fat=0, kcal=0;
+  let extra = ""; // 额外说明
 
-/* ===== 食物库 ===== */
-let foodCat = "全部";
-function renderFood(){
-  const q = document.getElementById("foodSearch").value.trim();
-  const cats = ["全部", ...new Set(FOODS.map(f=>f.category))];
-  const chips = document.getElementById("foodChips");
-  chips.innerHTML = cats.map(c=>`<div class="chip ${c===foodCat?'on':''}" onclick="setCat('${c}')">${c}</div>`).join("");
+  const g = profile.gender;
+  const age = profile.age;
+  const h = profile.height;
 
-  const list = FOODS.filter(f=>{
-    const okCat = foodCat==="全部" || f.category===foodCat;
-    const okQ = !q || f.name.includes(q);
-    return okCat && okQ;
-  });
-  const tb = document.querySelector("#foodTable tbody");
-  if(list.length===0){ tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#9aa0a6;">未找到匹配食物</td></tr>`; return; }
-  tb.innerHTML = list.map(f=>`
-    <tr>
-      <td>${f.name}</td>
-      <td><span class="tag">${f.category}</span></td>
-      <td>${f.kcal}</td>
-      <td>${f.protein}</td>
-      <td>${f.carb}</td>
-      <td>${f.fat}</td>
-    </tr>`).join("");
-}
-function setCat(c){ foodCat = c; renderFood(); }
+  // 基础代谢 Mifflin-St Jeor
+  let bmr = 10*w + 6.25*h - 5*age + (g==="male"?5:-161);
 
-/* ===== 食谱生成 ===== */
-function genMeal(){
-  const manual = +document.getElementById("mealTarget").value;
-  let targetCal = manual || (currentPlan ? currentPlan.targetCal : null);
-  let proteinTarget = currentPlan ? currentPlan.protein : null;
-  if(!targetCal){ alert("请先在「计算营养需求」页算一次，或手动填写目标热量"); return; }
-  if(!proteinTarget) proteinTarget = Math.round(targetCal * 0.3 / 4);
+  switch(id){
+    case "month3":{
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB["month3"]||{})[tl] || 2.8;
+      carb = w * carbK;
+      protein = w * 1.5;
+      fat = w * 0.7;
+      kcal = carb*4 + protein*4 + fat*9;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg，蛋白 1.5g/kg、脂肪 0.7g/kg 起步，每 10 天只调碳水。`;
+      break;
+    }
+    case "triple-carb":{
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB["triple-carb"]||{})[tl] || 3.0;
+      carb = w * carbK;
+      protein = w * 1.6;
+      fat = w * 0.8;
+      kcal = carb*4 + protein*4 + fat*9;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg，蛋白 1.6g/kg、脂肪 0.8g/kg 固定。`;
+      break;
+    }
+    case "carb-descend":{
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB["carb-descend"]||{})[tl] || 2.8;
+      carb = w * carbK;
+      protein = w * 1.5;
+      fat = w * 0.7;
+      kcal = carb*4 + protein*4 + fat*9;
+      const ver = segState.version || "dyn";
+      extra = `活动水平「${ACT_DESC[tl]}」→ 起始碳水 ${carbK}g/kg，蛋白 1.5g/kg 渐升、脂肪 0.7g/kg。版本：${ver==="dyn"?"三个月动态版（90天）":"40天冲刺版"}。每 10 天复盘渐降。`;
+      break;
+    }
+    case "five32":{
+      const base = segState.base || "big";
+      const act = profile.actLevel || "sed";
+      const defOpt = p.inputs[0].options.find(o=>o.v===base);
+      const deficit = defOpt ? defOpt.deficit : 500;
+      const actK = ACT_FACTOR[act] || 1.2;
+      const tdee = bmr * actK;
+      const intake = tdee - deficit;
+      carb = intake * 0.5 / 4;
+      protein = intake * 0.3 / 4;
+      fat = intake * 0.2 / 9;
+      kcal = intake;
+      extra = `总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），${base==="big"?"大基数":"小基数"}减 ${deficit} 大卡缺口，按 5:3:2 分配。`;
+      break;
+    }
+    case "kai-carb-cycle":{
+      const bt = segState.bodyType || "endo";
+      const opt = p.inputs[0].options.find(o=>o.v===bt);
+      const carbK = opt.carb, fatK = opt.fat;
+      carb = w * carbK;
+      fat = w * fatK;
+      protein = w * 1.0;
+      kcal = carb*4 + protein*4 + fat*9;
+      extra = `${opt.label}：碳水 ${carbK}g/kg、脂肪 ${fatK}g/kg、蛋白按 1g/kg 起步。一周 = 2 高碳 + 3 中碳 + 2 低碳（蛋白每天不变）。`;
+      break;
+    }
+    case "dietary-guideline":{
+      const act = profile.actLevel || "sed";
+      const actK = ACT_FACTOR[act] || 1.2;
+      const tdee = bmr * actK;
+      kcal = tdee;
+      carb = tdee * 0.575 / 4;  // 碳水取中值 57.5%
+      protein = tdee * 0.125 / 4; // 蛋白取中值 12.5%
+      fat = tdee * 0.25 / 9;    // 脂肪取中值 25%
+      extra = `按总能量 ${Math.round(tdee)} 大卡，供能比取中值：碳水 57.5%、蛋白 12.5%、脂肪 25%（官方区间 50–65%/10–15%/20–30%）。`;
+      break;
+    }
+    case "zengji-jianzhi":{
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB["zengji-jianzhi"]||{})[tl] || 3.0;
+      const actK = ACT_FACTOR[tl] || 1.55;
+      const tdee = bmr * actK;
+      const deficit = 250;  // 200–300 取中值
+      const intake = tdee - deficit;
+      carb = w * carbK;
+      protein = w * 1.6;      // 1.2–2 取中值
+      fat = w * 0.7;          // 0.6–0.8 取中值
+      kcal = intake;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），扣 200–300 小缺口后摄入≈${Math.round(intake)} 大卡，蛋白 1.6g/kg、脂肪 0.7g/kg 起步。核心：小缺口 + 保训练强度，力量涨肌肉就在长。`;
+      break;
+    }
+  }
 
-  const meals = buildMealPlan(targetCal, proteinTarget);
-  const res = document.getElementById("mealResult");
-  res.innerHTML = meals.map(m=>`
-    <div class="meal">
-      <h4>${m.name} <span style="font-weight:400;color:var(--sub);font-size:13px;">约 ${m.cal} kcal</span></h4>
-      <div class="mmeta">蛋白质 ${m.protein}g · 碳水 ${m.carb}g · 脂肪 ${m.fat}g</div>
-      <table>
-        <thead><tr><th>食物</th><th>份量(g)</th><th>热量</th><th>蛋白</th><th>碳水</th><th>脂肪</th></tr></thead>
-        <tbody>${m.items.map(i=>`
-          <tr><td>${i.f.name}</td><td>${i.grams}</td><td>${i.cal}</td><td>${i.p}</td><td>${i.c}</td><td>${i.fat}</td></tr>`).join("")}
-        </tbody>
-      </table>
-    </div>`).join("");
-
-  // 汇总
-  const total = meals.reduce((a,m)=>({cal:a.cal+m.cal,p:a.p+m.protein,c:a.c+m.carb,f:a.f+m.fat}),{cal:0,p:0,c:0,f:0});
-  res.innerHTML += `
-    <div class="cards" style="margin-top:16px;">
-      <div class="stat cal"><div class="v">${total.cal}</div><div class="k">总热量 kcal</div></div>
-      <div class="stat p"><div class="v">${total.p}g</div><div class="k">蛋白质</div></div>
-      <div class="stat c"><div class="v">${total.c}g</div><div class="k">碳水</div></div>
-      <div class="stat f"><div class="v">${total.f}g</div><div class="k">脂肪</div></div>
+  document.getElementById("calcResult").innerHTML = `
+    <div class="result-card">
+      <div class="rc-title">每日营养素目标</div>
+      <div class="result-macro">
+        <div class="macro-item"><div class="num">${Math.round(carb)}</div><div class="unit">克/天</div><div class="lbl">碳水化合物</div></div>
+        <div class="macro-item"><div class="num">${Math.round(protein)}</div><div class="unit">克/天</div><div class="lbl">蛋白质</div></div>
+        <div class="macro-item"><div class="num">${Math.round(fat)}</div><div class="unit">克/天</div><div class="lbl">脂肪</div></div>
+      </div>
+      <div style="text-align:center;font-size:13px;color:var(--sub);">总热量 ≈ ${Math.round(kcal)} 大卡/天</div>
     </div>
-    <div class="note">对照目标：热量 ${targetCal} kcal · 蛋白质 ${proteinTarget}g。可根据口味在「食物热量库」替换食材。</div>`;
-  res.classList.add("show");
-  res.scrollIntoView({behavior:"smooth", block:"start"});
+    <div class="result-card" style="background:var(--brand-soft);border-color:transparent;">
+      <div class="rc-title">说明</div>
+      <div style="font-size:13px;color:var(--text);line-height:1.7;">${extra}</div>
+    </div>
+  `;
 }
 
-function findFood(name){ return FOODS.find(f=>f.name===name); }
-function calcPortion(f, grams){
-  const k = grams/100;
-  return { f, grams, cal:Math.round(f.kcal*k), p:+(f.protein*k).toFixed(1), c:+(f.carb*k).toFixed(1), fat:+(f.fat*k).toFixed(1) };
+/* ===== 问卷推荐 ===== */
+// 公共前置题：目标 + 个人信息（性别/年龄/身高/体重/活动水平）
+const QUIZ_ENTRY = {
+  q:"你的首要目标是什么？",
+  type:"seg",
+  opts:[
+    {v:"lose", label:"减脂（想掉秤、降体脂）"},
+    {v:"muscle", label:"增肌（想长肌肉、提升力量）"},
+    {v:"health", label:"日常健康（吃得均衡就行）"}
+  ]
+};
+
+// 个人信息题（第 2~6 题，三目标通用，填完即写入个人信息）
+const QUIZ_INFO = [
+  {key:"gender", q:"你的性别是？", type:"seg", opts:[
+    {v:"male", label:"男"}, {v:"female", label:"女"}
+  ]},
+  {key:"age", q:"你的年龄是？", type:"num", unit:"岁"},
+  {key:"height", q:"你的身高是？", type:"num", unit:"cm"},
+  {key:"weight", q:"你的体重是？", type:"num", unit:"kg"},
+  {key:"actLevel", q:"你的日常活动 / 训练水平是？", type:"seg", opts:[
+    {v:"sed",   label:"久坐 · 几乎不练"},
+    {v:"light", label:"轻度 · 每周 1–2 练"},
+    {v:"mod",   label:"中度 · 每周 3–4 练"},
+    {v:"high",  label:"高强度 · 每周 5 练以上"}
+  ]}
+];
+
+// 各目标分支的专属题目（个人信息题之后按目标进入对应分支）
+const QUIZ_FLOW = {
+  lose: [
+    {
+      q:"你现在减脂遇到什么情况？",
+      opts:[
+        {v:"first", label:"第一次减脂，不太懂怎么吃"},
+        {v:"stuck", label:"减了一段时间卡住了（平台期）"},
+        {v:"rebound", label:"之前低碳减，状态差、容易反弹"},
+        {v:"na", label:"没在减脂 / 不适用"}
+      ]
+    },
+    {
+      q:"你更想要哪种执行方式？",
+      opts:[
+        {v:"simple", label:"有模板照着吃，越简单越好"},
+        {v:"precise", label:"按数字精确计算，步骤清晰"},
+        {v:"flexible", label:"灵活调整，能长期坚持"}
+      ]
+    }
+  ],
+  // 增肌：目前只有一个方案，填完个人信息后直接出结果；后续补充增肌方案后在此加入增肌专属题目
+  muscle: [],
+  // 日常健康：填完个人信息后直接推荐膳食指南
+  health: []
+};
+
+let quizIdx = 0;
+const quizAns = {};
+let quizGoal = null;   // 当前分支：lose / muscle / health
+let quizList = [];     // 当前分支的专属题目列表
+
+function goRecommend(){
+  quizIdx = 0;
+  quizGoal = null;
+  quizList = [];
+  Object.keys(quizAns).forEach(k=>delete quizAns[k]);
+  renderQuiz();
+  go('quiz');
 }
 
-function buildMealPlan(targetCal, proteinTarget){
-  const meals = [];
-  // 早/午/晚 热量分配约 25%/40%/35%
-  const bfCal = Math.round(targetCal*0.25);
-  const luCal = Math.round(targetCal*0.40);
-  const dnCal = targetCal - bfCal - luCal;
+function renderQuiz(){
+  // 总题数 = 1(目标) + QUIZ_INFO.length(个人信息) + quizList.length(分支)
+  const total = 1 + QUIZ_INFO.length + quizList.length;
+  if(quizIdx >= total){
+    renderQuizResult();
+    return;
+  }
+  let item;
+  if(quizIdx === 0) item = QUIZ_ENTRY;
+  else if(quizIdx <= QUIZ_INFO.length) item = QUIZ_INFO[quizIdx - 1];
+  else item = quizList[quizIdx - 1 - QUIZ_INFO.length];
 
-  // 早餐：燕麦+鸡蛋+牛奶
-  const bfItems = [calcPortion(findFood("燕麦片（干）"),60), calcPortion(findFood("鸡蛋（全蛋）"),100), calcPortion(findFood("低脂牛奶"),250)];
-  meals.push(sumMeal("早餐", bfItems));
+  const progress = Math.round((quizIdx/total)*100);
 
-  // 午餐：米饭+鸡胸+西兰花
-  const luItems = [calcPortion(findFood("米饭（熟）"),250), calcPortion(findFood("鸡胸肉（熟）"),150), calcPortion(findFood("西兰花（熟）"),150), calcPortion(findFood("橄榄油"),8)];
-  meals.push(sumMeal("午餐", luItems));
-
-  // 晚餐：红薯+牛肉+蔬菜
-  const dnItems = [calcPortion(findFood("红薯（熟）"),200), calcPortion(findFood("瘦牛肉（熟）"),120), calcPortion(findFood("菠菜（熟）"),150), calcPortion(findFood("橄榄油"),8)];
-  meals.push(sumMeal("晚餐", dnItems));
-
-  return meals;
+  if(item.type === "num"){
+    // 数字输入题
+    document.getElementById("quizBody").innerHTML = `
+      <div class="quiz-progress"><div class="bar" style="width:${progress}%"></div></div>
+      <div class="quiz-q">${item.q}</div>
+      <input class="form-input" type="number" id="quizNum" inputmode="decimal" placeholder="${item.unit}" style="font-size:18px;padding:14px;" />
+      <button class="btn-primary" style="margin-top:16px;" onclick="submitQuizNum('${item.key}')">下一步</button>
+    `;
+  } else {
+    // 选择题
+    document.getElementById("quizBody").innerHTML = `
+      <div class="quiz-progress"><div class="bar" style="width:${progress}%"></div></div>
+      <div class="quiz-q">${item.q}</div>
+      <div class="quiz-opts">
+        ${item.opts.map(o=>`<div class="quiz-opt" onclick="pickQuiz('${o.v}')">${o.label}</div>`).join("")}
+      </div>
+    `;
+  }
 }
-function sumMeal(name, items){
-  const cal = items.reduce((a,i)=>a+i.cal,0);
-  const p = +items.reduce((a,i)=>a+i.p,0).toFixed(1);
-  const c = +items.reduce((a,i)=>a+i.c,0).toFixed(1);
-  const f = +items.reduce((a,i)=>a+i.fat,0).toFixed(1);
-  return { name, items, cal, protein:p, carb:c, fat:f };
+
+function pickQuiz(v){
+  if(quizIdx === 0){
+    // 第 1 题：目标，切换分支
+    quizGoal = v;
+    quizList = QUIZ_FLOW[v] || [];
+    quizAns["goal"] = v;
+  } else if(quizIdx <= QUIZ_INFO.length){
+    // 个人信息题（seg 型）：记录并写入个人信息
+    const info = QUIZ_INFO[quizIdx - 1];
+    quizAns[info.key] = v;
+    const p = loadProfile();
+    p[info.key] = v;
+    saveProfile(p);
+  } else {
+    quizAns[quizList[quizIdx - 1 - QUIZ_INFO.length].q] = v;
+  }
+  quizIdx++;
+  renderQuiz();
 }
+
+function submitQuizNum(key){
+  const v = document.getElementById("quizNum").value;
+  if(v === "" || v === null){
+    return; // 未填不跳转
+  }
+  quizAns[key] = parseFloat(v);
+  const p = loadProfile();
+  p[key] = parseFloat(v);
+  saveProfile(p);
+  quizIdx++;
+  renderQuiz();
+}
+
+function renderQuizResult(){
+  const rec = recommendPlan();
+  const p = PLANS.find(x=>x.id===rec.id);
+  const g = GOAL_STYLE[p.goal] || GOAL_STYLE["减脂"];
+
+  // 备选方案：同目标下、非主推荐的方案（取 2 个）
+  const mainGoals = p.goals || [p.goal];
+  const alts = PLANS.filter(x=>x.id!==p.id && (x.goals||[x.goal]).some(gk=>mainGoals.includes(gk))).slice(0,2);
+
+  const altHtml = alts.length>0 ? `
+    <div class="quiz-alt">
+      <div class="alt-title">也可以看看这些：</div>
+      ${alts.map(a=>`
+        <div class="alt-card" onclick="setCurrentPlan('${a.id}');openPlan('${a.id}')">
+          <div>
+            <div class="ac-name">${a.name}</div>
+            <div class="ac-desc">${a.desc}</div>
+          </div>
+          <span class="ac-arrow">›</span>
+        </div>`).join("")}
+    </div>` : "";
+
+  document.getElementById("quizBody").innerHTML = `
+    <div class="quiz-result">
+      <div class="big">推荐你试试：${p.name}</div>
+      <div style="margin-bottom:20px;">
+        <span class="badge" style="color:${g.color};background:${g.bg};">${p.goal}</span>
+      </div>
+      <div class="why">
+        <b>为什么推荐它：</b><br>${rec.reason}
+      </div>
+      <button class="btn-primary" onclick="setCurrentPlan('${p.id}');openPlan('${p.id}')">查看方案详情</button>
+      ${altHtml}
+      <button class="form-input" style="margin-top:12px;background:var(--card);color:var(--brand);border:1px solid var(--brand);cursor:pointer;" onclick="goRecommend()">重新测一次</button>
+    </div>
+  `;
+}
+
+function recommendPlan(){
+  const goal = quizAns["goal"];
+
+  // 日常健康 → 膳食指南（直接出结果）
+  if(goal==="health"){
+    return {id:"dietary-guideline", reason:"你想吃得均衡健康，中国居民膳食指南是最通用的营养基线，无需训练门槛，所有人都适用。"};
+  }
+  // 增肌 → 增肌减脂同步法
+  if(goal==="muscle"){
+    return {id:"zengji-jianzhi", reason:"你想增肌，谭成义增肌减脂同步法用小缺口+保训练强度，力量在涨肌肉就在长，同时不挨饿不掉肌肉，适合有训练基础、想边增边减的你。"};
+  }
+  // 减脂分支
+  if(goal==="lose"){
+    const act = quizAns["actLevel"];
+    const stuck = quizAns["你现在减脂遇到什么情况？"];
+    const style = quizAns["你更想要哪种执行方式？"];
+
+    // 训练强度高 + 之前低碳反弹 → 三倍碳水
+    if(act==="high" && stuck==="rebound"){
+      return {id:"triple-carb", reason:"你训练强度高、但之前低碳减脂状态差易反弹，三倍碳水法靠高碳水支撑高强度训练，用训练消耗制造缺口，适合你。"};
+    }
+    // 训练强度高 → 三倍碳水
+    if(act==="high"){
+      return {id:"triple-carb", reason:"你训练强度高，三倍碳水法用高碳水提状态、靠训练消耗制造缺口，正好发挥你的训练能力。"};
+    }
+    // 平台期 → 碳水渐降
+    if(stuck==="stuck"){
+      return {id:"carb-descend", reason:"你卡在平台期，碳水渐降法从较高碳水逐步降低、穿插高碳日，给身体适应时间，长期可持续、不易反弹。"};
+    }
+    // 第一次减脂 + 想要简单 → 三个月减脂计划
+    if(stuck==="first" || style==="simple"){
+      return {id:"month3", reason:"你有完整模板照着吃，每 10 天只调碳水，简单直接，最适合减脂新手稳稳掉秤。"};
+    }
+    // 大基数/想要精确 → 532
+    if(style==="precise"){
+      return {id:"five32", reason:"你喜欢按数字精确执行，532 碳水渐降法计算步骤清晰、每周复盘调碳水，大基数也友好。"};
+    }
+    // 想长期坚持 → 碳水渐降
+    if(style==="flexible"){
+      return {id:"carb-descend", reason:"你想灵活调整、长期坚持，碳水渐降法循序渐进、穿插高碳日，可持续性强、不易反弹。"};
+    }
+    // 默认
+    return {id:"month3", reason:"你有完整模板照着吃，每 10 天只调碳水，简单直接，适合减脂稳稳掉秤。"};
+  }
+  return {id:"month3", reason:"推荐你从三个月减脂计划开始，有完整模板照着吃，简单直接。"};
+}
+
+/* ===== 我的面板 ===== */
+function showMe(){
+  renderMe();
+  go('me');
+}
+
+/* 面板行图标（Lucide 官方线性图标） */
+const ICONS = {
+  gender: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  age: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>',
+  height: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>',
+  weight: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/></svg>',
+  activity: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg>',
+  export: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
+  import: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  logo: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4V2"/><path d="M5 10v4a7.004 7.004 0 0 0 5.277 6.787c.412.104.802.292 1.102.592L12 22l.621-.621c.3-.3.69-.488 1.102-.592A7.003 7.003 0 0 0 19 14v-4"/><path d="M12 4C8 4 4.5 6 4 8c-.243.97-.919 1.952-2 3 1.31-.082 1.972-.29 3-1 .54.92.982 1.356 2 2 1.452-.647 1.954-1.098 2.5-2 .595.995 1.151 1.427 2.5 2 1.31-.621 1.862-1.058 2.5-2 .629.977 1.162 1.423 2.5 2 1.209-.548 1.68-.967 2-2 1.032.916 1.683 1.157 3 1-1.297-1.036-1.758-2.03-2-3-.5-2-4-4-8-4Z"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>'
+};
+
+function renderMe(){
+  const p = loadProfile();
+  const hasProfile = p && (p.gender || p.age || p.height || p.weight || p.actLevel);
+  const genderTxt = p.gender==="male"?"男":p.gender==="female"?"女":"未填写";
+  const actTxt = p.actLevel ? (ACT_DESC[p.actLevel]||"") : "未填写";
+
+  document.getElementById("meBody").innerHTML = `
+    <div class="me-section" id="meProfileSection">
+      <div class="st">个人信息</div>
+      <div class="me-card" id="meProfileCard">
+        ${hasProfile ? `
+          <div class="me-row"><span class="lbl"><span class="ic">${ICONS.gender}</span>性别</span><span class="val">${genderTxt}</span></div>
+          <div class="me-row"><span class="lbl"><span class="ic">${ICONS.age}</span>年龄</span><span class="val">${p.age?p.age+" 岁":"未填写"}</span></div>
+          <div class="me-row"><span class="lbl"><span class="ic">${ICONS.height}</span>身高</span><span class="val">${p.height?p.height+" cm":"未填写"}</span></div>
+          <div class="me-row"><span class="lbl"><span class="ic">${ICONS.weight}</span>体重</span><span class="val">${p.weight?p.weight+" kg":"未填写"}</span></div>
+          <div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>活动水平</span><span class="val">${actTxt}</span></div>
+          <div class="me-row"><span class="lbl"></span><span class="act" onclick="editMeProfile()">编辑</span></div>
+        ` : `
+          <div class="me-row"><span class="lbl">尚未填写个人信息</span><span class="act" onclick="editMeProfile()">去填写</span></div>
+        `}
+      </div>
+    </div>
+
+    <div class="me-section">
+      <div class="st">数据管理</div>
+      <div class="me-card">
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.export}</span>导出数据</span><span class="act" onclick="exportData()">导出</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.import}</span>导入数据</span><span class="act" onclick="document.getElementById('importFile').click()">导入</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.trash}</span><span class="me-danger">清空数据</span></span><span class="act me-danger" onclick="confirmClear()">清空</span></div>
+      </div>
+      <div class="me-tip">导出为 JSON 文件，换设备或分享给他人时，导入即可恢复你的个人信息。</div>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(this)" />
+    </div>
+
+    <div class="me-section">
+      <div class="st">关于</div>
+      <div class="me-card">
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.logo}</span>🌰饮食</span><span class="val">v0.1</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.book}</span>方案数据来源</span><span class="val">谭成义、凯圣王等公开教学 + 中国居民膳食指南</span></div>
+      </div>
+    </div>
+  `;
+}
+
+function editMeProfile(){
+  const p = loadProfile();
+  document.getElementById("meProfileSection").innerHTML = `
+    <div class="st">编辑个人信息</div>
+    <div class="me-card">
+      <div style="padding:15px 18px;">${renderProfileForm(p)}</div>
+      <div class="me-row">
+        <span class="lbl"></span>
+        <span class="act" onclick="saveMeProfile()">保存</span>
+      </div>
+    </div>
+  `;
+}
+
+function saveMeProfile(){
+  const p = loadProfile();
+  PROFILE_FIELDS.forEach(f=>{
+    if(f.type==="num"){
+      const v = document.getElementById("profile_"+f.key).value;
+      if(v) p[f.key] = parseFloat(v);
+    }
+  });
+  saveProfile(p);
+  renderMe();
+}
+
+function exportData(){
+  const data = {
+    app:"lizi-diet",
+    version:1,
+    exportedAt:new Date().toISOString(),
+    profile:loadProfile()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lizi-diet-数据备份.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      const profile = data.profile || data;
+      if(profile && typeof profile === "object"){
+        // 只导入合法的个人信息字段
+        const p = loadProfile();
+        PROFILE_FIELDS.forEach(f=>{
+          if(profile[f.key] !== undefined) p[f.key] = profile[f.key];
+        });
+        saveProfile(p);
+        renderMe();
+        alert("导入成功，个人信息已更新。");
+      } else {
+        alert("文件格式不正确，未能导入。");
+      }
+    }catch(err){
+      alert("文件解析失败，请确认是有效的 JSON 备份文件。");
+    }
+  };
+  reader.readAsText(file);
+  input.value = "";
+}
+
+function confirmClear(){
+  if(confirm("确定要清空所有本地数据吗？此操作不可恢复。")){
+    localStorage.removeItem(PROFILE_KEY);
+    renderMe();
+    alert("已清空本地数据。");
+  }
+}
+
+function showMePlaceholder(){}
 
 /* ===== 初始化 ===== */
-renderFood();
+renderFilters();
+renderCurrentPlan();
 </script>
 </body>
 </html>
