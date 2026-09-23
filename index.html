@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身饮食规划 · 三大营养素计算与食谱生成</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --border:#e5e7eb; --text:#1f2329;
+    --sub:#6b7280; --primary:#2f7df6; --primary-dark:#1f5fd0;
+    --green:#22c55e; --amber:#f59e0b; --red:#ef4444; --purple:#8b5cf6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6;
+    padding:24px 16px 60px;
+  }
+  .wrap{max-width:1080px; margin:0 auto;}
+  header{text-align:center; margin-bottom:28px;}
+  header h1{font-size:26px; font-weight:700;}
+  header p{color:var(--sub); font-size:14px; margin-top:6px;}
+
+  nav{display:flex; gap:8px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;}
+  nav button{
+    padding:9px 18px; border:1px solid var(--border); background:var(--card);
+    border-radius:20px; cursor:pointer; font-size:14px; color:var(--text); font-weight:500;
+    transition:.15s;
+  }
+  nav button.active{background:var(--primary); color:#fff; border-color:var(--primary);}
+
+  .panel{display:none; background:var(--card); border:1px solid var(--border);
+    border-radius:16px; padding:28px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .panel.active{display:block; animation:fade .2s;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1}}
+
+  h2{font-size:19px; margin-bottom:4px;}
+  .hint{color:var(--sub); font-size:13px; margin-bottom:20px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px;}
+  .field label{display:block; font-size:13px; color:var(--sub); margin-bottom:5px; font-weight:500;}
+  .field input,.field select{
+    width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:10px;
+    font-size:15px; background:#fff; color:var(--text);
+  }
+  .field input:focus,.field select:focus{outline:none; border-color:var(--primary);}
+
+  .seg{display:flex; gap:8px; flex-wrap:wrap;}
+  .seg button{padding:8px 16px; border:1px solid var(--border); background:#fff; border-radius:10px; cursor:pointer; font-size:14px;}
+  .seg button.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+
+  .btn{
+    display:inline-block; padding:12px 28px; background:var(--primary); color:#fff;
+    border:none; border-radius:12px; font-size:15px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .btn:hover{background:var(--primary-dark);}
+  .btn.ghost{background:#fff; color:var(--primary); border:1px solid var(--primary);}
+  .btn.small{padding:6px 14px; font-size:13px; border-radius:8px;}
+
+  .result{margin-top:20px; display:none;}
+  .result.show{display:block;}
+
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:20px;}
+  .stat{background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:16px; text-align:center;}
+  .stat .v{font-size:24px; font-weight:700;}
+  .stat .k{font-size:12px; color:var(--sub); margin-top:2px;}
+  .stat.p .v{color:var(--red);} .stat.c .v{color:var(--green);} .stat.f .v{color:var(--amber);} .stat.cal .v{color:var(--purple);}
+
+  .bar-wrap{margin:6px 0 4px; background:#eef0f3; border-radius:6px; height:10px; overflow:hidden;}
+  .bar{height:100%; border-radius:6px; transition:.4s;}
+
+  table{width:100%; border-collapse:collapse; margin-top:12px; font-size:14px;}
+  th,td{padding:9px 10px; text-align:left; border-bottom:1px solid var(--border);}
+  th{color:var(--sub); font-weight:600; font-size:12px; background:#f8fafc;}
+  tr:hover td{background:#fafbfc;}
+
+  .search{margin-bottom:16px; display:flex; gap:10px;}
+  .search input{flex:1; padding:10px 14px; border:1px solid var(--border); border-radius:10px; font-size:15px;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .chip{padding:5px 13px; border:1px solid var(--border); border-radius:16px; cursor:pointer; font-size:13px; background:#fff;}
+  .chip.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+
+  .meal{background:#f8fafc; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px;}
+  .meal h4{font-size:15px; margin-bottom:6px;}
+  .meal .mmeta{font-size:12px; color:var(--sub); margin-bottom:10px;}
+  .meal table{margin-top:6px;}
+
+  .note{background:#fff8e6; border:1px solid #f5e6b8; border-radius:10px; padding:14px 16px; font-size:13px; color:#8a6d1a; margin-top:16px;}
+
+  .foot{margin-top:28px; text-align:center; color:#9aa0a6; font-size:12px;}
+  .foot a{color:#9aa0a6;}
+  .inline-bar{display:flex; align-items:center; gap:8px; font-size:12px; color:var(--sub);}
+  .tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; background:#eef2ff; color:#5b4dd6;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💪 健身饮食规划</h1>
+    <p>计算三大营养素 · 生成食谱 · 查询食物热量</p>
+  </header>
+
+  <nav>
+    <button data-tab="calc" class="active">计算营养需求</button>
+    <button data-tab="food">食物热量库</button>
+    <button data-tab="meal">生成食谱</button>
+  </nav>
+
+  <!-- ============ 计算 ============ -->
+  <section id="calc" class="panel active">
+    <h2>计算你的每日营养需求</h2>
+    <p class="hint">基于 Mifflin-St Jeor 公式（1990）计算基础代谢，再按活动量与目标调整。</p>
+    <div class="grid">
+      <div class="field"><label>性别</label>
+        <div class="seg" id="segGender">
+          <button data-v="male" class="on">男</button><button data-v="female">女</button>
+        </div>
+      </div>
+      <div class="field"><label>年龄（岁）</label><input type="number" id="age" value="28" min="12" max="90"></div>
+      <div class="field"><label>身高（cm）</label><input type="number" id="height" value="175" min="100" max="230"></div>
+      <div class="field"><label>体重（kg）</label><input type="number" id="weight" value="70" min="30" max="250"></div>
+    </div>
+    <div class="field" style="margin-bottom:20px;">
+      <label>活动量</label>
+      <div class="seg" id="segActivity">
+        <button data-v="1.2">久坐</button>
+        <button data-v="1.375">轻度(1-3次/周)</button>
+        <button data-v="1.55" class="on">中度(3-5次/周)</button>
+        <button data-v="1.725">高度(6-7次/周)</button>
+        <button data-v="1.9">极高(体力劳动)</button>
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:20px;">
+      <label>目标</label>
+      <div class="seg" id="segGoal">
+        <button data-v="cut" class="on">减脂</button>
+        <button data-v="maintain">维持</button>
+        <button data-v="bulk">增肌</button>
+      </div>
+    </div>
+    <button class="btn" onclick="calculate()">计算我的需求</button>
+
+    <div class="result" id="calcResult">
+      <div class="cards" id="calcCards"></div>
+      <h3 style="font-size:15px; margin-bottom:8px;">三大营养素分布</h3>
+      <div id="macroBars"></div>
+      <div class="note" id="calcAdvice"></div>
+    </div>
+  </section>
+
+  <!-- ============ 食物库 ============ -->
+  <section id="food" class="panel">
+    <h2>食物热量查询</h2>
+    <p class="hint">每 100g 可食部营养含量。数据参考《中国食物成分表》与 USDA，仅供规划参考。</p>
+    <div class="search">
+      <input type="text" id="foodSearch" placeholder="搜索食物名称，如「鸡胸」" oninput="renderFood()">
+    </div>
+    <div class="chips" id="foodChips"></div>
+    <div style="overflow-x:auto;">
+      <table id="foodTable">
+        <thead><tr><th>名称</th><th>分类</th><th>热量(kcal)</th><th>蛋白质(g)</th><th>碳水(g)</th><th>脂肪(g)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="note">💡 支持本地录入自定义食物：在浏览器控制台或后续版本中可添加。当前为内置示例库。</div>
+  </section>
+
+  <!-- ============ 食谱 ============ -->
+  <section id="meal" class="panel">
+    <h2>一键生成食谱</h2>
+    <p class="hint">根据上方「计算营养需求」的结果，自动搭配一日三餐，贴近目标热量与蛋白质。</p>
+    <div class="field" style="margin-bottom:16px;">
+      <label>目标热量（kcal，默认取你的计算结果）</label>
+      <input type="number" id="mealTarget" placeholder="留空则用计算结果" min="800" max="6000">
+    </div>
+    <button class="btn" onclick="genMeal()">生成食谱</button>
+    <div class="result" id="mealResult"></div>
+  </section>
+
+  <div class="foot">
+    数据与公式仅供膳食规划参考，不构成医疗建议。减脂/增肌前请咨询专业人士。<br>
+    公式依据：Mifflin et al. <i>Am J Clin Nutr</i> 1990; ISSN 2017; FAO/WHO/UNU 2001。
+  </div>
+</div>
+
+<script src="foods.js"></script>
+<script>
+/* ===== 状态 ===== */
+let gender = "male", activity = 1.55, goal = "cut";
+let currentPlan = null; // 最近一次计算结果
+
+/* ===== 分段选择器 ===== */
+document.querySelectorAll(".seg").forEach(seg => {
+  seg.addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    seg.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    const id = seg.id;
+    if(id==="segGender") gender = b.dataset.v;
+    else if(id==="segActivity") activity = parseFloat(b.dataset.v);
+    else if(id==="segGoal") goal = b.dataset.v;
+  });
+});
+
+/* ===== Tab 切换 ===== */
+document.querySelectorAll("nav button").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    document.getElementById(btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* ===== 计算逻辑 ===== */
+function calcBMR(g, age, h, w){
+  // Mifflin-St Jeor (1990)
+  const base = 10*w + 6.25*h - 5*age;
+  return g==="male" ? base + 5 : base - 161;
+}
+
+function calculate(){
+  const age = +document.getElementById("age").value;
+  const h = +document.getElementById("height").value;
+  const w = +document.getElementById("weight").value;
+  if(!age || !h || !w){ alert("请完整填写年龄、身高、体重"); return; }
+  if(w < 20 || w > 300 || h < 80 || age < 10){ alert("输入数值异常，请检查"); return; }
+
+  const bmr = calcBMR(gender, age, h, w);
+  const tdee = bmr * activity;
+
+  // 目标热量调整
+  let targetCal;
+  if(goal==="cut") targetCal = tdee - 500;      // 约减 0.5kg/周
+  else if(goal==="bulk") targetCal = tdee + 300;
+  else targetCal = tdee;
+  targetCal = Math.max(1200, Math.round(targetCal));
+
+  // 蛋白质：按体重 g/kg（ISSN 2017 / Morton 2018）
+  let proteinPerKg;
+  if(goal==="cut") proteinPerKg = 2.0;       // 减脂期保肌肉
+  else if(goal==="bulk") proteinPerKg = 1.8; // 增肌期
+  else proteinPerKg = 1.6;
+  const protein = Math.round(w * proteinPerKg);
+
+  // 脂肪：占总热量 25%（减脂 20%）
+  const fatPct = goal==="cut" ? 0.20 : 0.25;
+  const fat = Math.round((targetCal * fatPct) / 9);
+
+  // 碳水：剩余热量
+  const carb = Math.round((targetCal - protein*4 - fat*9) / 4);
+
+  currentPlan = { gender, age, h, w, bmr, tdee, targetCal, protein, fat, carb, goal, activity };
+
+  // 渲染
+  const goalTxt = {cut:"减脂", maintain:"维持", bulk:"增肌"}[goal];
+  document.getElementById("calcCards").innerHTML = `
+    <div class="stat cal"><div class="v">${targetCal}</div><div class="k">目标热量 kcal/日</div></div>
+    <div class="stat"><div class="v">${bmr.toFixed(0)}</div><div class="k">基础代谢 BMR</div></div>
+    <div class="stat"><div class="v">${tdee.toFixed(0)}</div><div class="k">总消耗 TDEE</div></div>
+    <div class="stat p"><div class="v">${protein}g</div><div class="k">蛋白质</div></div>
+    <div class="stat c"><div class="v">${carb}g</div><div class="k">碳水</div></div>
+    <div class="stat f"><div class="v">${fat}g</div><div class="k">脂肪</div></div>
+  `;
+
+  const pPct = Math.round(protein*4/targetCal*100);
+  const cPct = Math.round(carb*4/targetCal*100);
+  const fPct = 100 - pPct - cPct;
+  document.getElementById("macroBars").innerHTML = `
+    <div class="inline-bar"><span style="width:52px;">蛋白质</span>
+      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${pPct}%;background:var(--red);"></div></div><span>${pPct}%</span></div>
+    <div class="inline-bar"><span style="width:52px;">碳水</span>
+      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${cPct}%;background:var(--green);"></div></div><span>${cPct}%</span></div>
+    <div class="inline-bar"><span style="width:52px;">脂肪</span>
+      <div class="bar-wrap" style="flex:1;"><div class="bar" style="width:${fPct}%;background:var(--amber);"></div></div><span>${fPct}%</span></div>
+  `;
+
+  document.getElementById("calcAdvice").innerHTML = adviceText(goal, protein, proteinPerKg);
+  document.getElementById("calcResult").classList.add("show");
+  document.getElementById("mealTarget").placeholder = targetCal;
+
+  // 存本地
+  savePlan(currentPlan);
+  document.getElementById("calcResult").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function adviceText(goal, protein, perKg){
+  const lines = [];
+  if(goal==="cut"){
+    lines.push("🎯 <b>减脂期</b>：热量缺口约 500 kcal/日，理论上每周约减 0.5 kg。");
+    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定（${protein}g/日），有助于在热量缺口下保留肌肉（ISSN 2017）。`);
+    lines.push("🍽 建议把蛋白质均匀分配到 3-5 餐，每餐约 20-40g。");
+  } else if(goal==="bulk"){
+    lines.push("🎯 <b>增肌期</b>：热量盈余约 300 kcal/日，配合抗阻训练促进肌肉增长。");
+    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定（${protein}g/日），处于 ISSN 推荐的 1.6–2.2 g/kg 区间。`);
+    lines.push("⚠️ 盈余不宜过大，避免过多脂肪堆积。");
+  } else {
+    lines.push("🎯 <b>维持期</b>：热量接近 TDEE，保持当前体重与体成分。");
+    lines.push(`🥩 蛋白质按 <b>${perKg} g/kg</b> 设定，维持肌肉量。`);
+  }
+  lines.push("💧 记得保证充足饮水（约 30-35 ml/kg 体重）。");
+  return lines.join("<br>");
+}
+
+/* ===== 本地存储 ===== */
+const STORE_KEY = "fitdiet_plans";
+function savePlan(p){
+  try{
+    const arr = JSON.parse(localStorage.getItem(STORE_KEY) || "[]");
+    arr.unshift({date:new Date().toISOString(), ...p});
+    localStorage.setItem(STORE_KEY, JSON.stringify(arr.slice(0,20)));
+  }catch(e){}
+}
+function loadPlan(){
+  try{ return JSON.parse(localStorage.getItem(STORE_KEY) || "[]"); }catch(e){ return []; }
+}
+
+/* ===== 食物库 ===== */
+let foodCat = "全部";
+function renderFood(){
+  const q = document.getElementById("foodSearch").value.trim();
+  const cats = ["全部", ...new Set(FOODS.map(f=>f.category))];
+  const chips = document.getElementById("foodChips");
+  chips.innerHTML = cats.map(c=>`<div class="chip ${c===foodCat?'on':''}" onclick="setCat('${c}')">${c}</div>`).join("");
+
+  const list = FOODS.filter(f=>{
+    const okCat = foodCat==="全部" || f.category===foodCat;
+    const okQ = !q || f.name.includes(q);
+    return okCat && okQ;
+  });
+  const tb = document.querySelector("#foodTable tbody");
+  if(list.length===0){ tb.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#9aa0a6;">未找到匹配食物</td></tr>`; return; }
+  tb.innerHTML = list.map(f=>`
+    <tr>
+      <td>${f.name}</td>
+      <td><span class="tag">${f.category}</span></td>
+      <td>${f.kcal}</td>
+      <td>${f.protein}</td>
+      <td>${f.carb}</td>
+      <td>${f.fat}</td>
+    </tr>`).join("");
+}
+function setCat(c){ foodCat = c; renderFood(); }
+
+/* ===== 食谱生成 ===== */
+function genMeal(){
+  const manual = +document.getElementById("mealTarget").value;
+  let targetCal = manual || (currentPlan ? currentPlan.targetCal : null);
+  let proteinTarget = currentPlan ? currentPlan.protein : null;
+  if(!targetCal){ alert("请先在「计算营养需求」页算一次，或手动填写目标热量"); return; }
+  if(!proteinTarget) proteinTarget = Math.round(targetCal * 0.3 / 4);
+
+  const meals = buildMealPlan(targetCal, proteinTarget);
+  const res = document.getElementById("mealResult");
+  res.innerHTML = meals.map(m=>`
+    <div class="meal">
+      <h4>${m.name} <span style="font-weight:400;color:var(--sub);font-size:13px;">约 ${m.cal} kcal</span></h4>
+      <div class="mmeta">蛋白质 ${m.protein}g · 碳水 ${m.carb}g · 脂肪 ${m.fat}g</div>
+      <table>
+        <thead><tr><th>食物</th><th>份量(g)</th><th>热量</th><th>蛋白</th><th>碳水</th><th>脂肪</th></tr></thead>
+        <tbody>${m.items.map(i=>`
+          <tr><td>${i.f.name}</td><td>${i.grams}</td><td>${i.cal}</td><td>${i.p}</td><td>${i.c}</td><td>${i.fat}</td></tr>`).join("")}
+        </tbody>
+      </table>
+    </div>`).join("");
+
+  // 汇总
+  const total = meals.reduce((a,m)=>({cal:a.cal+m.cal,p:a.p+m.protein,c:a.c+m.carb,f:a.f+m.fat}),{cal:0,p:0,c:0,f:0});
+  res.innerHTML += `
+    <div class="cards" style="margin-top:16px;">
+      <div class="stat cal"><div class="v">${total.cal}</div><div class="k">总热量 kcal</div></div>
+      <div class="stat p"><div class="v">${total.p}g</div><div class="k">蛋白质</div></div>
+      <div class="stat c"><div class="v">${total.c}g</div><div class="k">碳水</div></div>
+      <div class="stat f"><div class="v">${total.f}g</div><div class="k">脂肪</div></div>
+    </div>
+    <div class="note">对照目标：热量 ${targetCal} kcal · 蛋白质 ${proteinTarget}g。可根据口味在「食物热量库」替换食材。</div>`;
+  res.classList.add("show");
+  res.scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function findFood(name){ return FOODS.find(f=>f.name===name); }
+function calcPortion(f, grams){
+  const k = grams/100;
+  return { f, grams, cal:Math.round(f.kcal*k), p:+(f.protein*k).toFixed(1), c:+(f.carb*k).toFixed(1), fat:+(f.fat*k).toFixed(1) };
+}
+
+function buildMealPlan(targetCal, proteinTarget){
+  const meals = [];
+  // 早/午/晚 热量分配约 25%/40%/35%
+  const bfCal = Math.round(targetCal*0.25);
+  const luCal = Math.round(targetCal*0.40);
+  const dnCal = targetCal - bfCal - luCal;
+
+  // 早餐：燕麦+鸡蛋+牛奶
+  const bfItems = [calcPortion(findFood("燕麦片（干）"),60), calcPortion(findFood("鸡蛋（全蛋）"),100), calcPortion(findFood("低脂牛奶"),250)];
+  meals.push(sumMeal("早餐", bfItems));
+
+  // 午餐：米饭+鸡胸+西兰花
+  const luItems = [calcPortion(findFood("米饭（熟）"),250), calcPortion(findFood("鸡胸肉（熟）"),150), calcPortion(findFood("西兰花（熟）"),150), calcPortion(findFood("橄榄油"),8)];
+  meals.push(sumMeal("午餐", luItems));
+
+  // 晚餐：红薯+牛肉+蔬菜
+  const dnItems = [calcPortion(findFood("红薯（熟）"),200), calcPortion(findFood("瘦牛肉（熟）"),120), calcPortion(findFood("菠菜（熟）"),150), calcPortion(findFood("橄榄油"),8)];
+  meals.push(sumMeal("晚餐", dnItems));
+
+  return meals;
+}
+function sumMeal(name, items){
+  const cal = items.reduce((a,i)=>a+i.cal,0);
+  const p = +items.reduce((a,i)=>a+i.p,0).toFixed(1);
+  const c = +items.reduce((a,i)=>a+i.c,0).toFixed(1);
+  const f = +items.reduce((a,i)=>a+i.fat,0).toFixed(1);
+  return { name, items, cal, protein:p, carb:c, fat:f };
+}
+
+/* ===== 初始化 ===== */
+renderFood();
+</script>
+</body>
+</html>
