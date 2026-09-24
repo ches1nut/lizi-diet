@@ -3268,6 +3268,8 @@ function confirmClear(){
     localStorage.removeItem(PROFILE_KEY);       // 个人信息
     localStorage.removeItem(CURRENT_PLAN_KEY);  // 当前方案
     localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
+    localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
+    localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
     // 重置会话内状态
     compareSel = [];
     compareMode = false;
@@ -3275,6 +3277,8 @@ function confirmClear(){
     detailFrom = "list";
     recipeMeals = null;    // 清空内存中的食谱，避免「今天吃什么」展示过期食谱
     recipePlanId = "";
+    foodList = [];         // 清空今日摄入缓冲
+    pickedFood = null;
     renderMe();
     renderCurrentPlan();  // 刷新首页，回到「问卷 + 方案选择」状态
     go('home');           // 跳回首页
