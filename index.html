@@ -196,6 +196,18 @@
   .compare-bar button:disabled{opacity:.45; cursor:not-allowed;}
   .compare-bar button:not(:disabled):hover{transform:translateY(-1px);}
   .plan-card .desc{font-size:13px; color:var(--sub); line-height:1.6; margin-bottom:12px;}
+  .plan-pick-btn{
+    width:100%; margin-top:12px; padding:11px; border-radius:11px; border:none;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    font-size:14px; font-weight:700; cursor:pointer; transition:.15s;
+    box-shadow:var(--shadow-sm);
+  }
+  .plan-pick-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .plan-current-tag{
+    width:100%; margin-top:12px; padding:11px; border-radius:11px; border:none;
+    background:var(--brand-soft); color:var(--brand); font-size:14px; font-weight:700;
+    text-align:center; cursor:default;
+  }
   .plan-card .tags{display:flex; gap:6px; flex-wrap:wrap;}
   .chip{font-size:11px; padding:3px 9px; border-radius:7px; background:var(--brand-soft); color:var(--brand); font-weight:500;}
   .tag{font-size:11px; padding:3px 9px; border-radius:7px; background:#f3f4f6; color:var(--sub); border:1px solid var(--border);}
@@ -430,6 +442,152 @@
   }
   .btn-primary:hover{transform:translateY(-1px);}
 
+  /* ===== 推荐食谱页 ===== */
+  .quick-entry{
+    border:1px solid var(--border); border-radius:16px; padding:16px 16px;
+    background:var(--card); cursor:pointer; transition:.16s; box-shadow:var(--shadow-sm);
+  }
+  .quick-entry:hover{border-color:var(--brand); transform:translateY(-2px); box-shadow:var(--shadow-md);}
+  .quick-entry .qe-ic{font-size:24px; margin-bottom:8px;}
+  .quick-entry .qe-t{font-size:14px; font-weight:700; color:var(--text); margin-bottom:2px;}
+  .quick-entry .qe-d{font-size:12px; color:var(--sub); line-height:1.5;}
+  .recipe-body{padding:16px 28px 40px;}
+  .recipe-target-card{
+    border-radius:var(--radius); padding:18px 20px; margin-bottom:18px;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    box-shadow:var(--shadow-md);
+  }
+  .recipe-target-card .rt-label{font-size:11px; letter-spacing:1px; opacity:.85; margin-bottom:6px;}
+  .recipe-target-card .rt-name{font-size:18px; font-weight:700; margin-bottom:10px;}
+  .recipe-target-card .rt-macro{display:flex; gap:18px; flex-wrap:wrap;}
+  .recipe-target-card .rt-macro .m{font-size:12px; opacity:.95;}
+  .recipe-target-card .rt-macro .m b{font-size:16px; font-weight:800; display:block;}
+  .recipe-tpl-switch{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .tpl-chip{
+    font-size:12px; padding:7px 14px; border-radius:16px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
+  }
+  .tpl-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .meal-block{margin-bottom:16px;}
+  .meal-block .meal-title{font-size:14px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
+  .meal-block .meal-title .mt-dot{width:8px; height:8px; border-radius:50%;}
+  .food-row{
+    display:flex; align-items:center; gap:12px; padding:13px 16px; margin-bottom:8px;
+    border:1px solid var(--border); border-radius:14px; background:var(--card);
+    box-shadow:var(--shadow-sm); transition:.15s;
+  }
+  .food-row .fr-name{flex:1; font-size:14px; font-weight:600; color:var(--text);}
+  .food-row .fr-meta{font-size:12px; color:var(--sub); margin-top:2px;}
+  .food-row .fr-kcal{font-size:14px; font-weight:700; color:var(--brand); white-space:nowrap;}
+  .food-row .fr-del{color:#c4c9d4; cursor:pointer; flex-shrink:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; border-radius:7px; transition:.15s;}
+  .food-row .fr-del:hover{color:#DC2626; background:#FEE2E2;}
+  .food-row .fr-del svg{width:16px; height:16px;}
+  .recipe-sum{
+    display:flex; gap:10px; padding:14px 16px; margin-top:16px;
+    border-radius:14px; background:var(--brand-soft); text-align:center;
+  }
+  .recipe-sum .rs-item{flex:1;}
+  .recipe-sum .rs-item .n{font-size:17px; font-weight:800; color:var(--brand-deep);}
+  .recipe-sum .rs-item .u{font-size:11px; color:var(--sub); margin-top:2px;}
+  .recipe-sum .rs-item .bar{height:5px; border-radius:3px; background:#E4E2F8; margin-top:8px; overflow:hidden;}
+  .recipe-sum .rs-item .bar i{display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2));}
+
+  /* ===== 食物计算器页 ===== */
+  .food-body{padding:16px 28px 40px;}
+  .food-search{
+    display:flex; gap:10px; margin-bottom:14px;
+  }
+  .food-search input{
+    flex:1; padding:12px 16px; border-radius:12px; border:1px solid var(--border);
+    background:var(--card); font-size:14px; outline:none; color:var(--text); transition:.15s;
+  }
+  .food-search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft);}
+  .food-cats{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+  .food-cat{
+    font-size:12px; padding:6px 14px; border-radius:16px; cursor:pointer;
+    border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
+  }
+  .food-cat.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .food-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; max-height:360px; overflow-y:auto;}
+  .food-item{
+    border:1px solid var(--border); border-radius:13px; padding:12px 14px;
+    background:var(--card); cursor:pointer; transition:.15s; box-shadow:var(--shadow-sm);
+  }
+  .food-item:hover{border-color:var(--brand); transform:translateY(-1px);}
+  .food-item .fi-name{font-size:13px; font-weight:600; color:var(--text);}
+  .food-item .fi-kcal{font-size:12px; color:var(--sub); margin-top:3px;}
+  .food-item .fi-kcal b{color:var(--brand);}
+  .food-item.sel{border-color:var(--brand); background:var(--brand-soft);}
+  .food-picker{
+    border:1px solid var(--brand); border-radius:14px; padding:16px;
+    background:var(--brand-soft); margin-bottom:16px;
+  }
+  .food-picker .fp-name{font-size:15px; font-weight:700; color:var(--brand-deep); margin-bottom:12px;}
+  .food-picker .fp-row{display:flex; align-items:center; gap:10px;}
+  .food-picker .fp-row input{
+    flex:1; padding:11px 14px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card); font-size:15px; outline:none; color:var(--text);
+  }
+  .food-picker .fp-row input:focus{border-color:var(--brand);}
+  .food-picker .fp-unit{font-size:13px; color:var(--sub); white-space:nowrap;}
+  .food-picker .fp-btns{display:flex; gap:8px; margin-top:12px;}
+  .food-picker .fp-btns button{
+    flex:1; padding:11px; border-radius:11px; border:none; font-size:14px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .fp-add{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;}
+  .fp-cancel{background:var(--card); color:var(--sub); border:1px solid var(--border)!important;}
+  .fp-add:hover{transform:translateY(-1px);}
+  .food-photo-btn{
+    width:100%; padding:13px; border-radius:12px; border:1.5px dashed var(--brand-mid);
+    background:var(--card); color:var(--brand); font-size:14px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:.15s; margin-bottom:14px;
+  }
+  .food-photo-btn:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .food-photo-btn svg{width:18px; height:18px;}
+  .photo-previews{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .photo-previews .pp{
+    position:relative; width:72px; height:72px; border-radius:12px; overflow:hidden;
+    border:1px solid var(--border);
+  }
+  .photo-previews .pp img{width:100%; height:100%; object-fit:cover;}
+  .photo-previews .pp .pp-x{
+    position:absolute; right:3px; top:3px; width:20px; height:20px; border-radius:50%;
+    background:rgba(0,0,0,.55); color:#fff; font-size:12px; line-height:20px; text-align:center; cursor:pointer;
+  }
+  .food-list-summary{
+    border-radius:14px; background:var(--brand-soft); padding:14px 16px; margin-bottom:16px;
+  }
+  .food-list-summary .fls-t{font-size:13px; font-weight:700; color:var(--brand-deep); margin-bottom:8px;}
+  .food-list-summary .fls-empty{font-size:13px; color:var(--sub);}
+  .food-total{
+    display:flex; gap:10px; text-align:center; padding:16px;
+    border-radius:16px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    box-shadow:var(--shadow-md); margin-bottom:18px;
+  }
+  .food-total .ft-item{flex:1;}
+  .food-total .ft-item .n{font-size:20px; font-weight:800;}
+  .food-total .ft-item .u{font-size:11px; opacity:.85; margin-top:2px;}
+  .food-total .ft-kcal{flex:1; display:flex; flex-direction:column; justify-content:center;}
+  .food-total .ft-kcal .n{font-size:26px;}
+  .add-custom{
+    width:100%; padding:13px; border-radius:12px; border:none;
+    background:var(--card); color:var(--brand); font-size:14px; font-weight:600; cursor:pointer;
+    border:1.5px solid var(--border); transition:.15s;
+  }
+  .add-custom:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .custom-form{
+    border:1px solid var(--brand); border-radius:14px; padding:16px; background:var(--brand-soft); margin-top:12px;
+  }
+  .custom-form .cf-t{font-size:14px; font-weight:700; color:var(--brand-deep); margin-bottom:12px;}
+  .custom-form .cf-row{margin-bottom:10px;}
+  .custom-form .cf-row label{font-size:12px; color:var(--sub); display:block; margin-bottom:4px;}
+  .custom-form .cf-row input{
+    width:100%; padding:11px 14px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card); font-size:14px; outline:none; color:var(--text);
+  }
+  .custom-form .cf-row input:focus{border-color:var(--brand);}
+  .cf-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+
   /* ===== 手机窄屏 ===== */
   @media (max-width:480px){
     .navbar{padding:16px 18px 12px;}
@@ -481,7 +639,7 @@
 
       <div id="currentPlanBox"></div>
 
-      <div class="entries">
+      <div class="entries" id="homeEntries">
         <div class="entry recommend" onclick="goRecommend()">
           <div>
             <div class="t">我还没想好，帮我推荐</div>
@@ -520,7 +678,7 @@
     <div class="plan-list" id="planList"></div>
     <div class="compare-bar" id="compareBar" style="display:none;">
       <div class="info">已选 <span class="cnt" id="compareCnt">0</span> 个方案</div>
-      <button id="compareBtn" onclick="openCompare()" disabled>对比</button>
+      <button id="compareBtn" onclick="openCompare()" disabled>开始对比</button>
     </div>
   </div>
 
@@ -539,14 +697,14 @@
   <!-- ============ 方案详情页 ============ -->
   <div class="screen" id="screen-detail">
     <header class="detail-head">
-      <button class="back-btn" onclick="go('list')" aria-label="返回">
+      <button class="back-btn" onclick="goBackFromDetail()" aria-label="返回">
         <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">方案详情</div>
     </header>
     <div class="detail-body" id="detailBody"></div>
-    <div class="detail-cta">
-      <button onclick="startPlan()">按此方案开始计算</button>
+    <div class="detail-cta" id="detailCta">
+      <button id="detailPickBtn" onclick="pickPlanFromDetail()">选这个方案</button>
       <span class="cta-sub" id="detailCompareLink" onclick="quickCompare()">↔ 与其他方案对比</span>
     </div>
   </div>
@@ -584,8 +742,31 @@
     <div class="me-body" id="meBody"></div>
   </div>
 
+  <!-- ============ 推荐食谱页 ============ -->
+  <div class="screen" id="screen-recipe">
+    <header class="list-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">今日推荐食谱</div>
+    </header>
+    <div class="recipe-body" id="recipeBody"></div>
+  </div>
+
+  <!-- ============ 食物计算器页 ============ -->
+  <div class="screen" id="screen-food">
+    <header class="list-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">食物热量计算</div>
+    </header>
+    <div class="food-body" id="foodBody"></div>
+  </div>
+
 </div>
 
+<script src="foods.js"></script>
 <script>
 /* ===== 方案数据（6 个可执行方案） =====
    goal 目标标签：增肌 / 减脂 / 日常健康 */
@@ -805,39 +986,40 @@ const PLANS = [
     }
   },
   {
-    id:"zengji-jianzhi",
-    name:"增肌减脂同步法",
-    source:"谭成义",
-    desc:"训练要求高，小缺口+保强度，边增肌边减脂、不挨饿不掉肌肉。",
+    id:"zengji-yingyu",
+    name:"增肌盈余法",
+    source:"ISSN / 卫健委",
+    desc:"标准增肌逻辑：热量盈余 300–500 大卡，蛋白吃足、碳水供能 60–65%。",
     goal:"增肌",
-    goals:["增肌","减脂"],
-    tags:["训练要求高","必须力量训练"],
-    chips:["碳水 2.5–3.5g/kg","蛋白 1.2–2g/kg","缺口 200–300 大卡"],
-    compare:{carb:"2.5–3.5 g/kg",protein:"1.2–2 g/kg",fat:"0.6–0.8 g/kg",training:"高",duration:"小缺口 200–300 大卡"},
+    goals:["增肌"],
+    tags:["热量盈余","必须力量训练","权威标准"],
+    chips:["碳水 4–6g/kg","蛋白 1.6–2g/kg","盈余 300–500 大卡"],
+    compare:{carb:"4–6 g/kg",protein:"1.6–2 g/kg",fat:"0.6–1 g/kg",training:"高",duration:"盈余 300–500 大卡"},
     detail:{
-      logic:"打破两个大众误区：增肌不靠猛吃（靠训练带来的机械张力，力量在涨肌肉就在长），减脂不靠饿肚子（靠小缺口+激素稳定，缺口太大反而压激素、掉代谢、提前平台期）。用 200–300 大卡的小缺口保留合成信号又持续供能，同时维持甚至提高训练强度，实现增肌减脂同步。",
+      logic:"采用国际运动营养学会（ISSN，2017）与中国卫健委《中国居民膳食指南》的权威增肌标准：增肌需要「热量盈余 + 充足蛋白 + 足够碳水」。热量在维持体重基础上多 300–500 大卡，蛋白质 1.6–2.0 g/kg，碳水化合物供能比提到 60–65%（约 4–6 g/kg），为力量训练和肌肉合成提供能量与原料。增肌期体脂会轻微上升，属正常现象，配合渐进超负荷力量训练才能把盈余转化为肌肉而非脂肪。",
       params:{
-        "热量缺口":"200–300 大卡（约一碗米饭），既保留合成信号又持续供能",
-        "碳水":"2.5–3.5 g/kg（训练量大取高值）",
-        "蛋白质":"1.2–2 g/kg",
-        "脂肪":"0.6–0.8 g/kg（含蛋黄、坚果、食用油）",
-        "有氧":"一周 3–4 次，每次半小时出头，体能好了再加"
+        "热量盈余":"300–500 大卡/天（体脂偏高者取低值，偏瘦者取高值）",
+        "碳水":"4–6 g/kg（供能比 60–65%，训练量大取高值）",
+        "蛋白质":"1.6–2.0 g/kg",
+        "脂肪":"0.6–1.0 g/kg（供能比 20–30%，吃够必需脂肪酸）",
+        "力量训练":"每周 3–5 次渐进超负荷抗阻训练"
       },
       meals:[
-        "不追求热量盈余，吃够蛋白质保住肌肉合成信号",
-        "碳水按训练量给足，支撑力量训练强度不下降",
-        "脂肪按 0.6–0.8g/kg 稳步摄入，维持激素稳定",
-        "有氧每周 3–4 次、每次半小时出头，配合力量训练"
+        "热量盈余 300–500 大卡，为肌肉合成提供能量",
+        "蛋白 1.6–2g/kg 均分到每餐，保证充足氨基酸供应",
+        "碳水 4–6g/kg、供能比 60–65%，支撑训练并补充肌糖原",
+        "脂肪 0.6–1g/kg，维持激素与必需脂肪酸，不过度控油",
+        "每周 3–5 次渐进超负荷力量训练，让盈余长成肌肉"
       ],
       adjust:[
-        "保持 200–300 大卡小缺口 + 维持甚至提高训练强度",
-        "核心看力量数据：力量在涨，肌肉就在长",
-        "小缺口不影响训练状态、不压激素、不降代谢",
-        "激素稳定后线粒体活性加强，后期缺口极小也能继续减脂",
-        "不要做大缺口节食，否则皮质醇升、睾酮降、状态越来越差"
+        "体重每周增长约 0.25–0.5%（约 0.2–0.5kg）为理想速度",
+        "涨太快、体脂明显升高 → 盈余下调到 300 大卡",
+        "不涨体重/力量停滞 → 盈余上调到 500 大卡或加碳水",
+        "核心看力量与围度：力量在涨、肌肉围度在变大，方向就对",
+        "增肌期结束后再进入减脂期，不要边增边减"
       ],
-      who:"有半年以上训练基础的健身爱好者；不想经历增肌期→减脂期反复切换、想同步进行的人；之前节食减脂遇平台期、状态差、肌肉掉得多的人；想长期保持低体脂同时拥有好力量状态的人。",
-      target:"增肌减脂同步，边增边减、不挨饿不丢肌肉"
+      who:"想真正长肌肉、提升力量的新手与中级训练者；有规律力量训练基础、想在增肌期把营养吃到位的人；偏瘦、吃不胖、想健康增重增肌的人；希望用权威营养标准而非网红偏方指导增肌的人。",
+      target:"热量盈余 + 足量蛋白碳水，稳步增肌增力量"
     }
   }
 ];
@@ -850,10 +1032,17 @@ const GOAL_STYLE = {
 };
 
 /* ===== 页面切换 ===== */
+let curScreen = "home";
 function go(name){
+  curScreen = name;
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   document.getElementById("screen-"+name).classList.add("active");
   window.scrollTo(0,0);
+  // 离开列表页时退出对比模式
+  if(name!=="list" && compareMode){
+    compareMode = false;
+    compareSel = [];
+  }
   if(name==="list") renderFilters();
   if(name==="home") renderCurrentPlan();
 }
@@ -869,21 +1058,42 @@ function setCurrentPlan(id){
 
 function renderCurrentPlan(){
   const box = document.getElementById("currentPlanBox");
+  const homeEntries = document.getElementById("homeEntries");
   const id = getCurrentPlanId();
   const p = PLANS.find(x=>x.id===id);
-  const g = p ? (GOAL_STYLE[p.goal]||GOAL_STYLE["减脂"]) : null;
+  const profile = loadProfile();
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
 
-  if(p){
+  // 首页状态规则：个人信息完整 + 已选方案 → 方案/食谱态；否则一律回到「问卷+方案选择」初始态
+  if(p && hasProfile){
+    // 已选方案：隐藏「帮我推荐/我有想执行的方案」引导入口，只显示当前方案 + 食谱/热量快捷入口
+    if(homeEntries) homeEntries.style.display = "none";
     box.innerHTML = `
-      <div class="current-card" onclick="openPlan('${p.id}')">
+      <div class="current-card" onclick="openPlan('${p.id}','home')">
         <div class="cc-label"><span class="dot"></span>当前选择方案</div>
         <div class="cc-name">${p.name}</div>
         <div class="cc-sub">${p.desc}</div>
         <div class="cc-arrow">
           <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
+      </div>
+      <div class="entries" style="grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="quick-entry" onclick="openRecipe()">
+          <div class="qe-ic">🍱</div>
+          <div class="qe-t">今日推荐食谱</div>
+          <div class="qe-d">按目标配好一日三餐</div>
+        </div>
+        <div class="quick-entry" onclick="openFoodCalc()">
+          <div class="qe-ic">⚖️</div>
+          <div class="qe-t">食物热量计算</div>
+          <div class="qe-d">拍照或录食物算热量</div>
+        </div>
       </div>`;
   } else {
+    // 初始态：无个人信息（含清空后）= 全新用户，一律回到「问卷 + 方案选择」，不显示任何方案名
+    if(homeEntries) homeEntries.style.display = "grid";
+    // 无个人信息时，若残留当前方案，一并清理，保证「清空 = 全部重来」
+    if(p) setCurrentPlan("");
     box.innerHTML = `
       <div class="current-empty" onclick="go('list')">
         <div>
@@ -907,15 +1117,17 @@ function renderFilters(){
     `<span class="filter ${f===curFilter?'on':''}" onclick="setFilter('${f}')">${f}</span>`
   ).join("");
   renderPlans();
+  renderCompareBar();
 }
 function setFilter(f){ curFilter = f; renderFilters(); }
 
 /* ===== 方案对比选择状态 ===== */
-let compareSel = [];  // 当前勾选的方案 id（最多 3 个）
+let compareSel = [];        // 当前勾选对比的方案 id（最多 3 个）
+let compareMode = false;    // 列表页是否处于「对比模式」
 const COMPARE_MAX = 3;
 
 function toggleCompare(id, e){
-  e.stopPropagation();  // 阻止触发卡片点击
+  if(e) e.stopPropagation();
   const idx = compareSel.indexOf(id);
   if(idx>=0){
     compareSel.splice(idx,1);
@@ -934,8 +1146,10 @@ function renderCompareBar(){
   const bar = document.getElementById("compareBar");
   const cnt = document.getElementById("compareCnt");
   const btn = document.getElementById("compareBtn");
+  if(!bar) return;
+  if(!compareMode){ bar.style.display = "none"; return; }
   cnt.textContent = compareSel.length;
-  bar.style.display = compareSel.length>0 ? "flex" : "none";
+  bar.style.display = "flex";
   btn.disabled = compareSel.length<2;
 }
 
@@ -947,6 +1161,7 @@ function renderPlans(){
     const goals = p.goals || [p.goal];
     return goals.includes(curFilter);
   });
+  const curId = getCurrentPlanId();
   if(list.length===0){
     box.innerHTML = `<div style="text-align:center;color:#9aa0a6;font-size:13px;padding:40px 0;">暂无「${curFilter}」方案，敬请期待</div>`;
     return;
@@ -958,31 +1173,38 @@ function renderPlans(){
       return `<span class="badge" style="color:${gs.color};background:${gs.bg};margin-left:4px;">${gk}</span>`;
     }).join("");
     const isSel = compareSel.includes(p.id);
+    const isCurrent = p.id === curId;
+    // 对比模式：卡片右上角勾选框，点击卡片整体切换勾选
+    const chk = compareMode
+      ? `<div class="chk ${isSel?'on':''}" onclick="toggleCompare('${p.id}',event)"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`
+      : "";
+    // 选方案按钮：对比模式下隐藏；已是当前方案则不显示按钮
+    const pickBtn = compareMode ? "" : (isCurrent
+      ? `<div class="plan-current-tag">✓ 已选择</div>`
+      : `<button class="plan-pick-btn" onclick="event.stopPropagation();pickPlan('${p.id}')">选这个方案</button>`);
     return `
-    <div class="plan-card ${isSel?'sel':''}" onclick="openPlan('${p.id}')">
-      <div class="chk ${isSel?'on':''}" onclick="toggleCompare('${p.id}',event)">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
+    <div class="plan-card ${isSel?'sel':''}" onclick="${compareMode ? `toggleCompare('${p.id}')` : `openPlan('${p.id}')`}">
+      ${chk}
       <div class="top">
         <div class="name">${p.name}</div>
-        <span style="display:flex;flex-shrink:0;padding-right:28px;">${badges}</span>
+        <span style="display:flex;flex-shrink:0;${compareMode?'padding-right:28px;':''}">${badges}</span>
       </div>
       <div class="source" style="margin-bottom:6px;">参考来源：${p.source}</div>
       <div class="desc">${p.desc}</div>
-      <div class="tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
       <div class="tags" style="margin-top:8px;">${p.chips.map(c=>`<span class="chip">${c}</span>`).join("")}</div>
+      ${pickBtn}
     </div>`;
   }).join("");
-  renderCompareBar();
 }
 
 /* ===== 方案对比页 ===== */
 function openCompare(){
   const plans = compareSel.map(id=>PLANS.find(x=>x.id===id)).filter(Boolean);
   if(plans.length<2){
-    alert("请至少选择 2 个方案进行对比");
+    alert("请至少勾选 2 个方案进行对比");
     return;
   }
+  compareMode = false;   // 退出对比模式
   renderCompare(plans);
   go('compare');
 }
@@ -1023,35 +1245,41 @@ function renderCompare(plans){
 
   // 底部：选中某方案开始计算（默认第一个高亮）
   document.getElementById("compareCta").innerHTML = plans.map((p,i)=>`
-    <button onclick="compareStart('${p.id}')">${i===0?'✓ ':''}用「${p.name}」开始计算</button>
+    <button onclick="compareStart('${p.id}')">${i===0?'✓ ':''}选「${p.name}」</button>
   `).join("");
 }
 
 function compareStart(id){
-  compareSel = [id];       // 清空对比选择，保留选中这个
-  renderCompareBar();
-  openPlan(id);
+  compareSel = [];
+  pickPlan(id);
 }
 
-/* 详情页「与其他方案对比」：以当前方案为基准，自动带上同目标的其他方案 */
+/* 详情页「与其他方案对比」：进入方案列表页的对比模式，用户勾选 2-3 个方案后对比 */
 function quickCompare(){
+  // 以当前方案为基准预选一个，方便用户直接在此基础上增删
+  compareSel = [];
   const base = PLANS.find(x=>x.id===curPlanId);
-  if(!base) return;
-  const baseGoals = base.goals || [base.goal];
-  // 优先选同主目标的其他方案，凑满 2-3 个
-  const others = PLANS.filter(x=>x.id!==base.id && (x.goals||[x.goal]).some(g=>baseGoals.includes(g)));
-  compareSel = [base.id, ...others.slice(0,2).map(x=>x.id)];
-  renderPlans();
-  openCompare();
+  if(base) compareSel = [base.id];
+  compareMode = true;
+  curFilter = "全部";
+  go('list');
+  renderFilters();
 }
 
 /* ===== 方案详情页 ===== */
 let curPlanId = null;
+let detailFrom = "list";   // 进入详情页的来源：list / home / quiz
 
-function openPlan(id){
+function goBackFromDetail(){
+  // 从首页进来的回首页，否则回列表
+  go(detailFrom === "home" ? "home" : "list");
+}
+
+function openPlan(id, from){
   const p = PLANS.find(x=>x.id===id);
   if(!p) return;
   curPlanId = id;
+  detailFrom = from || "list";
   const g = GOAL_STYLE[p.goal] || GOAL_STYLE["减脂"];
   const d = p.detail;
 
@@ -1105,6 +1333,25 @@ function openPlan(id){
       <div class="p">${d.who}</div>
     </div>
   `;
+
+  // 详情页底部按钮：已选方案不显示「选这个方案」
+  const pickBtn = document.getElementById("detailPickBtn");
+  if(pickBtn){
+    if(getCurrentPlanId()===id){
+      pickBtn.textContent = "✓ 已选择";
+      pickBtn.disabled = true;
+      pickBtn.style.background = "var(--brand-soft)";
+      pickBtn.style.color = "var(--brand)";
+      pickBtn.style.cursor = "default";
+    } else {
+      pickBtn.textContent = "选这个方案";
+      pickBtn.disabled = false;
+      pickBtn.style.background = "";
+      pickBtn.style.color = "";
+      pickBtn.style.cursor = "";
+    }
+  }
+
   go('detail');
 }
 
@@ -1161,27 +1408,90 @@ const PROFILE_FIELDS = [
   ]}
 ];
 
+// 减脂专属扩展字段（目标体重 / 预计时长，仅在减脂目标下出现）
+const GOAL_EXTRA_FIELDS = [
+  {key:"targetWeight", label:"目标体重", type:"num", unit:"kg"},
+  {key:"targetWeeks",   label:"预计减脂时长", type:"num", unit:"周", hint:"（WHO 建议健康减重速度为每周 0.5–1kg）"}
+];
+
+// 权威减脂速度标准（来源：世界卫生组织 WHO 建议）
+const WEIGHT_LOSS = {
+  minKgPerWeek: 0.5,   // 最低健康速度（kg/周）
+  maxKgPerWeek: 1.0,   // 最高健康速度（kg/周）
+  minKgPerWeekSoft: 0.3  // 过低阈值（低于此值提示目标偏保守）
+};
+
+// 校验「当前体重 → 目标体重」与「预计时长」是否现实
+// 返回 {ok, speed, weeksMin, weeksMax, msg, level}
+function validateWeightLoss(curWeight, targetWeight, weeks){
+  const diff = curWeight - targetWeight;
+  if(diff <= 0){
+    return {ok:false, level:"invalid", speed:0, weeksMin:0, weeksMax:0,
+      msg:"目标体重应低于当前体重（减脂目标下）。若想维持或增重，请切换目标。"};
+  }
+  if(weeks && weeks > 0){
+    const speed = diff / weeks;  // kg/周
+    const weeksMin = Math.ceil(diff / WEIGHT_LOSS.maxKgPerWeek);
+    const weeksMax = Math.round(diff / WEIGHT_LOSS.minKgPerWeek);
+    if(speed > WEIGHT_LOSS.maxKgPerWeek){
+      return {ok:false, level:"warn-fast", speed, weeksMin, weeksMax,
+        msg:`按这个时长，你需要每周减 ${speed.toFixed(2)}kg，超过 WHO 建议的安全上限（0.5–1kg/周）。建议延长到 ${weeksMin} 周以上，或把目标体重调高一些。`};
+    }
+    if(speed < WEIGHT_LOSS.minKgPerWeekSoft){
+      return {ok:true, level:"warn-slow", speed, weeksMin, weeksMax,
+        msg:`这个时长偏宽松，每周只需减 ${speed.toFixed(2)}kg，可能动力不足。合理时长约 ${weeksMin}–${weeksMax} 周。`};
+    }
+    return {ok:true, level:"ok", speed, weeksMin, weeksMax,
+      msg:`合理。预计每周减约 ${speed.toFixed(2)}kg，处于 WHO 建议的 0.5–1kg/周安全区间内。`};
+  }
+  // 未填时长，仅给出建议区间
+  const weeksMin = Math.ceil(diff / WEIGHT_LOSS.maxKgPerWeek);
+  const weeksMax = Math.round(diff / WEIGHT_LOSS.minKgPerWeek);
+  return {ok:true, level:"hint", speed:0, weeksMin, weeksMax,
+    msg:`共需减 ${diff.toFixed(1)}kg。按 WHO 建议（0.5–1kg/周），合理时长约 ${weeksMin}–${weeksMax} 周。`};
+}
+
 // 活动水平 → 各方案碳水系数映射（三个月/碳水渐降/三倍碳水）
 const ACT_CARB = {
   "month3":       { sed:2.2, light:2.5, mod:2.8, high:3.0 },
   "carb-descend": { sed:2.5, light:2.6, mod:2.8, high:3.0 },
   "triple-carb":  { sed:2.5, light:2.7, mod:2.8, high:3.0 },  // 三倍碳水：新手2.5→练高3.0
-  "zengji-jianzhi": { sed:2.5, light:2.8, mod:3.0, high:3.5 }  // 增肌减脂：训练量高取高值
+  "zengji-yingyu": { sed:4.0, light:4.5, mod:5.0, high:6.0 }  // 增肌盈余：碳水 4–6g/kg，供能比 60–65%
 };
 // 活动水平 → 活动系数（算 TDEE，532/膳食指南用）
 const ACT_FACTOR = { sed:1.2, light:1.375, mod:1.55, high:1.725 };
 const ACT_DESC = { sed:"久坐·几乎不练", light:"轻度·每周1–2练", mod:"中度·每周3–4练", high:"高强度·每周5练以上" };
 
-/* ===== 计算页 ===== */
-function startPlan(){
-  const p = PLANS.find(x=>x.id===curPlanId);
-  if(!p) return;
-  setCurrentPlan(p.id);   // 记为用户当前选择方案
-  renderCalc(p);
-  go('calc');
+/* ===== 选定方案 → 直接出结果 ===== */
+let pendingRecipeAfterInfo = false;  // 标记：补完信息后直接出食谱
+
+function pickPlanFromDetail(){
+  pickPlan(curPlanId);
 }
 
-function renderCalc(p){
+/* 选定方案：记入当前方案，个人信息齐全则直接出「营养+食谱」结果，否则先补信息 */
+function pickPlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p) return;
+  setCurrentPlan(p.id);
+  const profile = loadProfile();
+  // 根据方案主目标，记录 goal（用于决定是否显示减脂专属字段）
+  profile.goal = p.goal === "减脂" ? "lose" : (p.goal === "增肌" ? "muscle" : "health");
+  saveProfile(profile);
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
+  if(hasProfile){
+    pendingRecipeAfterInfo = false;
+    openRecipe();   // 直接出结果（食谱页顶部含营养目标，一体）
+  } else {
+    // 信息不齐：先到计算页补信息，补完自动出食谱
+    pendingRecipeAfterInfo = true;
+    curPlanId = id;
+    renderCalc(p, true);
+    go('calc');
+  }
+}
+
+function renderCalc(p, toRecipe){
   const profile = loadProfile();
   const d = p.detail;
   const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
@@ -1191,9 +1501,9 @@ function renderCalc(p){
   if(!hasProfile){
     profileHtml = `
       <div class="profile-tip">
-        请先完善你的个人信息（只需填一次，之后切换方案会自动带出）：
+        ${toRecipe ? "先完善一下你的个人信息，马上为你生成推荐食谱：" : "请先完善你的个人信息（只需填一次，之后切换方案会自动带出）："}
         <div style="margin-top:12px;">${renderProfileForm(profile)}</div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">保存个人信息</button>
+        <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">${toRecipe ? "保存并生成食谱" : "保存个人信息"}</button>
       </div>`;
   } else {
     const al = profile.actLevel ? ACT_DESC[profile.actLevel] : "";
@@ -1226,13 +1536,30 @@ function renderCalc(p){
     <div class="calc-plan-source">参考来源：${p.source}</div>
     ${profileHtml}
     ${inputHtml}
-    <button class="btn-primary" onclick="calcResult('${p.id}')">计算我的营养素</button>
+    ${toRecipe ? "" : `<button class="btn-primary" onclick="calcResult('${p.id}')">计算我的营养素</button>`}
     <div id="calcResult"></div>
   `;
 }
 
+// 未提交输入暂存：切换 segment 重渲染时，保留用户已输入但未保存的数字值
+let profileDraft = {};
+
+// 从当前 DOM 表单收集未提交的输入值（num 字段 + 减脂专属字段）
+function collectProfileDraft(){
+  PROFILE_FIELDS.forEach(f=>{
+    if(f.type==="num"){
+      const el = document.getElementById("profile_"+f.key);
+      if(el && el.value !== "") profileDraft[f.key] = el.value;
+    }
+  });
+  ["targetWeight","targetWeeks"].forEach(k=>{
+    const el = document.getElementById("profile_"+k);
+    if(el && el.value !== "") profileDraft[k] = el.value;
+  });
+}
+
 function renderProfileForm(profile){
-  return PROFILE_FIELDS.map(f=>{
+  const base = PROFILE_FIELDS.map(f=>{
     if(f.type==="seg"){
       return `
         <div class="form-group">
@@ -1242,19 +1569,68 @@ function renderProfileForm(profile){
           </div>
         </div>`;
     }
+    // 优先用草稿值（未提交输入），其次用已保存值
+    const val = (profileDraft[f.key] !== undefined) ? profileDraft[f.key] : (profile[f.key]||"");
     return `
       <div class="form-group">
         <label><b>${f.label}</b></label>
-        <input class="form-input" type="number" id="profile_${f.key}" value="${profile[f.key]||""}" placeholder="${f.unit}" />
+        <input class="form-input" type="number" id="profile_${f.key}" value="${val}" placeholder="${f.unit}" />
       </div>`;
   }).join("");
+
+  // 减脂目标：追加目标体重 + 预计时长
+  let extra = "";
+  if(profile.goal === "lose"){
+    const tw = (profileDraft.targetWeight !== undefined) ? profileDraft.targetWeight : (profile.targetWeight||"");
+    const tww = (profileDraft.targetWeeks !== undefined) ? profileDraft.targetWeeks : (profile.targetWeeks||"");
+    extra = `
+      <div class="form-group">
+        <label><b>目标体重</b></label>
+        <input class="form-input" type="number" id="profile_targetWeight" value="${tw}" placeholder="kg" oninput="renderWeightHint()" />
+      </div>
+      <div class="form-group">
+        <label><b>预计减脂时长</b></label>
+        <input class="form-input" type="number" id="profile_targetWeeks" value="${tww}" placeholder="周" oninput="renderWeightHint()" />
+      </div>
+      <div id="weightHint" style="margin-top:8px;"></div>`;
+  }
+  return base + extra;
+}
+
+// 实时显示减脂合理性提示（目标体重 / 时长联动）
+function renderWeightHint(){
+  const box = document.getElementById("weightHint");
+  if(!box) return;
+  const p = loadProfile();
+  const curW = parseFloat(document.getElementById("profile_weight")?.value) || p.weight;
+  const tgtW = parseFloat(document.getElementById("profile_targetWeight")?.value);
+  const weeks = parseFloat(document.getElementById("profile_targetWeeks")?.value);
+  if(!curW || !tgtW){
+    box.innerHTML = "";
+    return;
+  }
+  const r = validateWeightLoss(curW, tgtW, weeks);
+  const colorMap = {invalid:"#DC2626", "warn-fast":"#DC2626", "warn-slow":"#B45309", "ok":"#0F6E56", "hint":"#185FA5"};
+  const iconMap = {invalid:"⚠️", "warn-fast":"⚠️", "warn-slow":"💡", "ok":"✓", "hint":"💡"};
+  box.innerHTML = `<div class="weight-hint" style="color:${colorMap[r.level]};background:${r.level==="ok"?"rgba(15,110,86,.08)":r.level==="warn-fast"||r.level==="invalid"?"rgba(220,38,38,.08)":"rgba(24,95,165,.08)"};font-size:12.5px;line-height:1.6;padding:10px 12px;border-radius:10px;">${iconMap[r.level]} ${r.msg}</div>`;
 }
 
 function pickProfileSeg(key, v){
+  // 重渲染前，先收集当前表单里未提交的输入，避免丢失
+  collectProfileDraft();
   const p = loadProfile();
   p[key] = v;
   saveProfile(p);
-  renderCalc(PLANS.find(x=>x.id===curPlanId));
+  if(pendingRecipeAfterInfo){
+    const hasProfile = p.gender && p.age && p.height && p.weight;
+    if(hasProfile){ openRecipe(); return; }
+  }
+  // 根据当前页面重渲染对应表单：我的面板 vs 计算页
+  if(curScreen === "me"){
+    editMeProfile();
+  } else {
+    renderCalc(PLANS.find(x=>x.id===curPlanId));
+  }
 }
 
 function saveProfileForm(){
@@ -1265,7 +1641,28 @@ function saveProfileForm(){
       if(v) p[f.key] = parseFloat(v);
     }
   });
+  // 减脂专属字段
+  if(p.goal === "lose"){
+    const tw = document.getElementById("profile_targetWeight");
+    const tww = document.getElementById("profile_targetWeeks");
+    if(tw && tw.value) p.targetWeight = parseFloat(tw.value);
+    if(tww && tww.value) p.targetWeeks = parseFloat(tww.value);
+  }
+  // 减脂合理性校验：超安全速度时警告
+  if(p.goal === "lose" && p.weight && p.targetWeight && p.targetWeeks){
+    const r = validateWeightLoss(p.weight, p.targetWeight, p.targetWeeks);
+    if(r.level === "warn-fast" || r.level === "invalid"){
+      if(!confirm(r.msg + "\n\n仍要按当前设置保存吗？（建议调整目标体重或时长）")){
+        return;
+      }
+    }
+  }
   saveProfile(p);
+  profileDraft = {};
+  if(pendingRecipeAfterInfo){
+    const hasProfile = p.gender && p.age && p.height && p.weight;
+    if(hasProfile){ openRecipe(); return; }
+  }
   renderCalc(PLANS.find(x=>x.id===curPlanId));
 }
 
@@ -1379,18 +1776,18 @@ function calcResult(id){
       extra = `按总能量 ${Math.round(tdee)} 大卡，供能比取中值：碳水 57.5%、蛋白 12.5%、脂肪 25%（官方区间 50–65%/10–15%/20–30%）。`;
       break;
     }
-    case "zengji-jianzhi":{
+    case "zengji-yingyu":{
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB["zengji-jianzhi"]||{})[tl] || 3.0;
+      const carbK = (ACT_CARB["zengji-yingyu"]||{})[tl] || 5.0;
       const actK = ACT_FACTOR[tl] || 1.55;
       const tdee = bmr * actK;
-      const deficit = 250;  // 200–300 取中值
-      const intake = tdee - deficit;
+      const surplus = 400;  // 300–500 取中值
+      const intake = tdee + surplus;
       carb = w * carbK;
-      protein = w * 1.6;      // 1.2–2 取中值
-      fat = w * 0.7;          // 0.6–0.8 取中值
+      protein = w * 1.8;      // 1.6–2.0 取中值
+      fat = w * 0.8;          // 0.6–1.0 取中值
       kcal = intake;
-      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），扣 200–300 小缺口后摄入≈${Math.round(intake)} 大卡，蛋白 1.6g/kg、脂肪 0.7g/kg 起步。核心：小缺口 + 保训练强度，力量涨肌肉就在长。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），加 300–500 盈余后摄入≈${Math.round(intake)} 大卡，蛋白 1.8g/kg、脂肪 0.8g/kg 起步。核心：热量盈余 + 足量蛋白碳水，配合渐进超负荷力量训练稳步增肌。`;
       break;
     }
   }
@@ -1424,7 +1821,7 @@ const QUIZ_ENTRY = {
   ]
 };
 
-// 个人信息题（第 2~6 题，三目标通用，填完即写入个人信息）
+// 个人信息题（三目标通用，填完即写入个人信息）
 const QUIZ_INFO = [
   {key:"gender", q:"你的性别是？", type:"seg", opts:[
     {v:"male", label:"男"}, {v:"female", label:"女"}
@@ -1438,6 +1835,12 @@ const QUIZ_INFO = [
     {v:"mod",   label:"中度 · 每周 3–4 练"},
     {v:"high",  label:"高强度 · 每周 5 练以上"}
   ]}
+];
+
+// 减脂专属信息题（目标体重 / 预计时长，插在体重之后）
+const QUIZ_INFO_LOSE = [
+  {key:"targetWeight", q:"你的目标体重是多少？", type:"num", unit:"kg"},
+  {key:"targetWeeks",   q:"你希望用多久达到目标？（周）", type:"num", unit:"周", hint:true}
 ];
 
 // 各目标分支的专属题目（个人信息题之后按目标进入对应分支）
@@ -1477,32 +1880,48 @@ function goRecommend(){
   quizGoal = null;
   quizList = [];
   Object.keys(quizAns).forEach(k=>delete quizAns[k]);
+  // 预填已有个人信息：已填过的字段不再重复询问（目标题始终保留，用户可重选）
+  const p = loadProfile();
+  QUIZ_INFO.forEach(f=>{ if(p[f.key] !== undefined && p[f.key] !== "") quizAns[f.key] = p[f.key]; });
+  QUIZ_INFO_LOSE.forEach(f=>{ if(p[f.key] !== undefined && p[f.key] !== "") quizAns[f.key] = p[f.key]; });
   renderQuiz();
   go('quiz');
 }
 
+// 生成完整问卷题目序列：目标题 + 未填的通用信息题 + (未填的减脂专属信息题) + 分支题
+function getQuizItems(){
+  const items = [QUIZ_ENTRY, ...QUIZ_INFO.filter(f=>!(f.key in quizAns))];
+  if(quizGoal === "lose"){
+    // 减脂：追加未填的目标体重/时长
+    const loseExtra = QUIZ_INFO_LOSE.filter(f=>!(f.key in quizAns));
+    items.push(...loseExtra);
+  }
+  items.push(...quizList);
+  return items;
+}
+
 function renderQuiz(){
-  // 总题数 = 1(目标) + QUIZ_INFO.length(个人信息) + quizList.length(分支)
-  const total = 1 + QUIZ_INFO.length + quizList.length;
+  const items = getQuizItems();
+  const total = items.length;
   if(quizIdx >= total){
     renderQuizResult();
     return;
   }
-  let item;
-  if(quizIdx === 0) item = QUIZ_ENTRY;
-  else if(quizIdx <= QUIZ_INFO.length) item = QUIZ_INFO[quizIdx - 1];
-  else item = quizList[quizIdx - 1 - QUIZ_INFO.length];
-
+  const item = items[quizIdx];
   const progress = Math.round((quizIdx/total)*100);
 
   if(item.type === "num"){
     // 数字输入题
+    const hint = item.hint ? `<div class="quiz-hint" id="quizNumHint" style="font-size:12.5px;color:#185FA5;margin-top:10px;line-height:1.6;"></div>` : "";
     document.getElementById("quizBody").innerHTML = `
       <div class="quiz-progress"><div class="bar" style="width:${progress}%"></div></div>
       <div class="quiz-q">${item.q}</div>
-      <input class="form-input" type="number" id="quizNum" inputmode="decimal" placeholder="${item.unit}" style="font-size:18px;padding:14px;" />
+      <input class="form-input" type="number" id="quizNum" inputmode="decimal" placeholder="${item.unit}" style="font-size:18px;padding:14px;" oninput="onQuizNumInput('${item.key}')" />
+      ${hint}
       <button class="btn-primary" style="margin-top:16px;" onclick="submitQuizNum('${item.key}')">下一步</button>
     `;
+    // 渲染减脂时长提示
+    if(item.hint) onQuizNumInput(item.key);
   } else {
     // 选择题
     document.getElementById("quizBody").innerHTML = `
@@ -1515,21 +1934,61 @@ function renderQuiz(){
   }
 }
 
+// 数字题输入时的实时提示（减脂时长题给出权威建议）
+function onQuizNumInput(key){
+  const hintBox = document.getElementById("quizNumHint");
+  if(!hintBox) return;
+  if(key === "targetWeeks"){
+    const p = loadProfile();
+    const curW = p.weight;
+    const tgtW = quizAns["targetWeight"];
+    if(curW && tgtW){
+      const r = validateWeightLoss(curW, tgtW, null);
+      hintBox.innerHTML = `💡 ${r.msg}`;
+    } else {
+      hintBox.innerHTML = "";
+    }
+    return;
+  }
+  if(key === "targetWeight"){
+    const p = loadProfile();
+    const curW = p.weight;
+    const v = parseFloat(document.getElementById("quizNum").value);
+    if(curW && v && v < curW){
+      const diff = curW - v;
+      const wMin = Math.ceil(diff / WEIGHT_LOSS.maxKgPerWeek);
+      const wMax = Math.round(diff / WEIGHT_LOSS.minKgPerWeek);
+      hintBox.innerHTML = `💡 需减 ${diff.toFixed(1)}kg，按 WHO 建议（0.5–1kg/周），合理时长约 ${wMin}–${wMax} 周。`;
+    } else if(curW && v && v >= curW){
+      hintBox.innerHTML = `⚠️ 目标体重应低于当前体重 ${curW}kg（减脂目标下）。`;
+    } else {
+      hintBox.innerHTML = "";
+    }
+  }
+}
+
 function pickQuiz(v){
   if(quizIdx === 0){
     // 第 1 题：目标，切换分支
     quizGoal = v;
     quizList = QUIZ_FLOW[v] || [];
     quizAns["goal"] = v;
-  } else if(quizIdx <= QUIZ_INFO.length){
-    // 个人信息题（seg 型）：记录并写入个人信息
-    const info = QUIZ_INFO[quizIdx - 1];
-    quizAns[info.key] = v;
+    // 记录目标到个人信息
     const p = loadProfile();
-    p[info.key] = v;
+    p.goal = v;
     saveProfile(p);
   } else {
-    quizAns[quizList[quizIdx - 1 - QUIZ_INFO.length].q] = v;
+    const items = getQuizItems();
+    const item = items[quizIdx];
+    if(item.key){
+      // 个人信息题（含减脂专属）：记录并写入个人信息
+      quizAns[item.key] = v;
+      const p = loadProfile();
+      p[item.key] = v;
+      saveProfile(p);
+    } else {
+      quizAns[item.q] = v;
+    }
   }
   quizIdx++;
   renderQuiz();
@@ -1540,10 +1999,25 @@ function submitQuizNum(key){
   if(v === "" || v === null){
     return; // 未填不跳转
   }
-  quizAns[key] = parseFloat(v);
+  const num = parseFloat(v);
+  quizAns[key] = num;
   const p = loadProfile();
-  p[key] = parseFloat(v);
+  p[key] = num;
   saveProfile(p);
+
+  // 减脂时长校验：超出安全速度时给警告并阻断
+  if(key === "targetWeeks" && quizGoal === "lose"){
+    const curW = p.weight;
+    const tgtW = p.targetWeight;
+    if(curW && tgtW){
+      const r = validateWeightLoss(curW, tgtW, num);
+      if(r.level === "warn-fast" || r.level === "invalid"){
+        if(!confirm(r.msg + "\n\n仍要按这个时长继续吗？")){
+          return;
+        }
+      }
+    }
+  }
   quizIdx++;
   renderQuiz();
 }
@@ -1561,7 +2035,7 @@ function renderQuizResult(){
     <div class="quiz-alt">
       <div class="alt-title">也可以看看这些：</div>
       ${alts.map(a=>`
-        <div class="alt-card" onclick="setCurrentPlan('${a.id}');openPlan('${a.id}')">
+        <div class="alt-card" onclick="setCurrentPlan('${a.id}');openPlan('${a.id}','home')">
           <div>
             <div class="ac-name">${a.name}</div>
             <div class="ac-desc">${a.desc}</div>
@@ -1579,7 +2053,7 @@ function renderQuizResult(){
       <div class="why">
         <b>为什么推荐它：</b><br>${rec.reason}
       </div>
-      <button class="btn-primary" onclick="setCurrentPlan('${p.id}');openPlan('${p.id}')">查看方案详情</button>
+      <button class="btn-primary" onclick="setCurrentPlan('${p.id}');openPlan('${p.id}','home')">查看方案详情</button>
       ${altHtml}
       <button class="form-input" style="margin-top:12px;background:var(--card);color:var(--brand);border:1px solid var(--brand);cursor:pointer;" onclick="goRecommend()">重新测一次</button>
     </div>
@@ -1593,16 +2067,23 @@ function recommendPlan(){
   if(goal==="health"){
     return {id:"dietary-guideline", reason:"你想吃得均衡健康，中国居民膳食指南是最通用的营养基线，无需训练门槛，所有人都适用。"};
   }
-  // 增肌 → 增肌减脂同步法
+  // 增肌 → 增肌盈余法
   if(goal==="muscle"){
-    return {id:"zengji-jianzhi", reason:"你想增肌，谭成义增肌减脂同步法用小缺口+保训练强度，力量在涨肌肉就在长，同时不挨饿不掉肌肉，适合有训练基础、想边增边减的你。"};
+    return {id:"zengji-yingyu", reason:"你想增肌，增肌盈余法采用 ISSN 与卫健委的权威标准：热量盈余 300–500 大卡、蛋白 1.6–2g/kg、碳水供能比 60–65%，配合渐进超负荷力量训练，把盈余转化为肌肉。"};
   }
   // 减脂分支
   if(goal==="lose"){
     const act = quizAns["actLevel"];
     const stuck = quizAns["你现在减脂遇到什么情况？"];
     const style = quizAns["你更想要哪种执行方式？"];
+    const curW = quizAns["weight"];
+    const tgtW = quizAns["targetWeight"];
+    const needLose = (curW && tgtW && tgtW < curW) ? (curW - tgtW) : null;
 
+    // 大基数（需减 >15kg）优先精确控制的 532
+    if(needLose && needLose > 15){
+      return {id:"five32", reason:`你需要减约 ${needLose.toFixed(0)}kg，属于较大基数。532 碳水渐降法计算步骤清晰、每周复盘调碳水，更适合大基数稳步减脂、避免反弹。`};
+    }
     // 训练强度高 + 之前低碳反弹 → 三倍碳水
     if(act==="high" && stuck==="rebound"){
       return {id:"triple-carb", reason:"你训练强度高、但之前低碳减脂状态差易反弹，三倍碳水法靠高碳水支撑高强度训练，用训练消耗制造缺口，适合你。"};
@@ -1668,6 +2149,8 @@ function renderMe(){
           <div class="me-row"><span class="lbl"><span class="ic">${ICONS.age}</span>年龄</span><span class="val">${p.age?p.age+" 岁":"未填写"}</span></div>
           <div class="me-row"><span class="lbl"><span class="ic">${ICONS.height}</span>身高</span><span class="val">${p.height?p.height+" cm":"未填写"}</span></div>
           <div class="me-row"><span class="lbl"><span class="ic">${ICONS.weight}</span>体重</span><span class="val">${p.weight?p.weight+" kg":"未填写"}</span></div>
+          ${p.goal==="lose" && p.targetWeight ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>目标体重</span><span class="val">${p.targetWeight} kg</span></div>` : ""}
+          ${p.goal==="lose" && p.targetWeeks ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>预计时长</span><span class="val">${p.targetWeeks} 周</span></div>` : ""}
           <div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>活动水平</span><span class="val">${actTxt}</span></div>
           <div class="me-row"><span class="lbl"></span><span class="act" onclick="editMeProfile()">编辑</span></div>
         ` : `
@@ -1699,6 +2182,11 @@ function renderMe(){
 
 function editMeProfile(){
   const p = loadProfile();
+  // 兜底：goal 缺失时根据当前方案推断（老用户兼容）
+  if(!p.goal){
+    const cp = PLANS.find(x=>x.id===getCurrentPlanId());
+    if(cp) p.goal = cp.goal === "减脂" ? "lose" : (cp.goal === "增肌" ? "muscle" : "health");
+  }
   document.getElementById("meProfileSection").innerHTML = `
     <div class="st">编辑个人信息</div>
     <div class="me-card">
@@ -1719,7 +2207,14 @@ function saveMeProfile(){
       if(v) p[f.key] = parseFloat(v);
     }
   });
+  if(p.goal === "lose"){
+    const tw = document.getElementById("profile_targetWeight");
+    const tww = document.getElementById("profile_targetWeeks");
+    if(tw && tw.value) p.targetWeight = parseFloat(tw.value);
+    if(tww && tww.value) p.targetWeeks = parseFloat(tww.value);
+  }
   saveProfile(p);
+  profileDraft = {};
   renderMe();
 }
 
@@ -1753,6 +2248,10 @@ function importData(input){
         PROFILE_FIELDS.forEach(f=>{
           if(profile[f.key] !== undefined) p[f.key] = profile[f.key];
         });
+        // 减脂专属字段 + 目标
+        ["goal","targetWeight","targetWeeks"].forEach(k=>{
+          if(profile[k] !== undefined) p[k] = profile[k];
+        });
         saveProfile(p);
         renderMe();
         alert("导入成功，个人信息已更新。");
@@ -1769,13 +2268,539 @@ function importData(input){
 
 function confirmClear(){
   if(confirm("确定要清空所有本地数据吗？此操作不可恢复。")){
-    localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(PROFILE_KEY);       // 个人信息
+    localStorage.removeItem(CURRENT_PLAN_KEY);  // 当前方案
+    localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
+    // 重置会话内状态
+    compareSel = [];
+    compareMode = false;
+    curPlanId = null;
+    detailFrom = "list";
     renderMe();
-    alert("已清空本地数据。");
+    renderCurrentPlan();  // 刷新首页，回到「问卷 + 方案选择」状态
+    go('home');           // 跳回首页
+    alert("已清空本地数据，将回到初始状态。");
   }
 }
 
 function showMePlaceholder(){}
+
+/* ==================================================================
+   推荐食谱 & 食物热量计算
+   ================================================================== */
+
+/* ---- 食物数据（内置 FOODS + 用户自定义） ---- */
+const CUSTOM_FOOD_KEY = "lizi_custom_foods";
+function loadCustomFoods(){
+  try{ return JSON.parse(localStorage.getItem(CUSTOM_FOOD_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveCustomFoods(list){ localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }
+function allFoods(){
+  return FOODS.concat(loadCustomFoods());
+}
+function findFood(name){
+  return allFoods().find(f=>f.name===name);
+}
+function foodKcal(f, grams){
+  // 按每 100g 营养值，换算成实际克数的热量与三大营养素
+  return {
+    kcal: f.kcal * grams / 100,
+    protein: f.protein * grams / 100,
+    carb: f.carb * grams / 100,
+    fat: f.fat * grams / 100
+  };
+}
+
+/* ---- 计算目标营养素（复用一个纯净函数，供食谱匹配用） ---- */
+function computeTarget(planId, profile){
+  const w = profile.weight;
+  const g = profile.gender, age = profile.age, h = profile.height;
+  const bmr = 10*w + 6.25*h - 5*age + (g==="male"?5:-161);
+  let carb=0, protein=0, fat=0, kcal=0;
+  switch(planId){
+    case "month3": case "carb-descend": {
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB[planId]||{})[tl] || 2.8;
+      carb = w*carbK; protein = w*1.5; fat = w*0.7; kcal = carb*4+protein*4+fat*9; break;
+    }
+    case "triple-carb": {
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB[planId]||{})[tl] || 3.0;
+      carb = w*carbK; protein = w*1.6; fat = w*0.8; kcal = carb*4+protein*4+fat*9; break;
+    }
+    case "five32": {
+      const base = segState.base || "big";
+      const act = profile.actLevel || "sed";
+      const def = base==="big"?500:300;
+      const actK = ACT_FACTOR[act] || 1.2;
+      const tdee = bmr*actK; const intake = tdee-def;
+      carb = intake*0.5/4; protein = intake*0.3/4; fat = intake*0.2/9; kcal = intake; break;
+    }
+    case "kai-carb-cycle": {
+      const bt = segState.bodyType || "endo";
+      const p = PLANS.find(x=>x.id==="kai-carb-cycle");
+      const opt = p.inputs[0].options.find(o=>o.v===bt);
+      carb = w*opt.carb; fat = w*opt.fat; protein = w*1.0; kcal = carb*4+protein*4+fat*9; break;
+    }
+    case "dietary-guideline": {
+      const act = profile.actLevel || "sed";
+      const actK = ACT_FACTOR[act] || 1.2; const tdee = bmr*actK;
+      kcal = tdee; carb = tdee*0.575/4; protein = tdee*0.125/4; fat = tdee*0.25/9; break;
+    }
+    case "zengji-yingyu": {
+      const tl = profile.actLevel || "mod";
+      const carbK = (ACT_CARB[planId]||{})[tl] || 5.0;
+      const actK = ACT_FACTOR[tl] || 1.55; const tdee = bmr*actK;
+      const intake = tdee+400;
+      carb = w*carbK; protein = w*1.8; fat = w*0.8; kcal = intake; break;
+    }
+  }
+  return { carb, protein, fat, kcal };
+}
+
+/* ---- 推荐食谱页 ---- */
+let recipeTplIdx = 0;
+let recipePlanId = "";
+let recipeMeals = null;   // 当前展示的一日三餐（已缩放）
+let recipeCustom = null;  // 用户手动替换后的三餐
+
+function planGoal(planId){
+  const p = PLANS.find(x=>x.id===planId);
+  return p ? p.goal : "减脂";
+}
+
+/* 按用户体重（70kg 基准）缩放模板 */
+function scaleTemplate(tpl, weight){
+  const ratio = (weight || 70) / 70;
+  const out = {goal:tpl.goal, name:tpl.name, meals:{}};
+  Object.keys(tpl.meals).forEach(m=>{
+    out.meals[m] = tpl.meals[m].map(it=>({n:it.n, g:Math.round(it.g*ratio)}));
+  });
+  return out;
+}
+
+function mealTotal(items){
+  let kcal=0, p=0, c=0, f=0;
+  items.forEach(it=>{
+    const fd = findFood(it.n);
+    if(fd){
+      const v = foodKcal(fd, it.g);
+      kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
+    }
+  });
+  return {kcal, protein:p, carb:c, fat:f};
+}
+
+function openRecipe(){
+  const id = getCurrentPlanId();
+  const profile = loadProfile();
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
+  if(!id){
+    alert("请先选择一个饮食方案");
+    go('list');
+    return;
+  }
+  if(!hasProfile){
+    alert("请先完善个人信息，才能为你推荐食谱");
+    go('calc');
+    return;
+  }
+  recipePlanId = id;
+  recipeTplIdx = 0;
+  recipeCustom = null;
+  buildRecipe();
+  go('recipe');
+}
+
+function buildRecipe(){
+  const profile = loadProfile();
+  const target = computeTarget(recipePlanId, profile);
+  const goal = planGoal(recipePlanId);
+  const tpls = MEAL_TEMPLATES.filter(t=>t.goal===goal);
+  const tpl = tpls[recipeTplIdx % tpls.length];
+
+  // 若用户已手动替换，用替换后的；否则用模板
+  recipeMeals = recipeCustom ? recipeCustom : scaleTemplate(tpl, profile.weight);
+
+  const plan = PLANS.find(x=>x.id===recipePlanId);
+  const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
+    const t = mealTotal(recipeMeals.meals[m]);
+    acc.kcal+=t.kcal; acc.protein+=t.protein; acc.carb+=t.carb; acc.fat+=t.fat;
+    return acc;
+  }, {kcal:0,protein:0,carb:0,fat:0});
+
+  const pct = (val, tgt)=> Math.min(100, Math.round(val/tgt*100));
+
+  document.getElementById("recipeBody").innerHTML = `
+    <div class="recipe-target-card">
+      <div class="rt-label">今日营养目标 · ${plan.name}</div>
+      <div class="rt-name">${planGoal(recipePlanId)==="增肌"?"增肌期":"减脂期"}推荐食谱</div>
+      <div class="rt-macro">
+        <div class="m">碳水<b>${Math.round(target.carb)}g</b></div>
+        <div class="m">蛋白<b>${Math.round(target.protein)}g</b></div>
+        <div class="m">脂肪<b>${Math.round(target.fat)}g</b></div>
+        <div class="m">热量<b>${Math.round(target.kcal)}kcal</b></div>
+      </div>
+    </div>
+
+    ${tpls.length>1 ? `
+    <div class="recipe-tpl-switch" id="recipeTplSwitch">
+      ${tpls.map((t,i)=>`<span class="tpl-chip ${i===recipeTplIdx?"on":""}" onclick="switchRecipeTpl(${i})">${t.name}</span>`).join("")}
+    </div>` : ""}
+
+    <div id="recipeMeals"></div>
+
+    <div class="recipe-sum" id="recipeSum"></div>
+
+    <button class="btn-primary" style="margin-top:16px;" onclick="openFoodCalc()">用计算器精确核对 / 添加食物</button>
+    <button class="add-custom" style="margin-top:10px;" onclick="resetRecipe()">恢复模板推荐</button>
+  `;
+  renderRecipeMeals();
+}
+
+function switchRecipeTpl(i){
+  recipeTplIdx = i;
+  recipeCustom = null;  // 切换模板时清除手动替换
+  buildRecipe();
+}
+
+function renderRecipeMeals(){
+  const box = document.getElementById("recipeMeals");
+  const mealColors = {"早餐":"#F59E0B","午餐":"#4A3FA8","晚餐":"#0F6E56"};
+  box.innerHTML = Object.keys(recipeMeals.meals).map(m=>`
+    <div class="meal-block">
+      <div class="meal-title"><span class="mt-dot" style="background:${mealColors[m]||"#4A3FA8"};"></span>${m}</div>
+      ${recipeMeals.meals[m].map(it=>{
+        const fd = findFood(it.n);
+        const v = fd ? foodKcal(fd, it.g) : {kcal:0,protein:0,carb:0,fat:0};
+        return `
+        <div class="food-row">
+          <div style="flex:1;">
+            <div class="fr-name">${it.n}</div>
+            <div class="fr-meta">${it.g}g · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
+          </div>
+          <div class="fr-kcal">${Math.round(v.kcal)} kcal</div>
+          <div class="fr-del" onclick="removeMealItem('${m}','${it.n}')" title="移除">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </div>
+        </div>`;
+      }).join("")}
+      <div class="food-row" style="border-style:dashed;justify-content:center;color:var(--brand);cursor:pointer;" onclick="addMealItem('${m}')">
+        <span style="font-size:13px;font-weight:600;">＋ 添加食物到${m}</span>
+      </div>
+    </div>`).join("");
+  renderRecipeSum();
+}
+
+function renderRecipeSum(){
+  const target = computeTarget(recipePlanId, loadProfile());
+  const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
+    const t = mealTotal(recipeMeals.meals[m]);
+    acc.kcal+=t.kcal; acc.protein+=t.protein; acc.carb+=t.carb; acc.fat+=t.fat;
+    return acc;
+  }, {kcal:0,protein:0,carb:0,fat:0});
+  const pct = v=>Math.min(100, Math.round(v*100));
+  document.getElementById("recipeSum").innerHTML = `
+    <div class="rs-item"><div class="n">${Math.round(totals.kcal)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(totals.kcal/target.kcal)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(totals.carb)}/${Math.round(target.carb)}</div><div class="u">碳水 g</div><div class="bar"><i style="width:${pct(totals.carb/target.carb)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(totals.protein)}/${Math.round(target.protein)}</div><div class="u">蛋白 g</div><div class="bar"><i style="width:${pct(totals.protein/target.protein)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(totals.fat)}/${Math.round(target.fat)}</div><div class="u">脂肪 g</div><div class="bar"><i style="width:${pct(totals.fat/target.fat)}%;"></i></div></div>
+  `;
+}
+
+function removeMealItem(meal, name){
+  recipeMeals.meals[meal] = recipeMeals.meals[meal].filter(it=>it.n!==name);
+  recipeCustom = recipeMeals;
+  renderRecipeMeals();
+}
+
+function resetRecipe(){
+  recipeCustom = null;
+  buildRecipe();
+}
+
+/* 从食物选择器往某餐添加食物 */
+let addMealTarget = "";
+function addMealItem(meal){
+  addMealTarget = meal;
+  renderFoodPicker(meal);
+}
+
+function renderFoodPicker(meal){
+  // 在对应餐下方内联渲染一个简易选择器
+  const box = document.getElementById("recipeMeals");
+  const foods = allFoods();
+  const pickerHtml = `
+    <div class="food-picker" style="margin-top:6px;">
+      <div class="fp-name">添加到「${meal}」</div>
+      <div style="margin-bottom:10px;">
+        <input id="mealFoodSearch" style="width:100%;padding:10px 14px;border-radius:11px;border:1px solid var(--border);background:var(--card);font-size:14px;outline:none;" placeholder="搜索食物..." oninput="renderMealFoodOptions('${meal}')" />
+      </div>
+      <div id="mealFoodOptions" style="max-height:200px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        ${foods.slice(0,40).map(f=>`
+          <div class="food-item" onclick="pickMealFood('${meal}','${f.name}')">
+            <div class="fi-name">${f.name}</div>
+            <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
+          </div>`).join("")}
+      </div>
+      <div class="fp-row" style="margin-top:12px;">
+        <input id="mealFoodGrams" type="number" placeholder="克数" value="100" />
+        <span class="fp-unit">克</span>
+      </div>
+      <div class="fp-btns">
+        <button class="fp-add" onclick="confirmAddMealFood()">添加</button>
+        <button class="fp-cancel" onclick="renderRecipeMeals()">取消</button>
+      </div>
+    </div>`;
+  // 把 picker 插到「添加食物」按钮位置（替换该按钮）
+  box.innerHTML = box.innerHTML.replace(
+    new RegExp(`(<div class="food-row" style="border-style:dashed;justify-content:center;color:var\\(--brand\\);cursor:pointer;" onclick="addMealItem\\('${meal}'\\)">[\\s\\S]*?<\\/div>)`),
+    pickerHtml
+  );
+  window.pickedMealFood = "";
+}
+
+let pickedMealFood = "";
+function pickMealFood(meal, name){
+  pickedMealFood = name;
+  document.querySelectorAll("#mealFoodOptions .food-item").forEach(el=>el.classList.remove("sel"));
+  // 简单高亮
+}
+function renderMealFoodOptions(meal){
+  const kw = document.getElementById("mealFoodSearch").value.trim();
+  const foods = allFoods().filter(f=>!kw || f.name.includes(kw));
+  document.getElementById("mealFoodOptions").innerHTML = foods.slice(0,40).map(f=>`
+    <div class="food-item ${pickedMealFood===f.name?"sel":""}" onclick="pickMealFood('${meal}','${f.name}')">
+      <div class="fi-name">${f.name}</div>
+      <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
+    </div>`).join("");
+}
+function confirmAddMealFood(){
+  const name = pickedMealFood || (document.getElementById("mealFoodSearch") && document.getElementById("mealFoodSearch").value.trim());
+  const grams = parseFloat(document.getElementById("mealFoodGrams").value) || 100;
+  const fd = findFood(name);
+  if(!fd){ alert("请先选择一个食物"); return; }
+  recipeMeals.meals[addMealTarget].push({n:name, g:grams});
+  recipeCustom = recipeMeals;
+  renderRecipeMeals();
+}
+
+/* ---- 食物计算器页 ---- */
+let foodCat = "全部";
+let foodKw = "";
+let pickedFood = null;
+let foodList = [];        // {name, grams}
+let foodPhotos = [];      // 拍照存档（dataURL）
+
+function openFoodCalc(){
+  renderFoodCalc();
+  go('food');
+}
+
+function renderFoodCalc(){
+  const cats = ["全部"].concat(Array.from(new Set(allFoods().map(f=>f.category))));
+  const foods = allFoods().filter(f=>{
+    const okCat = foodCat==="全部" || f.category===foodCat;
+    const okKw = !foodKw || f.name.includes(foodKw);
+    return okCat && okKw;
+  });
+
+  document.getElementById("foodBody").innerHTML = `
+    <div class="food-search">
+      <input id="foodSearchInput" placeholder="搜索食物名称..." value="${foodKw}" oninput="foodKw=this.value;renderFoodCalc()" />
+    </div>
+    <div class="food-cats">
+      ${cats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" onclick="setFoodCat('${c}')">${c}</span>`).join("")}
+    </div>
+    <div class="food-grid" id="foodGrid">
+      ${foods.map(f=>`
+        <div class="food-item ${pickedFood===f.name?"sel":""}" onclick="pickFoodItem('${f.name}')">
+          <div class="fi-name">${f.name}</div>
+          <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
+          <div class="fi-kcal" style="font-size:11px;">蛋白${f.protein} · 碳水${f.carb} · 脂肪${f.fat}</div>
+        </div>`).join("")}
+    </div>
+
+    <div id="foodPickerBox"></div>
+
+    <button class="food-photo-btn" onclick="document.getElementById('photoInput').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      拍照 / 上传食物图片（存档，暂不自动识别）
+    </button>
+    <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addFoodPhotos(this)" />
+    <div class="photo-previews" id="photoPreviews"></div>
+
+    <div class="food-list-summary" id="foodListSummary"></div>
+
+    <div class="food-total" id="foodTotal"></div>
+
+    <button class="add-custom" onclick="toggleCustomForm()">＋ 添加自定义食物</button>
+    <div id="customFormBox"></div>
+  `;
+
+  renderFoodPickerBox();
+  renderFoodListSummary();
+  renderFoodTotal();
+  renderPhotoPreviews();
+  renderCustomForm();
+}
+
+function setFoodCat(c){ foodCat = c; pickedFood = null; renderFoodCalc(); }
+
+function pickFoodItem(name){
+  pickedFood = name;
+  renderFoodPickerBox();
+  // 更新高亮
+  document.querySelectorAll("#foodGrid .food-item").forEach(el=>el.classList.remove("sel"));
+  const items = document.querySelectorAll("#foodGrid .food-item");
+  items.forEach(el=>{ if(el.querySelector(".fi-name") && el.querySelector(".fi-name").textContent===name) el.classList.add("sel"); });
+}
+
+function renderFoodPickerBox(){
+  const box = document.getElementById("foodPickerBox");
+  if(!box) return;
+  if(!pickedFood){
+    box.innerHTML = `<div style="font-size:13px;color:var(--sub);text-align:center;padding:8px 0 14px;">点上方食物，输入克数添加到清单</div>`;
+    return;
+  }
+  const fd = findFood(pickedFood);
+  box.innerHTML = `
+    <div class="food-picker">
+      <div class="fp-name">${fd.name} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${fd.kcal} kcal / 100g）</span></div>
+      <div class="fp-row">
+        <input id="foodGramsInput" type="number" placeholder="克数" value="100" />
+        <span class="fp-unit">克</span>
+      </div>
+      <div class="fp-btns">
+        <button class="fp-add" onclick="addFoodToList()">加入清单</button>
+        <button class="fp-cancel" onclick="pickedFood=null;renderFoodCalc()">取消</button>
+      </div>
+    </div>`;
+}
+
+function addFoodToList(){
+  const grams = parseFloat(document.getElementById("foodGramsInput").value) || 100;
+  const fd = findFood(pickedFood);
+  if(!fd || grams<=0) return;
+  foodList.push({name:fd.name, grams});
+  pickedFood = null;
+  renderFoodCalc();
+}
+
+function removeFoodFromList(i){
+  foodList.splice(i,1);
+  renderFoodCalc();
+}
+
+function renderFoodListSummary(){
+  const box = document.getElementById("foodListSummary");
+  if(!box) return;
+  if(foodList.length===0){
+    box.innerHTML = `<div class="fls-t">已选食物</div><div class="fls-empty">还没有添加食物，点上方食物加入清单</div>`;
+    return;
+  }
+  box.innerHTML = `
+    <div class="fls-t">已选食物（${foodList.length} 项）</div>
+    ${foodList.map((it,i)=>{
+      const fd = findFood(it.name);
+      const v = foodKcal(fd, it.grams);
+      return `
+      <div class="food-row" style="padding:10px 14px;">
+        <div style="flex:1;">
+          <div class="fr-name" style="font-size:13px;">${it.name}</div>
+          <div class="fr-meta">${it.grams}g</div>
+        </div>
+        <div class="fr-kcal" style="font-size:13px;">${Math.round(v.kcal)} kcal</div>
+        <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+      </div>`;
+    }).join("")}
+  `;
+}
+
+function renderFoodTotal(){
+  const box = document.getElementById("foodTotal");
+  if(!box) return;
+  let kcal=0, p=0, c=0, f=0;
+  foodList.forEach(it=>{
+    const fd = findFood(it.name);
+    const v = foodKcal(fd, it.grams);
+    kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
+  });
+  box.innerHTML = `
+    <div class="ft-item"><div class="n">${Math.round(c)}</div><div class="u">碳水 g</div></div>
+    <div class="ft-item"><div class="n">${Math.round(p)}</div><div class="u">蛋白 g</div></div>
+    <div class="ft-item"><div class="n">${Math.round(f)}</div><div class="u">脂肪 g</div></div>
+    <div class="ft-kcal"><div class="n">${Math.round(kcal)}</div><div class="u">总热量 kcal</div></div>
+  `;
+}
+
+/* 拍照存档 */
+function addFoodPhotos(input){
+  const files = Array.from(input.files || []);
+  files.forEach(file=>{
+    const reader = new FileReader();
+    reader.onload = function(e){
+      foodPhotos.push(e.target.result);
+      renderPhotoPreviews();
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = "";
+}
+function renderPhotoPreviews(){
+  const box = document.getElementById("photoPreviews");
+  if(!box) return;
+  box.innerHTML = foodPhotos.map((src,i)=>`
+    <div class="pp">
+      <img src="${src}" />
+      <span class="pp-x" onclick="removePhoto(${i})">×</span>
+    </div>`).join("");
+}
+function removePhoto(i){ foodPhotos.splice(i,1); renderPhotoPreviews(); }
+
+/* 自定义食物 */
+let customFormOpen = false;
+function toggleCustomForm(){
+  customFormOpen = !customFormOpen;
+  renderFoodCalc();
+}
+function renderCustomForm(){
+  const box = document.getElementById("customFormBox");
+  if(!box) return;
+  if(!customFormOpen){ box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <div class="custom-form">
+      <div class="cf-t">添加自定义食物（每 100g）</div>
+      <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" /></div>
+      <div class="cf-row"><label>分类</label><input id="cfCat" placeholder="如：蛋白质" value="自定义" /></div>
+      <div class="cf-grid">
+        <div class="cf-row"><label>热量 kcal</label><input id="cfKcal" type="number" placeholder="0" /></div>
+        <div class="cf-row"><label>蛋白质 g</label><input id="cfProtein" type="number" placeholder="0" /></div>
+        <div class="cf-row"><label>碳水 g</label><input id="cfCarb" type="number" placeholder="0" /></div>
+        <div class="cf-row"><label>脂肪 g</label><input id="cfFat" type="number" placeholder="0" /></div>
+      </div>
+      <div class="fp-btns" style="margin-top:14px;">
+        <button class="fp-add" onclick="saveCustomFood()">保存</button>
+        <button class="fp-cancel" onclick="toggleCustomForm()">取消</button>
+      </div>
+    </div>`;
+}
+function saveCustomFood(){
+  const name = document.getElementById("cfName").value.trim();
+  const cat = document.getElementById("cfCat").value.trim() || "自定义";
+  const kcal = parseFloat(document.getElementById("cfKcal").value) || 0;
+  const protein = parseFloat(document.getElementById("cfProtein").value) || 0;
+  const carb = parseFloat(document.getElementById("cfCarb").value) || 0;
+  const fat = parseFloat(document.getElementById("cfFat").value) || 0;
+  if(!name){ alert("请填写食物名称"); return; }
+  const list = loadCustomFoods();
+  list.push({name, category:cat, kcal, protein, carb, fat});
+  saveCustomFoods(list);
+  customFormOpen = false;
+  alert(`已保存自定义食物「${name}」`);
+  renderFoodCalc();
+}
 
 /* ===== 初始化 ===== */
 renderFilters();
