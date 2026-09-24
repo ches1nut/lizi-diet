@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>🌰饮食</title>
+<title>🌰 diet</title>
 <style>
   :root{
     --brand:#26215C;
@@ -704,6 +704,25 @@
   }
   .intake-row .ir-del:hover{background:#FECACA;}
 
+  .food-mode-tabs{
+    display:flex; gap:6px; background:var(--bg); padding:4px; border-radius:14px; margin-bottom:14px;
+    border:1px solid var(--border);
+  }
+  .food-mode-tabs .fseg{
+    flex:1; padding:10px 0; border:none; border-radius:10px; cursor:pointer;
+    background:transparent; font-size:14px; font-weight:600; color:var(--sub); transition:.15s;
+  }
+  .food-mode-tabs .fseg.on{
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; box-shadow:var(--shadow-sm);
+  }
+  .food-cat-more{
+    border-style:dashed !important; color:var(--brand) !important; font-weight:600;
+  }
+  .food-summary-bar{
+    position:sticky; bottom:0; z-index:5;
+    background:var(--bg); padding-top:10px;
+  }
+
   .food-search{
     display:flex; gap:10px; margin-bottom:14px;
   }
@@ -729,14 +748,6 @@
   .food-item .fi-kcal b{color:var(--brand);}
   .food-item.sel{border-color:var(--brand); background:var(--brand-soft);}
   .combo-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
-  .combo-toggle{
-    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
-    margin-top:16px; padding:13px 16px; border-radius:14px; cursor:pointer;
-    border:1px dashed var(--brand-mid); background:var(--brand-soft);
-    font-size:13px; font-weight:600; color:var(--brand); transition:.15s;
-  }
-  .combo-toggle:hover{border-color:var(--brand); background:var(--brand-soft);}
-  .combo-toggle .ct-arrow{font-size:11px;}
   .combo-item{
     border:1px solid var(--border); border-radius:13px; padding:12px 14px;
     background:linear-gradient(135deg,var(--brand-soft),var(--card)); cursor:pointer; transition:.15s;
@@ -1045,7 +1056,7 @@
     <header class="navbar">
       <div class="brand">
         <div class="logo">🌰</div>
-        <div class="name">🌰饮食</div>
+        <div class="name">🌰 diet</div>
       </div>
       <button class="me-btn" onclick="showMe()" aria-label="我的">
         <svg viewBox="0 0 24 24" fill="none">
@@ -3170,7 +3181,7 @@ function renderMe(){
     <div class="me-section">
       <div class="st">关于</div>
       <div class="me-card">
-        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.logo}</span>🌰饮食</span><span class="val">v0.2</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.logo}</span>🌰 diet</span><span class="val">v0.2</span></div>
         <div class="me-row"><span class="lbl"><span class="ic">${ICONS.book}</span>方案数据来源</span><span class="val">谭成义、凯圣王、努力的橙子等公开教学 + ISSN/卫健委标准 + 中国居民膳食指南</span></div>
       </div>
     </div>
@@ -3967,7 +3978,8 @@ let pickedFood = null;
 let foodList = [];        // {name, grams} —— 作为「今天」的摄入编辑缓冲，变更即持久化到每日记录
 let foodPhotos = [];      // 拍照存档（dataURL）
 let comboTag = "全部";    // 套餐分类筛选
-let comboOpen = false;     // 套餐区块是否展开
+let foodMode = "food";     // 记录页顶部分段：food（记食物）| combo（一键套餐）
+let catsCollapsed = true;  // 分类 tag 是否折叠（默认收起只显示常用分类）
 
 // 模糊搜索别名：口语词 → 命中的品牌/分类关键词（搜「奶茶」「咖啡」等品类词也能找到对应品牌食物）
 const SEARCH_ALIASES = {
@@ -4049,20 +4061,32 @@ function openFoodCalc(){
 }
 
 function renderFoodCalc(){
-  const cats = ["全部"].concat(Array.from(new Set(allFoods().map(f=>f.category))));
+  const allCats = Array.from(new Set(allFoods().map(f=>f.category)));
+  // 常用分类：按食物数量降序取前 7 个（排除「全部」）
+  const catCount = {};
+  allFoods().forEach(f=>{ catCount[f.category]=(catCount[f.category]||0)+1; });
+  const topCats = allCats.slice().sort((a,b)=>(catCount[b]||0)-(catCount[a]||0)).slice(0,7);
+  const shownCats = catsCollapsed ? topCats : allCats;
+  const hasMore = allCats.length > topCats.length;
+
   const foods = allFoods().filter(f=>{
     const okCat = foodCat==="全部" || f.category===foodCat;
     const okKw = foodMatchKw(f, foodKw);
     return okCat && okKw;
   });
 
-  document.getElementById("foodBody").innerHTML = `
+  const searchBox = `
     <div class="food-search">
       <input id="foodSearchInput" placeholder="搜索食物名称..." value="${foodKw}" oninput="foodKw=this.value;renderFoodCalc()" />
-    </div>
-    <div class="food-note" style="font-size:11.5px;color:var(--sub);line-height:1.5;margin:2px 2px 10px;">数值为常见典型值范围（每 100g 可食部），因品种、做法不同有浮动，仅供参考。</div>
+    </div>`;
+
+  // 「记食物」分段主体
+  const foodSection = `
+    ${searchBox}
     <div class="food-cats">
-      ${cats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" onclick="setFoodCat('${c}')">${c}</span>`).join("")}
+      <span class="food-cat ${foodCat==="全部"?"on":""}" onclick="setFoodCat('全部')">全部</span>
+      ${shownCats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" onclick="setFoodCat('${c}')">${c}</span>`).join("")}
+      ${hasMore ? `<span class="food-cat food-cat-more ${catsCollapsed?"":"on"}" onclick="toggleCats()">${catsCollapsed ? `展开全部 ${allCats.length} 个 ▾` : "收起 ▲"}</span>` : ""}
     </div>
     <div class="food-grid" id="foodGrid">
       ${foods.map(f=>{
@@ -4080,28 +4104,42 @@ function renderFoodCalc(){
         </div>`;
       }).join("")}
     </div>
-
     <div id="foodPickerBox"></div>
-
     <button class="food-photo-btn" onclick="document.getElementById('photoInput').click()">
       <svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
       拍照 / 上传食物图片（存档，暂不自动识别）
     </button>
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addFoodPhotos(this)" />
     <div class="photo-previews" id="photoPreviews"></div>
-
-    <div class="food-list-summary" id="foodListSummary"></div>
-
-    <div class="food-total" id="foodTotal"></div>
-
     <button class="add-custom" onclick="toggleCustomForm()">＋ 添加自定义食物</button>
-    <div id="customFormBox"></div>
+    <div id="customFormBox"></div>`;
 
-    <button class="combo-toggle" onclick="toggleCombo()">
-      <span>🍱 一键套餐（点一下就加整套）</span>
-      <span class="ct-arrow" id="comboToggleArrow">${comboOpen?"▲":"▼"}</span>
-    </button>
-    <div id="comboBox"></div>
+  // 「一键套餐」分段主体
+  const comboTags = ["全部"].concat(Array.from(new Set(MEAL_COMBOS.map(c=>c.tag))));
+  const combos = MEAL_COMBOS.filter(c=>comboTag==="全部" || c.tag===comboTag);
+  const comboSection = `
+    <div class="food-cats">
+      ${comboTags.map(t=>`<span class="food-cat ${t===comboTag?"on":""}" onclick="setComboTag('${t}')">${t}</span>`).join("")}
+    </div>
+    <div class="combo-grid" id="comboGrid">
+      ${combos.map(c=>`
+        <div class="combo-item" onclick="addCombo(${MEAL_COMBOS.indexOf(c)})">
+          <div class="ci-name">${c.name}</div>
+          <div class="ci-sub">${c.items.map(it=>it.n.replace(/\(.*\)/,"").replace(/·.*/,"")).join(" + ")}</div>
+          <div class="ci-kcal">≈ ${comboKcal(c)} kcal</div>
+        </div>`).join("")}
+    </div>`;
+
+  document.getElementById("foodBody").innerHTML = `
+    <div class="food-mode-tabs">
+      <button class="fseg ${foodMode==="food"?"on":""}" onclick="setFoodMode('food')">🍽 记食物</button>
+      <button class="fseg ${foodMode==="combo"?"on":""}" onclick="setFoodMode('combo')">🍱 一键套餐</button>
+    </div>
+    ${foodMode==="food" ? foodSection : comboSection}
+    <div class="food-summary-bar" id="foodSummaryBar">
+      <div class="food-list-summary" id="foodListSummary"></div>
+      <div class="food-total" id="foodTotal"></div>
+    </div>
   `;
 
   renderFoodPickerBox();
@@ -4109,9 +4147,10 @@ function renderFoodCalc(){
   renderFoodTotal();
   renderPhotoPreviews();
   renderCustomForm();
-  renderComboBox();
 }
 
+function setFoodMode(m){ foodMode = m; renderFoodCalc(); }
+function toggleCats(){ catsCollapsed = !catsCollapsed; renderFoodCalc(); }
 function setFoodCat(c){ foodCat = c; pickedFood = null; renderFoodCalc(); }
 
 /* ---- 一键套餐（组合餐） ---- */
@@ -4128,32 +4167,6 @@ function comboKcal(combo){
     }
   });
   return Math.round(kcal);
-}
-function renderComboBox(){
-  const box = document.getElementById("comboBox");
-  if(!box) return;
-  if(!comboOpen){
-    box.innerHTML = "";
-    return;
-  }
-  const tags = ["全部"].concat(Array.from(new Set(MEAL_COMBOS.map(c=>c.tag))));
-  const combos = MEAL_COMBOS.filter(c=>comboTag==="全部" || c.tag===comboTag);
-  box.innerHTML = `
-    <div class="food-cats" style="margin-bottom:6px;">
-      ${tags.map(t=>`<span class="food-cat ${t===comboTag?"on":""}" onclick="setComboTag('${t}')">${t}</span>`).join("")}
-    </div>
-    <div class="combo-grid">
-      ${combos.map(c=>`
-        <div class="combo-item" onclick="addCombo(${MEAL_COMBOS.indexOf(c)})">
-          <div class="ci-name">${c.name}</div>
-          <div class="ci-sub">${c.items.map(it=>it.n.replace(/\(.*\)/,"").replace(/·.*/,"")).join(" + ")}</div>
-          <div class="ci-kcal">≈ ${comboKcal(c)} kcal</div>
-        </div>`).join("")}
-    </div>`;
-}
-function toggleCombo(){
-  comboOpen = !comboOpen;
-  renderFoodCalc();
 }
 function setComboTag(t){ comboTag = t; renderFoodCalc(); }
 function addCombo(idx){
