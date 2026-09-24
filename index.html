@@ -622,13 +622,14 @@
     border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
   }
   .pref-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
-  .rts-btn{
-    flex-shrink:0; display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:12px;
-    border:none; cursor:pointer; background:linear-gradient(135deg,var(--brand),var(--brand-2));
-    color:#fff; font-size:13px; font-weight:700; box-shadow:var(--shadow-sm); transition:.15s;
+  .regen-meal-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
+    margin:2px 0 18px; padding:12px; border-radius:13px; cursor:pointer;
+    border:1px dashed var(--brand-mid); background:var(--brand-soft);
+    font-size:14px; font-weight:700; color:var(--brand); transition:.15s;
   }
-  .rts-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
-  .rts-btn svg{width:14px; height:14px;}
+  .regen-meal-btn:hover{border-color:var(--brand);}
+  .regen-meal-btn svg{width:15px; height:15px;}
   .meal-tabs{display:flex; gap:8px; margin-bottom:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:5px; box-shadow:var(--shadow-sm);}
   .meal-tab{flex:1; text-align:center; padding:9px 0; border-radius:10px; font-size:14px; font-weight:600; color:var(--sub); cursor:pointer; user-select:none; transition:.15s;}
   .meal-tab.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:700; box-shadow:var(--shadow-sm);}
@@ -3551,10 +3552,6 @@ function buildRecipe(){
     <div class="recipe-combo-box">
       <div class="rcb-head">
         <span class="rcb-title">${recipeMealTab}想吃点什么？</span>
-        <button class="rts-btn" onclick="regenRecipe()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-          换一换
-        </button>
       </div>
       <div class="rcb-row">
         <span class="rcb-label">肉/蛋白</span>
@@ -3574,6 +3571,11 @@ function buildRecipe(){
 
     <div id="recipeMeals"></div>
 
+    <button class="regen-meal-btn" onclick="regenRecipe()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      换一换这顿饭
+    </button>
+
     <div class="recipe-sum" id="recipeSum"></div>
 
     <div class="recipe-actions">
@@ -3583,7 +3585,6 @@ function buildRecipe(){
         一键加入今日摄入
       </button>
     </div>
-    <button class="add-custom" style="margin-top:10px;" onclick="resetRecipe()">重新生成</button>
   `;
   renderRecipeMeals();
 }
@@ -3814,15 +3815,6 @@ function renderRecipeSum(){
 function removeMealItem(meal, name){
   recipeMeals.meals[meal] = recipeMeals.meals[meal].filter(it=>it.n!==name);
   renderRecipeMeals();
-}
-
-function resetRecipe(){
-  // 重新生成一整天三餐
-  const profile = loadProfile();
-  const goal = planGoal(recipePlanId);
-  recipeSeed = 0;
-  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
-  buildRecipe();
 }
 
 /* 从食物选择器往某餐添加食物 */
