@@ -1687,9 +1687,16 @@ function renderIntakeRing(){
         const isSrv = isServingFood(fd);
         const v = foodKcal(fd, qty);
         if(it.kcalAdj) v.kcal += it.kcalAdj;
-        const qtyInput = isSrv
-          ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`
-          : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+        const qtyInput = (()=>{
+          const pt = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[it.name] || null) : null;
+          if(isSrv){
+            return `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`;
+          }
+          if(pt && pt.unit !== "克"){
+            return `<input class="fls-qty" type="number" value="${Math.round(qty/pt.g*10)/10}" min="0.5" step="0.5" onchange="updateHomeIntakePortion(${i}, this.value)" /><span class="fls-unit">${pt.unit}</span>`;
+          }
+          return `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+        })();
         return `
         <div class="ring-detail-row">
           <div class="rd-info">
@@ -1755,6 +1762,22 @@ function updateHomeIntakeQty(i, val){
   if(rec){ rec.items = items; saveDailyLog(log); }
   renderIntakeRing();
 }
+// 首页明细里按自然单位（个/碗/份…）修改数量 → 换算成克
+function updateHomeIntakePortion(i, portions){
+  const items = loadTodayItems();
+  const it = items[i];
+  if(!it) return;
+  const pt = (typeof PORTIONS!=="undefined") ? PORTIONS[it.name] : null;
+  const n = parseFloat(portions);
+  if(!pt || isNaN(n) || n <= 0) return;
+  it.grams = Math.round(n * pt.g * 10) / 10;
+  delete it.servings;
+  const log = loadDailyLog();
+  const t = todayStr();
+  const rec = log.find(r=>r.date===t);
+  if(rec){ rec.items = items; saveDailyLog(log); }
+  renderIntakeRing();
+}
 // 首页明细里删除第 i 项
 function removeHomeIntake(i){
   const items = loadTodayItems();
@@ -1791,12 +1814,21 @@ function renderIntakeDetail(){
     const v = foodKcal(fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
     kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
-    const qtyInput = isSrv
-      ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`
-      : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+    const qtyInput = (()=>{
+      const pt = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[it.name] || null) : null;
+      const usePortion = pt && pt.unit !== "克";
+      if(isSrv){
+        return `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`;
+      }
+      if(usePortion){
+        return `<input class="fls-qty" type="number" value="${Math.round(qty/pt.g*10)/10}" min="0.5" step="0.5" onchange="updateIntakeDetailPortion(${i}, this.value)" /><span class="fls-unit">${pt.unit}</span>`;
+      }
+      return `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+    })();
+    const ptInfo = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[it.name] || null) : null;
     const meta = isSrv
       ? `${it.note ? it.note+" · " : ""}${it.kcalAdj ? (it.kcalAdj>0?"+":"")+it.kcalAdj+" kcal" : ""}`
-      : humanizeGrams(it.name, qty);
+      : (ptInfo && ptInfo.unit !== "克") ? `约 ${Math.round(qty)}g` : humanizeGrams(it.name, qty);
     return `
       <div class="intake-row">
         <div class="ir-info">
@@ -1843,6 +1875,20 @@ function updateIntakeDetailQty(i, val){
   const v = parseFloat(val);
   if(!fd || isNaN(v) || v <= 0) return;
   if(it.servings !== undefined){ it.servings = v; } else { it.grams = v; }
+  saveTodayItemsRaw(items);
+  renderIntakeDetail();
+  renderIntakeRing();
+}
+// 详情页按自然单位（个/碗/份…）修改数量 → 换算成克
+function updateIntakeDetailPortion(i, portions){
+  const items = loadTodayItems();
+  const it = items[i];
+  if(!it) return;
+  const pt = (typeof PORTIONS!=="undefined") ? PORTIONS[it.name] : null;
+  const n = parseFloat(portions);
+  if(!pt || isNaN(n) || n <= 0) return;
+  it.grams = Math.round(n * pt.g * 10) / 10;
+  delete it.servings;
   saveTodayItemsRaw(items);
   renderIntakeDetail();
   renderIntakeRing();
@@ -4348,6 +4394,20 @@ function updateFoodItemQty(i, val){
   renderIntakeRing();
 }
 
+// 按自然单位（个 / 碗 / 份 …）修改数量 → 换算成克存储
+function updateFoodItemPortion(i, portions){
+  const it = foodList[i];
+  if(!it) return;
+  const p = (typeof PORTIONS!=="undefined") ? PORTIONS[it.name] : null;
+  const n = parseFloat(portions);
+  if(!p || isNaN(n) || n <= 0) return;
+  it.grams = Math.round(n * p.g * 10) / 10;
+  delete it.servings;
+  saveTodayItems();
+  renderFoodCalc();
+  renderIntakeRing();
+}
+
 function renderFoodListSummary(){
   const box = document.getElementById("foodListSummary");
   if(!box) return;
@@ -4363,12 +4423,18 @@ function renderFoodListSummary(){
       const v = foodKcal(fd, qty);
       if(it.kcalAdj) v.kcal += it.kcalAdj;
       const isSrv = isServingFood(fd);
+      const p = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[it.name] || null) : null;
+      const usePortion = p && p.unit !== "克";
       const qtyInput = isSrv
         ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateFoodItemQty(${i}, this.value)" /> <span class="fls-unit">${fd.unit||"份"}</span>`
-        : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateFoodItemQty(${i}, this.value)" /> <span class="fls-unit">克</span>`;
+        : usePortion
+          ? `<input class="fls-qty" type="number" value="${Math.round(qty/p.g*10)/10}" min="0.5" step="0.5" onchange="updateFoodItemPortion(${i}, this.value)" /> <span class="fls-unit">${p.unit}</span>`
+          : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateFoodItemQty(${i}, this.value)" /> <span class="fls-unit">克</span>`;
       const metaShow = isSrv
         ? `${it.note ? it.note : ""}${it.kcalAdj ? `${it.note?" · ":""}${it.kcalAdj>0?"+":""}${it.kcalAdj} kcal` : ""}`
-        : (fd ? humanizeGrams(it.name, qty) : ("约 "+roundish(qty)+"g"));
+        : usePortion
+          ? `约 ${Math.round(qty)}g`
+          : (fd ? humanizeGrams(it.name, qty) : ("约 "+roundish(qty)+"g"));
       return `
       <div class="food-row" style="padding:10px 14px;">
         <div style="flex:1;">
