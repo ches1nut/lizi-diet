@@ -219,6 +219,11 @@
     padding:16px 28px; border-bottom:0.5px solid var(--border);
     display:flex; align-items:center; gap:12px;
   }
+  .detail-chosen-badge{
+    margin-left:auto; font-size:12px; font-weight:600;
+    color:var(--brand); background:var(--brand-soft);
+    padding:5px 11px; border-radius:20px; white-space:nowrap; flex-shrink:0;
+  }
   .detail-body{padding:24px 28px 40px;}
   .detail-hero{margin-bottom:24px;}
   .detail-hero .name{font-size:23px; font-weight:800; margin-bottom:8px; display:flex; align-items:center; gap:10px;}
@@ -262,6 +267,12 @@
     transition:.15s; box-shadow:var(--shadow-md);
   }
   .detail-cta button:hover{transform:translateY(-1px);}
+  .detail-cta .detail-switch-btn{
+    width:100%; padding:15px; border-radius:14px; border:1px solid var(--brand);
+    background:var(--card); color:var(--brand); font-size:15px; font-weight:700; cursor:pointer;
+    transition:.15s; box-shadow:var(--shadow-sm); margin-top:10px;
+  }
+  .detail-cta .detail-switch-btn:hover{transform:translateY(-1px); background:var(--brand-soft);}
   .detail-cta .cta-sub{
     display:block; text-align:center; margin-top:10px; font-size:13px; color:var(--brand);
     cursor:pointer; font-weight:600;
@@ -384,6 +395,11 @@
     background:var(--card); box-shadow:var(--shadow-sm);
   }
   .quiz-opt:hover{border-color:var(--brand); background:var(--brand-soft); transform:translateY(-1px);}
+  .quiz-skip{
+    display:block; width:100%; margin-top:12px; padding:12px; background:transparent;
+    border:none; color:var(--sub); font-size:13px; cursor:pointer; text-align:center;
+  }
+  .quiz-skip:hover{color:var(--brand);}
 
   .quiz-result{text-align:center; padding:20px 0;}
   .quiz-result .big{font-size:24px; font-weight:800; margin-bottom:12px;}
@@ -451,6 +467,49 @@
   .quick-entry .qe-ic{font-size:24px; margin-bottom:8px;}
   .quick-entry .qe-t{font-size:14px; font-weight:700; color:var(--text); margin-bottom:2px;}
   .quick-entry .qe-d{font-size:12px; color:var(--sub); line-height:1.5;}
+
+  /* 身体数据记录页 */
+  .bodylog-body{padding:16px 28px 40px;}
+  .bl-form{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:18px 18px; margin-bottom:18px; box-shadow:var(--shadow-sm);
+  }
+  .bl-form-t{font-size:15px; font-weight:800; margin-bottom:14px;}
+  .bl-row{margin-bottom:12px;}
+  .bl-row label{display:block; font-size:12.5px; color:var(--sub); margin-bottom:6px; font-weight:600;}
+  .bl-row label .opt{color:#B45309; font-weight:500; font-size:11px; margin-left:4px;}
+  .bl-row input{
+    width:100%; padding:11px 13px; border-radius:11px; border:1px solid var(--border);
+    font-size:15px; background:var(--bg); color:var(--text); box-sizing:border-box;
+  }
+  .bl-row input:focus{outline:none; border-color:var(--brand);}
+  .bl-trend{display:flex; gap:12px; margin-bottom:18px;}
+  .bl-trend-item{
+    flex:1; background:var(--brand-soft); border-radius:14px; padding:14px 16px;
+  }
+  .bl-trend-item .lbl{font-size:12px; color:var(--sub); margin-bottom:4px;}
+  .bl-trend-item .val{font-size:20px; font-weight:800;}
+  .bl-trend-item .val.down{color:#0F6E56;}
+  .bl-trend-item .val.up{color:#DC2626;}
+  .bl-trend-item .val.flat{color:var(--sub);}
+  .bl-list{display:flex; flex-direction:column; gap:8px;}
+  .bl-item{
+    display:flex; align-items:center; gap:12px; background:var(--card);
+    border:1px solid var(--border); border-radius:14px; padding:13px 15px;
+  }
+  .bl-date{font-size:12px; color:var(--sub); flex-shrink:0; min-width:82px;}
+  .bl-vals{flex:1; display:flex; flex-direction:column; gap:2px; min-width:0;}
+  .bl-w{font-size:15px; font-weight:700; color:var(--text);}
+  .bl-bf{font-size:12px; color:var(--sub);}
+  .bl-delta{font-size:11.5px; font-weight:700; margin-left:6px;}
+  .bl-delta.down{color:#0F6E56;}
+  .bl-delta.up{color:#DC2626;}
+  .bl-del{
+    flex-shrink:0; border:none; background:transparent; color:#9CA3AF; font-size:12px;
+    cursor:pointer; padding:4px 8px;
+  }
+  .bl-del:hover{color:#DC2626;}
+  .bl-empty{text-align:center; color:var(--sub); font-size:13px; padding:30px 0;}
   .recipe-body{padding:16px 28px 40px;}
   .recipe-target-card{
     border-radius:var(--radius); padding:18px 20px; margin-bottom:18px;
@@ -588,6 +647,87 @@
   .custom-form .cf-row input:focus{border-color:var(--brand);}
   .cf-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 
+  /* ===== 切换方案底部面板 ===== */
+  .sheet-mask{
+    position:fixed; inset:0; background:rgba(23,25,35,.45);
+    z-index:100; opacity:0; pointer-events:none; transition:opacity .2s;
+    backdrop-filter:blur(2px);
+  }
+  .sheet-mask.show{opacity:1; pointer-events:auto;}
+  .plan-sheet{
+    position:fixed; left:50%; transform:translate(-50%,100%); bottom:0;
+    width:100%; max-width:680px; z-index:101;
+    background:var(--card); border-radius:20px 20px 0 0;
+    padding:10px 0 0; transition:transform .25s ease;
+    max-height:72vh; display:flex; flex-direction:column;
+  }
+  .plan-sheet.show{transform:translate(-50%,0);}
+  .sheet-grab{width:40px; height:4px; border-radius:2px; background:var(--border); margin:6px auto 4px;}
+  .sheet-head{display:flex; align-items:center; justify-content:space-between; padding:10px 22px 12px; border-bottom:0.5px solid var(--border);}
+  .sheet-head .t{font-size:16px; font-weight:700;}
+  .sheet-head .x{width:28px; height:28px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--sub); cursor:pointer; font-size:18px;}
+  .sheet-list{overflow-y:auto; padding:10px 16px 20px;}
+  .sheet-item{
+    display:flex; align-items:flex-start; gap:12px; padding:14px 12px; border-radius:14px; cursor:pointer;
+    border:1px solid transparent; transition:.12s;
+  }
+  .sheet-item:active{background:var(--brand-soft);}
+  .sheet-item.cur{background:var(--brand-soft); border-color:var(--brand-mid);}
+  .sheet-item .si-main{flex:1; min-width:0;}
+  .sheet-item .si-name{font-size:15px; font-weight:700; display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .sheet-item .si-desc{font-size:12.5px; color:var(--sub); margin-top:3px; line-height:1.5;}
+  .sheet-item .si-macro{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;}
+  .sheet-item .si-macro .m-chip{
+    display:inline-flex; align-items:center; gap:4px; font-size:11.5px; color:var(--text);
+    background:rgba(255,255,255,.65); border:1px solid var(--border); border-radius:7px; padding:3px 8px;
+  }
+  .sheet-item .si-macro .m-chip i{
+    font-style:normal; font-size:10px; color:var(--brand); font-weight:700; margin-right:1px;
+  }
+  .sheet-item .si-meta{display:flex; flex-wrap:wrap; gap:8px; margin-top:7px;}
+  .sheet-item .si-meta .mt-chip{font-size:11.5px; color:var(--sub); line-height:1.5;}
+  .sheet-item .si-check{
+    width:22px; height:22px; border-radius:50%; flex-shrink:0; margin-top:2px;
+    background:var(--brand); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;
+  }
+
+  /* 切换方案入口按钮（头部） */
+  .switch-plan-btn{
+    margin-left:auto; font-size:13px; font-weight:600; color:var(--brand);
+    background:var(--brand-soft); padding:7px 13px; border-radius:9px; cursor:pointer;
+    border:none; white-space:nowrap;
+  }
+  .switch-plan-btn:active{opacity:.7;}
+
+  /* 切换方案确认弹层 */
+  .switch-confirm{
+    position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.9);
+    width:calc(100% - 48px); max-width:400px; z-index:102;
+    background:var(--card); border-radius:20px; padding:20px;
+    opacity:0; pointer-events:none; transition:.18s ease;
+    box-shadow:var(--shadow-lg, 0 20px 60px rgba(0,0,0,.2));
+  }
+  .switch-confirm.show{opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1);}
+  .sc-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .sc-title{font-size:17px; font-weight:800;}
+  .sc-head .x{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--sub); cursor:pointer; font-size:16px;}
+  .sc-body{font-size:13.5px; line-height:1.65; color:var(--text);}
+  .sc-tip{margin-bottom:12px;}
+  .sc-block{background:var(--brand-soft); border-radius:12px; padding:12px 14px; margin-bottom:12px;}
+  .sc-block-t{font-size:12px; color:var(--sub); font-weight:600; margin-bottom:8px;}
+  .sc-diff{display:flex; align-items:center; gap:8px; font-size:13px; margin-top:6px; flex-wrap:wrap;}
+  .sc-diff span{color:var(--sub); width:60px; flex-shrink:0;}
+  .sc-diff b{color:var(--brand); font-weight:700;}
+  .sc-goal-hint{font-size:12.5px; color:var(--brand-deep); line-height:1.6;}
+  .sc-warn{
+    font-size:12.5px; color:#A16207; background:#FFF7E6; border-radius:12px;
+    padding:12px 14px; line-height:1.6;
+  }
+  .sc-actions{display:flex; gap:10px; margin-top:18px;}
+  .sc-actions button{flex:1; padding:13px; border-radius:12px; border:none; font-size:14px; font-weight:700; cursor:pointer;}
+  .sc-cancel{background:var(--bg); color:var(--sub); border:1px solid var(--border) !important;}
+  .sc-ok{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; box-shadow:var(--shadow-md);}
+
   /* ===== 手机窄屏 ===== */
   @media (max-width:480px){
     .navbar{padding:16px 18px 12px;}
@@ -701,11 +841,12 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">方案详情</div>
+      <span class="detail-chosen-badge" id="detailChosenBadge" style="display:none;">✓ 已选择</span>
     </header>
     <div class="detail-body" id="detailBody"></div>
     <div class="detail-cta" id="detailCta">
-      <button id="detailPickBtn" onclick="pickPlanFromDetail()">选这个方案</button>
-      <span class="cta-sub" id="detailCompareLink" onclick="quickCompare()">↔ 与其他方案对比</span>
+      <button id="detailPickBtn" onclick="detailCtaClick()">选这个方案</button>
+      <button class="detail-switch-btn" id="detailSwitchBtn" onclick="openPlanSheet('detail')" style="display:none;">切换方案</button>
     </div>
   </div>
 
@@ -749,6 +890,7 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">今日推荐食谱</div>
+      <button class="switch-plan-btn" onclick="openPlanSheet('recipe')">切换方案</button>
     </header>
     <div class="recipe-body" id="recipeBody"></div>
   </div>
@@ -764,6 +906,42 @@
     <div class="food-body" id="foodBody"></div>
   </div>
 
+  <!-- ============ 身体数据记录页 ============ -->
+  <div class="screen" id="screen-bodylog">
+    <header class="list-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">身体数据记录</div>
+    </header>
+    <div class="bodylog-body" id="bodylogBody"></div>
+  </div>
+
+</div>
+
+<!-- ============ 切换方案底部面板 ============ -->
+<div class="sheet-mask" id="sheetMask" onclick="closePlanSheet()"></div>
+<div class="plan-sheet" id="planSheet">
+  <div class="sheet-grab"></div>
+  <div class="sheet-head">
+    <div class="t">切换方案</div>
+    <div class="x" onclick="closePlanSheet()">✕</div>
+  </div>
+  <div class="sheet-list" id="sheetList"></div>
+</div>
+
+<!-- 切换方案确认弹层 -->
+<div class="sheet-mask" id="switchConfirmMask" onclick="closeSwitchConfirm()"></div>
+<div class="switch-confirm" id="switchConfirm">
+  <div class="sc-head">
+    <div class="sc-title">确认切换方案？</div>
+    <div class="x" onclick="closeSwitchConfirm()">✕</div>
+  </div>
+  <div class="sc-body" id="switchConfirmBody"></div>
+  <div class="sc-actions">
+    <button class="sc-cancel" onclick="closeSwitchConfirm()">取消</button>
+    <button class="sc-ok" id="switchConfirmOk" onclick="doSwitchConfirm()">确认切换</button>
+  </div>
 </div>
 
 <script src="foods.js"></script>
@@ -1088,6 +1266,11 @@ function renderCurrentPlan(){
           <div class="qe-t">食物热量计算</div>
           <div class="qe-d">拍照或录食物算热量</div>
         </div>
+        <div class="quick-entry" onclick="openBodyLog()" style="grid-column:1 / -1;">
+          <div class="qe-ic">📈</div>
+          <div class="qe-t">记录身体变化</div>
+          <div class="qe-d">记录体重、体脂率，追踪变化趋势</div>
+        </div>
       </div>`;
   } else {
     // 初始态：无个人信息（含清空后）= 全新用户，一律回到「问卷 + 方案选择」，不显示任何方案名
@@ -1334,22 +1517,26 @@ function openPlan(id, from){
     </div>
   `;
 
-  // 详情页底部按钮：已选方案不显示「选这个方案」
+  // 详情页底部按钮 + 右上角「已选择」角标
   const pickBtn = document.getElementById("detailPickBtn");
-  if(pickBtn){
-    if(getCurrentPlanId()===id){
-      pickBtn.textContent = "✓ 已选择";
-      pickBtn.disabled = true;
-      pickBtn.style.background = "var(--brand-soft)";
-      pickBtn.style.color = "var(--brand)";
-      pickBtn.style.cursor = "default";
-    } else {
+  const switchBtn = document.getElementById("detailSwitchBtn");
+  const badge = document.getElementById("detailChosenBadge");
+  if(getCurrentPlanId()===id){
+    // 当前方案（已选定）：右上角显示「已选择」小角标，底部只保留「切换方案」
+    if(badge) badge.style.display = "";
+    if(pickBtn){
+      pickBtn.textContent = "切换方案";
+      pickBtn.disabled = false;
+    }
+    if(switchBtn) switchBtn.style.display = "none";
+  } else {
+    // 未选定：隐藏角标，底部显示「选这个方案」主按钮 + 「切换方案」次按钮
+    if(badge) badge.style.display = "none";
+    if(pickBtn){
       pickBtn.textContent = "选这个方案";
       pickBtn.disabled = false;
-      pickBtn.style.background = "";
-      pickBtn.style.color = "";
-      pickBtn.style.cursor = "";
     }
+    if(switchBtn) switchBtn.style.display = "";
   }
 
   go('detail');
@@ -1405,7 +1592,9 @@ const PROFILE_FIELDS = [
     {v:"light", label:"轻度·每周 1–2 练"},
     {v:"mod",   label:"中度·每周 3–4 练"},
     {v:"high",  label:"高强度·每周 5 练以上"}
-  ]}
+  ]},
+  {key:"bodyFat", label:"体脂率（选填，估算即可）", type:"num", unit:"%", optional:true},
+  {key:"trainYears", label:"训练年限（选填）", type:"num", unit:"年", optional:true}
 ];
 
 // 减脂专属扩展字段（目标体重 / 预计时长，仅在减脂目标下出现）
@@ -1462,11 +1651,187 @@ const ACT_CARB = {
 const ACT_FACTOR = { sed:1.2, light:1.375, mod:1.55, high:1.725 };
 const ACT_DESC = { sed:"久坐·几乎不练", light:"轻度·每周1–2练", mod:"中度·每周3–4练", high:"高强度·每周5练以上" };
 
+// 依据体脂率（选填）确定增肌热量盈余
+// 返回 {surplus, note}：体脂偏高→300；偏瘦→500；未填/正常→400
+function surplusForBodyFat(profile){
+  const bf = profile.bodyFat;
+  const g = profile.gender;
+  if(bf === undefined || bf === null || bf === "" || isNaN(parseFloat(bf))){
+    return {surplus:400, note:"（未填体脂率，盈余取中间值 400）"};
+  }
+  const v = parseFloat(bf);
+  // 参考区间：男 10–20%、女 18–28% 为正常
+  const low = g === "female" ? 18 : 10;
+  const high = g === "female" ? 28 : 20;
+  if(v > high){
+    return {surplus:300, note:`（体脂率 ${v}% 偏高，盈余下调到 300，避免增肌期脂肪堆积过多）`};
+  }
+  if(v < low){
+    return {surplus:500, note:`（体脂率 ${v}% 偏低，盈余上调到 500，偏瘦体质可放心多吃）`};
+  }
+  return {surplus:400, note:`（体脂率 ${v}% 处于正常区间，盈余取中间值 400）`};
+}
+
 /* ===== 选定方案 → 直接出结果 ===== */
 let pendingRecipeAfterInfo = false;  // 标记：补完信息后直接出食谱
 
+/* ===== 切换方案底部面板 ===== */
+let planSheetFrom = "";   // 打开面板的来源页面：recipe / detail
+
+function openPlanSheet(from){
+  planSheetFrom = from || "recipe";
+  const curId = getCurrentPlanId();
+  const list = document.getElementById("sheetList");
+  list.innerHTML = PLANS.map(p=>{
+    const g = GOAL_STYLE[p.goal] || GOAL_STYLE["减脂"];
+    const badges = (p.goals || [p.goal]).map(gk=>{
+      const gs = GOAL_STYLE[gk] || GOAL_STYLE["减脂"];
+      return `<span class="badge" style="color:${gs.color};background:${gs.bg};margin-left:4px;font-size:11px;">${gk}</span>`;
+    }).join("");
+    const isCur = p.id === curId;
+    const cmp = p.compare || {};
+    const macroRow = (cmp.carb || cmp.protein || cmp.fat) ? `
+      <div class="si-macro">
+        ${cmp.carb ? `<span class="m-chip"><i>碳</i>${cmp.carb}</span>` : ""}
+        ${cmp.protein ? `<span class="m-chip"><i>蛋</i>${cmp.protein}</span>` : ""}
+        ${cmp.fat ? `<span class="m-chip"><i>脂</i>${cmp.fat}</span>` : ""}
+      </div>` : "";
+    const metaRow = (cmp.training || cmp.duration) ? `
+      <div class="si-meta">
+        ${cmp.training ? `<span class="mt-chip">💪 训练门槛：${cmp.training}</span>` : ""}
+        ${cmp.duration ? `<span class="mt-chip">⏱ ${cmp.duration}</span>` : ""}
+      </div>` : "";
+    return `
+    <div class="sheet-item ${isCur?"cur":""}" onclick="confirmSwitchPlan('${p.id}')">
+      <div class="si-main">
+        <div class="si-name">${p.name}${badges}</div>
+        <div class="si-desc">${p.desc}</div>
+        ${macroRow}
+        ${metaRow}
+      </div>
+      ${isCur ? `<div class="si-check">✓</div>` : ""}
+    </div>`;
+  }).join("");
+  document.getElementById("sheetMask").classList.add("show");
+  document.getElementById("planSheet").classList.add("show");
+}
+
+function closePlanSheet(){
+  document.getElementById("sheetMask").classList.remove("show");
+  document.getElementById("planSheet").classList.remove("show");
+}
+
+/* 切换方案：记录新方案 + 更新 goal，然后刷新来源页面 */
+function switchPlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p || id === getCurrentPlanId()){
+    closePlanSheet();
+    return;
+  }
+  setCurrentPlan(p.id);
+  const profile = loadProfile();
+  profile.goal = p.goal === "减脂" ? "lose" : (p.goal === "增肌" ? "muscle" : "health");
+  saveProfile(profile);
+  closePlanSheet();
+
+  if(planSheetFrom === "detail"){
+    // 详情页：重新打开新方案详情
+    openPlan(id, detailFrom);
+  } else {
+    // 食谱页：重置并重新生成食谱
+    recipePlanId = id;
+    recipeTplIdx = 0;
+    recipeCustom = null;
+    buildRecipe();
+  }
+}
+
+/* ===== 切换方案确认（节奏差异提醒 + 二次确认） ===== */
+let pendingSwitchId = "";   // 待确认切换的方案 id
+
+// 点击方案列表某项 → 弹确认层，而非立即切换
+function confirmSwitchPlan(id){
+  const p = PLANS.find(x=>x.id===id);
+  if(!p || id === getCurrentPlanId()){
+    closePlanSheet();
+    return;
+  }
+  const cur = PLANS.find(x=>x.id===getCurrentPlanId());
+  const newDur = (p.compare && p.compare.duration) || "未标注";
+  const curDur = (cur && cur.compare && cur.compare.duration) || "未标注";
+  const newTrain = (p.compare && p.compare.training) || "未标注";
+  const curTrain = (cur && cur.compare && cur.compare.training) || "未标注";
+
+  // 节奏差异：新旧方案的周期/训练门槛不同时，给出醒目提示
+  let diffHtml = "";
+  let goalHintHtml = "";
+  if(cur && cur.id !== id){
+    const diffs = [];
+    if(curDur !== newDur) diffs.push(`<div class="sc-diff"><span>节奏</span><b>${curDur}</b> → <b>${newDur}</b></div>`);
+    if(curTrain !== newTrain) diffs.push(`<div class="sc-diff"><span>训练门槛</span><b>${curTrain}</b> → <b>${newTrain}</b></div>`);
+    if(diffs.length){
+      diffHtml = `
+        <div class="sc-block">
+          <div class="sc-block-t">计划差异</div>
+          ${diffs.join("")}
+        </div>`;
+    }
+
+    // 目标一致性提示：同目标减脂方案之间切换 → 提示「碳水能衔接，但需改复盘方式」；
+    // 不同目标（如减脂↔增肌）→ 更醒目的警告
+    const curGoal = cur.goal, newGoal = p.goal;
+    if(curGoal === newGoal && newGoal === "减脂"){
+      goalHintHtml = `
+        <div class="sc-block">
+          <div class="sc-block-t">切换说明</div>
+          <div class="sc-goal-hint">这两个都是减脂方案、同为「吃 10 天→复盘→微调」节奏，碳水克数能衔接，但切换后需改用新方案的复盘方式（如主动降碳 / 穿插高碳日）。</div>
+        </div>`;
+    } else if(curGoal !== newGoal){
+      goalHintHtml = `
+        <div class="sc-block" style="background:#FFF7E6;">
+          <div class="sc-block-t" style="color:#A16207;">⚠️ 目标改变</div>
+          <div class="sc-goal-hint" style="color:#A16207;">从「${curGoal}」切到「${newGoal}」，营养策略方向完全相反，请确认这是你当前真正想要的目标。</div>
+        </div>`;
+    }
+  }
+
+  pendingSwitchId = id;
+  document.getElementById("switchConfirmBody").innerHTML = `
+    <div class="sc-tip">切换后，会按「${p.name}」重新规划饮食与训练节奏。</div>
+    ${goalHintHtml}
+    ${diffHtml}
+    <div class="sc-warn">⚠️ 不同方案的周期和饮食结构差异较大，切换后旧方案的执行进度不会保留，相当于重新开始一个周期。</div>
+  `;
+  document.getElementById("switchConfirmMask").classList.add("show");
+  document.getElementById("switchConfirm").classList.add("show");
+}
+
+function closeSwitchConfirm(){
+  pendingSwitchId = "";
+  document.getElementById("switchConfirmMask").classList.remove("show");
+  document.getElementById("switchConfirm").classList.remove("show");
+}
+
+function doSwitchConfirm(){
+  const id = pendingSwitchId;
+  if(!id) return;
+  pendingSwitchId = "";
+  document.getElementById("switchConfirmMask").classList.remove("show");
+  document.getElementById("switchConfirm").classList.remove("show");
+  switchPlan(id);
+}
+
 function pickPlanFromDetail(){
   pickPlan(curPlanId);
+}
+
+/* 详情页底部按钮点击：当前方案→打开切换面板；非当前方案→选定 */
+function detailCtaClick(){
+  if(getCurrentPlanId() === curPlanId){
+    openPlanSheet("detail");
+  } else {
+    pickPlan(curPlanId);
+  }
 }
 
 /* 选定方案：记入当前方案，个人信息齐全则直接出「营养+食谱」结果，否则先补信息 */
@@ -1781,13 +2146,13 @@ function calcResult(id){
       const carbK = (ACT_CARB["zengji-yingyu"]||{})[tl] || 5.0;
       const actK = ACT_FACTOR[tl] || 1.55;
       const tdee = bmr * actK;
-      const surplus = 400;  // 300–500 取中值
-      const intake = tdee + surplus;
+      const bf = surplusForBodyFat(profile);
+      const intake = tdee + bf.surplus;
       carb = w * carbK;
       protein = w * 1.8;      // 1.6–2.0 取中值
       fat = w * 0.8;          // 0.6–1.0 取中值
       kcal = intake;
-      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），加 300–500 盈余后摄入≈${Math.round(intake)} 大卡，蛋白 1.8g/kg、脂肪 0.8g/kg 起步。核心：热量盈余 + 足量蛋白碳水，配合渐进超负荷力量训练稳步增肌。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），加 ${bf.surplus} 大卡盈余后摄入≈${Math.round(intake)} 大卡${bf.note}，蛋白 1.8g/kg、脂肪 0.8g/kg 起步。核心：热量盈余 + 足量蛋白碳水，配合渐进超负荷力量训练稳步增肌。`;
       break;
     }
   }
@@ -1834,7 +2199,9 @@ const QUIZ_INFO = [
     {v:"light", label:"轻度 · 每周 1–2 练"},
     {v:"mod",   label:"中度 · 每周 3–4 练"},
     {v:"high",  label:"高强度 · 每周 5 练以上"}
-  ]}
+  ]},
+  {key:"bodyFat", q:"你的体脂率大概是多少？（选填，估算即可）", type:"num", unit:"%", optional:true},
+  {key:"trainYears", q:"你的训练年限大概多久？（选填，未训练可跳过）", type:"num", unit:"年", optional:true}
 ];
 
 // 减脂专属信息题（目标体重 / 预计时长，插在体重之后）
@@ -1874,6 +2241,7 @@ let quizIdx = 0;
 const quizAns = {};
 let quizGoal = null;   // 当前分支：lose / muscle / health
 let quizList = [];     // 当前分支的专属题目列表
+let quizItems = [];    // 固定生成的完整题目序列（答一题不重排，避免索引错位）
 
 function goRecommend(){
   quizIdx = 0;
@@ -1884,20 +2252,15 @@ function goRecommend(){
   const p = loadProfile();
   QUIZ_INFO.forEach(f=>{ if(p[f.key] !== undefined && p[f.key] !== "") quizAns[f.key] = p[f.key]; });
   QUIZ_INFO_LOSE.forEach(f=>{ if(p[f.key] !== undefined && p[f.key] !== "") quizAns[f.key] = p[f.key]; });
+  // 生成固定的初始题目序列（目标 + 未填的通用信息题）
+  quizItems = [QUIZ_ENTRY, ...QUIZ_INFO.filter(f=>!(f.key in quizAns))];
   renderQuiz();
   go('quiz');
 }
 
-// 生成完整问卷题目序列：目标题 + 未填的通用信息题 + (未填的减脂专属信息题) + 分支题
+// 生成完整题目序列（仅在「选目标」和「跳过」时需要重排分支题，其余用固定 quizItems）
 function getQuizItems(){
-  const items = [QUIZ_ENTRY, ...QUIZ_INFO.filter(f=>!(f.key in quizAns))];
-  if(quizGoal === "lose"){
-    // 减脂：追加未填的目标体重/时长
-    const loseExtra = QUIZ_INFO_LOSE.filter(f=>!(f.key in quizAns));
-    items.push(...loseExtra);
-  }
-  items.push(...quizList);
-  return items;
+  return quizItems;
 }
 
 function renderQuiz(){
@@ -1913,12 +2276,14 @@ function renderQuiz(){
   if(item.type === "num"){
     // 数字输入题
     const hint = item.hint ? `<div class="quiz-hint" id="quizNumHint" style="font-size:12.5px;color:#185FA5;margin-top:10px;line-height:1.6;"></div>` : "";
+    const skipBtn = item.optional ? `<button class="quiz-skip" onclick="skipQuizNum('${item.key}')">跳过（选填）</button>` : "";
     document.getElementById("quizBody").innerHTML = `
       <div class="quiz-progress"><div class="bar" style="width:${progress}%"></div></div>
       <div class="quiz-q">${item.q}</div>
       <input class="form-input" type="number" id="quizNum" inputmode="decimal" placeholder="${item.unit}" style="font-size:18px;padding:14px;" oninput="onQuizNumInput('${item.key}')" />
       ${hint}
       <button class="btn-primary" style="margin-top:16px;" onclick="submitQuizNum('${item.key}')">下一步</button>
+      ${skipBtn}
     `;
     // 渲染减脂时长提示
     if(item.hint) onQuizNumInput(item.key);
@@ -1965,6 +2330,31 @@ function onQuizNumInput(key){
       hintBox.innerHTML = "";
     }
   }
+  if(key === "bodyFat"){
+    const p = loadProfile();
+    const h = p.height, wgt = p.weight;
+    const v = parseFloat(document.getElementById("quizNum").value);
+    if(h && wgt && v && v > 0){
+      const bmi = wgt / ((h/100)*(h/100));
+      hintBox.innerHTML = `💡 你的 BMI 约 ${bmi.toFixed(1)}。参考：体脂率男 10–20%、女 18–28% 属正常区间。`;
+    } else {
+      hintBox.innerHTML = "";
+    }
+  }
+  if(key === "trainYears"){
+    const v = parseFloat(document.getElementById("quizNum").value);
+    if(v !== undefined && !isNaN(v)){
+      if(v < 1){
+        hintBox.innerHTML = `💡 新手阶段（<1 年）：建议优先掌握基础动作与训练习惯，营养按标准区间即可。`;
+      } else if(v < 3){
+        hintBox.innerHTML = `💡 初级–中级（1–3 年）：可逐步尝试精细化营养与训练周期化。`;
+      } else {
+        hintBox.innerHTML = `💡 有经验（≥3 年）：可根据体感与目标微调营养素配比。`;
+      }
+    } else {
+      hintBox.innerHTML = "";
+    }
+  }
 }
 
 function pickQuiz(v){
@@ -1977,6 +2367,12 @@ function pickQuiz(v){
     const p = loadProfile();
     p.goal = v;
     saveProfile(p);
+    // 选完目标后，把「减脂专属信息题 + 分支题」追加到固定序列末尾
+    // （目标题已在 items[0]，通用信息题紧随其后，追加题不影响已答/未答题的位置）
+    if(quizGoal === "lose"){
+      quizItems.push(...QUIZ_INFO_LOSE.filter(f=>!(f.key in quizAns)));
+    }
+    quizItems.push(...quizList);
   } else {
     const items = getQuizItems();
     const item = items[quizIdx];
@@ -2022,6 +2418,16 @@ function submitQuizNum(key){
   renderQuiz();
 }
 
+// 选填数字题跳过：不写入答案，直接进入下一题
+function skipQuizNum(key){
+  delete quizAns[key];
+  const p = loadProfile();
+  delete p[key];
+  saveProfile(p);
+  quizIdx++;
+  renderQuiz();
+}
+
 function renderQuizResult(){
   const rec = recommendPlan();
   const p = PLANS.find(x=>x.id===rec.id);
@@ -2035,7 +2441,7 @@ function renderQuizResult(){
     <div class="quiz-alt">
       <div class="alt-title">也可以看看这些：</div>
       ${alts.map(a=>`
-        <div class="alt-card" onclick="setCurrentPlan('${a.id}');openPlan('${a.id}','home')">
+        <div class="alt-card" onclick="openPlan('${a.id}','home')">
           <div>
             <div class="ac-name">${a.name}</div>
             <div class="ac-desc">${a.desc}</div>
@@ -2053,11 +2459,28 @@ function renderQuizResult(){
       <div class="why">
         <b>为什么推荐它：</b><br>${rec.reason}
       </div>
-      <button class="btn-primary" onclick="setCurrentPlan('${p.id}');openPlan('${p.id}','home')">查看方案详情</button>
+      <button class="btn-primary" onclick="openPlan('${p.id}','home')">查看方案详情</button>
       ${altHtml}
       <button class="form-input" style="margin-top:12px;background:var(--card);color:var(--brand);border:1px solid var(--brand);cursor:pointer;" onclick="goRecommend()">重新测一次</button>
     </div>
   `;
+}
+
+// 大基数判定：综合 BMI + 体脂率 + 需减 kg 数，任一命中即视为大基数
+// 优先 BMI（≥28 中国肥胖线）→ 体脂率（男>25% 女>32%）→ 需减 >15kg
+function isBigBase(curW, curH, bf, needLose){
+  if(curW && curH){
+    const bmi = curW / ((curH/100)*(curH/100));
+    if(bmi >= 28) return true;   // 中国成人肥胖标准 BMI≥28
+  }
+  if(bf){
+    const v = parseFloat(bf);
+    if(!isNaN(v) && v > 0){
+      if(v > 32) return true;    // 男女通用高体脂线（男>25 女>32，取宽松 32）
+    }
+  }
+  if(needLose && needLose > 15) return true;
+  return false;
 }
 
 function recommendPlan(){
@@ -2078,11 +2501,17 @@ function recommendPlan(){
     const style = quizAns["你更想要哪种执行方式？"];
     const curW = quizAns["weight"];
     const tgtW = quizAns["targetWeight"];
+    const curH = quizAns["height"];
+    const bf = quizAns["bodyFat"];
     const needLose = (curW && tgtW && tgtW < curW) ? (curW - tgtW) : null;
 
-    // 大基数（需减 >15kg）优先精确控制的 532
-    if(needLose && needLose > 15){
-      return {id:"five32", reason:`你需要减约 ${needLose.toFixed(0)}kg，属于较大基数。532 碳水渐降法计算步骤清晰、每周复盘调碳水，更适合大基数稳步减脂、避免反弹。`};
+    // 大基数判定：优先用 BMI / 体脂率（更准确），退化到 kg 差阈值
+    const bigBase = isBigBase(curW, curH, bf, needLose);
+    // 大基数优先精确控制的 532
+    if(bigBase){
+      const bmi = curW && curH ? (curW/((curH/100)*(curH/100))) : null;
+      const why = bmi ? `（BMI 约 ${bmi.toFixed(1)}）` : (bf ? `（体脂率 ${bf}%）` : `（需减约 ${needLose.toFixed(0)}kg）`);
+      return {id:"five32", reason:`你的基数偏大${why}。532 碳水渐降法计算步骤清晰、每周复盘调碳水，更适合大基数稳步减脂、避免反弹。`};
     }
     // 训练强度高 + 之前低碳反弹 → 三倍碳水
     if(act==="high" && stuck==="rebound"){
@@ -2152,6 +2581,8 @@ function renderMe(){
           ${p.goal==="lose" && p.targetWeight ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>目标体重</span><span class="val">${p.targetWeight} kg</span></div>` : ""}
           ${p.goal==="lose" && p.targetWeeks ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>预计时长</span><span class="val">${p.targetWeeks} 周</span></div>` : ""}
           <div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>活动水平</span><span class="val">${actTxt}</span></div>
+          ${p.bodyFat ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>体脂率</span><span class="val">${p.bodyFat} %</span></div>` : ""}
+          ${p.trainYears ? `<div class="me-row"><span class="lbl"><span class="ic">${ICONS.activity}</span>训练年限</span><span class="val">${p.trainYears} 年</span></div>` : ""}
           <div class="me-row"><span class="lbl"></span><span class="act" onclick="editMeProfile()">编辑</span></div>
         ` : `
           <div class="me-row"><span class="lbl">尚未填写个人信息</span><span class="act" onclick="editMeProfile()">去填写</span></div>
@@ -2352,7 +2783,8 @@ function computeTarget(planId, profile){
       const tl = profile.actLevel || "mod";
       const carbK = (ACT_CARB[planId]||{})[tl] || 5.0;
       const actK = ACT_FACTOR[tl] || 1.55; const tdee = bmr*actK;
-      const intake = tdee+400;
+      const bf = surplusForBodyFat(profile);
+      const intake = tdee+bf.surplus;
       carb = w*carbK; protein = w*1.8; fat = w*0.8; kcal = intake; break;
     }
   }
@@ -2584,6 +3016,133 @@ function confirmAddMealFood(){
   recipeMeals.meals[addMealTarget].push({n:name, g:grams});
   recipeCustom = recipeMeals;
   renderRecipeMeals();
+}
+
+/* ---- 身体数据记录页 ---- */
+const BODY_LOG_KEY = "lizi_body_log";
+function loadBodyLog(){
+  try{ return JSON.parse(localStorage.getItem(BODY_LOG_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveBodyLog(list){ localStorage.setItem(BODY_LOG_KEY, JSON.stringify(list)); }
+
+function openBodyLog(){
+  renderBodyLog();
+  go('bodylog');
+}
+
+function renderBodyLog(){
+  const logs = loadBodyLog();   // 按时间升序存，展示时倒序
+  const profile = loadProfile();
+  const curWeight = profile.weight || "";
+  const curBodyFat = profile.bodyFat || "";
+
+  // 统计：最近一次 vs 最初一次 的体重/体脂变化
+  let trendHtml = "";
+  if(logs.length >= 2){
+    const first = logs[0], last = logs[logs.length-1];
+    const wDiff = (last.weight - first.weight);
+    const bfDiff = (last.bodyFat != null && first.bodyFat != null) ? (last.bodyFat - first.bodyFat) : null;
+    trendHtml = `
+      <div class="bl-trend">
+        <div class="bl-trend-item">
+          <div class="lbl">体重总变化</div>
+          <div class="val ${wDiff<0?'down':wDiff>0?'up':'flat'}">${wDiff>0?'+':''}${wDiff.toFixed(1)} kg</div>
+        </div>
+        ${bfDiff!=null ? `
+        <div class="bl-trend-item">
+          <div class="lbl">体脂率总变化</div>
+          <div class="val ${bfDiff<0?'down':bfDiff>0?'up':'flat'}">${bfDiff>0?'+':''}${bfDiff.toFixed(1)} %</div>
+        </div>` : ""}
+      </div>`;
+  }
+
+  const listHtml = logs.length ? `
+    <div class="bl-list">
+      ${[...logs].reverse().map((r,i)=>{
+        const prev = logs[logs.length-1-i-1];  // 上一条（更早）
+        let wTag = "", bfTag = "";
+        if(prev){
+          const wd = r.weight - prev.weight;
+          if(wd !== 0) wTag = `<span class="bl-delta ${wd<0?'down':'up'}">${wd>0?'+':''}${wd.toFixed(1)}kg</span>`;
+          if(r.bodyFat!=null && prev.bodyFat!=null){
+            const bd = r.bodyFat - prev.bodyFat;
+            if(bd !== 0) bfTag = `<span class="bl-delta ${bd<0?'down':'up'}">${bd>0?'+':''}${bd.toFixed(1)}%</span>`;
+          }
+        }
+        return `
+        <div class="bl-item">
+          <div class="bl-date">${r.date}</div>
+          <div class="bl-vals">
+            <span class="bl-w">${r.weight} kg ${wTag}</span>
+            ${r.bodyFat!=null ? `<span class="bl-bf">体脂 ${r.bodyFat}% ${bfTag}</span>` : ""}
+          </div>
+          <button class="bl-del" onclick="delBodyLog(${logs.length-1-i})">删</button>
+        </div>`;
+      }).join("")}
+    </div>` : `<div class="bl-empty">还没有记录，从今天开始记一笔吧。</div>`;
+
+  document.getElementById("bodylogBody").innerHTML = `
+    <div class="bl-form">
+      <div class="bl-form-t">记一笔</div>
+      <div class="bl-row">
+        <label>体重 (kg)</label>
+        <input type="number" id="blWeight" inputmode="decimal" placeholder="${curWeight||'当前体重'}" value="${curWeight}" step="0.1" />
+      </div>
+      <div class="bl-row">
+        <label>体脂率 (%) <span class="opt">选填</span></label>
+        <input type="number" id="blBodyFat" inputmode="decimal" placeholder="${curBodyFat||'估算即可'}" value="${curBodyFat}" step="0.1" />
+      </div>
+      <div class="bl-row">
+        <label>日期</label>
+        <input type="date" id="blDate" value="${todayStr()}" />
+      </div>
+      <button class="btn-primary" onclick="addBodyLog()">保存记录</button>
+    </div>
+    ${trendHtml}
+    ${listHtml}
+  `;
+}
+
+function todayStr(){
+  const d = new Date();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function addBodyLog(){
+  const w = parseFloat(document.getElementById("blWeight").value);
+  const bfVal = document.getElementById("blBodyFat").value;
+  const bf = bfVal === "" ? null : parseFloat(bfVal);
+  const date = document.getElementById("blDate").value || todayStr();
+  if(!w || isNaN(w) || w <= 0){
+    alert("请填写有效体重");
+    return;
+  }
+  if(bf !== null && (isNaN(bf) || bf <= 0)){
+    alert("体脂率若填写需为有效正数");
+    return;
+  }
+  const logs = loadBodyLog();
+  logs.push({date, weight: Math.round(w*10)/10, bodyFat: bf===null?null:Math.round(bf*10)/10});
+  logs.sort((a,b)=> a.date < b.date ? -1 : (a.date > b.date ? 1 : 0));
+  saveBodyLog(logs);
+  // 同步最新体重/体脂到个人信息，供方案计算使用
+  const profile = loadProfile();
+  profile.weight = w;
+  if(bf !== null) profile.bodyFat = bf;
+  saveProfile(profile);
+  renderBodyLog();
+}
+
+function delBodyLog(idx){
+  const logs = loadBodyLog();
+  if(idx >= 0 && idx < logs.length){
+    logs.splice(idx,1);
+    saveBodyLog(logs);
+    renderBodyLog();
+  }
 }
 
 /* ---- 食物计算器页 ---- */
