@@ -20,6 +20,7 @@
     --shadow-sm:0 1px 2px rgba(23,25,35,.04), 0 2px 8px rgba(23,25,35,.05);
     --shadow-md:0 4px 12px rgba(23,25,35,.06), 0 12px 32px rgba(38,33,92,.12);
     --radius:18px;
+    --tabbar-h:58px;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
@@ -32,6 +33,7 @@
   .page{
     max-width:680px; margin:0 auto; min-height:100vh;
     display:flex; flex-direction:column;
+    padding-bottom:calc(var(--tabbar-h) + 18px + env(safe-area-inset-bottom, 0px));
   }
 
   /* ===== 顶部导航（首页用） ===== */
@@ -109,6 +111,79 @@
   .current-empty .ce-arrow{color:var(--brand); flex-shrink:0;}
   .current-empty .ce-arrow svg{width:18px; height:18px;}
 
+  /* 首页仪表盘：紧凑方案卡 + 食谱卡 + 今日摄入卡 */
+  .home-dash{display:flex; flex-direction:column; gap:12px; margin-bottom:20px;}
+
+  .dash-plan{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border-radius:14px; padding:12px 16px; cursor:pointer; transition:.15s;
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
+    color:#fff; box-shadow:var(--shadow-sm);
+  }
+  .dash-plan:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .dash-plan .dp-label{font-size:10.5px; letter-spacing:1px; opacity:.85; display:flex; align-items:center; gap:6px; margin-bottom:2px;}
+  .dash-plan .dp-label .dot{width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 3px rgba(245,158,11,.3);}
+  .dash-plan .dp-name{font-size:15px; font-weight:700;}
+  .dash-plan .dp-arrow{flex-shrink:0; display:flex; align-items:center;}
+  .dash-plan .dp-arrow svg{width:18px; height:18px;}
+
+  .dash-recipe{
+    border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    background:var(--card); cursor:pointer; transition:.15s; box-shadow:var(--shadow-sm);
+  }
+  .dash-recipe:hover{border-color:var(--brand); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .dash-recipe .dr-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .dash-recipe .dr-t{font-size:14px; font-weight:700; color:var(--text);}
+  .dash-recipe .dr-goal{font-size:10.5px; font-weight:600; color:var(--brand); background:var(--brand-soft); padding:2px 8px; border-radius:20px;}
+  .dash-recipe .dr-target{display:flex; gap:12px; flex-wrap:wrap; margin-bottom:10px;}
+  .dash-recipe .dr-target span{font-size:11.5px; color:var(--sub);}
+  .dash-recipe .dr-target b{color:var(--text);}
+  .dash-recipe .dr-meals{display:flex; flex-direction:column; gap:5px;}
+  .dash-recipe .rp-meal{display:flex; align-items:center; gap:8px; font-size:12px;}
+  .dash-recipe .rp-m{color:var(--brand); font-weight:600; flex-shrink:0; min-width:30px;}
+  .dash-recipe .rp-f{color:var(--sub);}
+
+  .dash-intake{
+    border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    background:var(--card); cursor:pointer; transition:.15s; box-shadow:var(--shadow-sm);
+  }
+  .dash-intake:hover{border-color:var(--brand); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .dash-intake .di-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;}
+  .dash-intake .di-t{font-size:14px; font-weight:700; color:var(--text);}
+  .dash-intake .di-edit{font-size:11.5px; font-weight:600; color:var(--brand);}
+  .dash-intake .di-kcal-row{display:flex; align-items:baseline; gap:6px;}
+  .dash-intake .di-kcal-num{font-size:28px; font-weight:800; color:var(--text); line-height:1.1;}
+  .dash-intake .di-kcal-unit{font-size:12px; color:var(--sub);}
+  .dash-intake .di-bar{height:8px; border-radius:6px; background:var(--brand-soft); overflow:hidden; margin:8px 0 6px;}
+  .dash-intake .di-bar-fill{height:100%; border-radius:6px; background:linear-gradient(90deg,var(--brand),var(--brand-2)); transition:width .4s;}
+  .dash-intake .di-macros{display:flex; gap:12px; font-size:11.5px; color:var(--sub); margin-bottom:8px;}
+  .dash-intake .di-macros b{color:var(--text);}
+  .dash-intake .di-macros .di-pct{margin-left:auto; font-weight:700; color:var(--brand);}
+  .dash-intake .di-list{border-top:0.5px solid var(--border); padding-top:8px; display:flex; flex-direction:column; gap:5px;}
+  .dash-intake .di-item{display:flex; align-items:center; gap:8px; font-size:12px;}
+  .dash-intake .di-item .di-name{flex:1; color:var(--text);}
+  .dash-intake .di-item .di-meta{color:var(--sub); font-size:11px;}
+  .dash-intake .di-item .di-kcal{color:var(--sub); font-weight:600;}
+  .dash-intake .di-empty{font-size:12px; color:var(--sub); padding:4px 0;}
+  .dash-intake .di-more{font-size:11px; color:var(--sub);}
+
+  /* 不知道吃什么 → 推荐食谱 引导卡 */
+  .dash-what{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    background:var(--card); box-shadow:var(--shadow-sm);
+  }
+  .dash-what .dw-main{display:flex; align-items:center; gap:12px; flex:1; min-width:0;}
+  .dash-what .dw-emoji{font-size:30px; flex-shrink:0;}
+  .dash-what .dw-t{font-size:15px; font-weight:700; color:var(--text);}
+  .dash-what .dw-d{font-size:12px; color:var(--sub); margin-top:2px;}
+  .dash-what .dw-btn{
+    flex-shrink:0; padding:10px 16px; border-radius:12px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    font-size:13px; font-weight:700; box-shadow:var(--shadow-sm); transition:.15s;
+  }
+  .dash-what .dw-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
+
   .entries{display:grid; gap:14px;}
   .entry{
     border-radius:var(--radius); padding:22px;
@@ -136,6 +211,16 @@
   .entry.browse .arrow{background:var(--brand-soft);}
 
   .foot{text-align:center; color:#a6acb8; font-size:12px; padding:0 28px 28px;}
+
+  /* 轻量 toast 提示 */
+  .toast{
+    position:fixed; left:50%; bottom:calc(var(--tabbar-h) + 26px + env(safe-area-inset-bottom, 0px)); transform:translateX(-50%) translateY(20px);
+    background:rgba(31,35,41,.92); color:#fff; font-size:13px; padding:10px 18px;
+    border-radius:22px; opacity:0; pointer-events:none; transition:.25s; z-index:9999;
+    box-shadow:0 8px 24px rgba(0,0,0,.2); white-space:nowrap; max-width:82vw;
+    text-overflow:ellipsis; overflow:hidden;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
   /* ===== 列表页 ===== */
   .list-head{
@@ -181,7 +266,7 @@
 
   /* 底部对比栏 */
   .compare-bar{
-    position:fixed; left:50%; transform:translateX(-50%); bottom:18px; z-index:40;
+    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--tabbar-h) + 18px); z-index:40;
     width:calc(100% - 56px); max-width:624px; border-radius:16px;
     background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
     padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -258,7 +343,7 @@
   .param-row .k{font-size:13px; color:var(--sub); width:84px; flex-shrink:0; font-weight:500;}
   .param-row .v{font-size:14px; color:var(--text); line-height:1.6;}
   .detail-cta{
-    position:sticky; bottom:0; padding:14px 28px;
+    position:sticky; bottom:var(--tabbar-h); padding:14px 28px;
     background:linear-gradient(to top, var(--bg) 70%, rgba(246,247,251,0));
   }
   .detail-cta button{
@@ -316,7 +401,7 @@
   .compare-goal-badges{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:6px;}
   .compare-goal-badges .badge{margin-left:0;}
   .compare-cta{
-    position:sticky; bottom:0; padding:14px 28px;
+    position:sticky; bottom:var(--tabbar-h); padding:14px 28px;
     background:linear-gradient(to top, var(--bg) 70%, rgba(246,247,251,0));
   }
   .compare-cta .btn-row{display:flex; gap:12px;}
@@ -457,6 +542,10 @@
     box-shadow:var(--shadow-md);
   }
   .btn-primary:hover{transform:translateY(-1px);}
+  .btn-primary svg{width:16px; height:16px;}
+  .recipe-actions{display:flex; gap:10px; margin-top:16px;}
+  .recipe-actions .btn-primary{flex:1; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .btn-intake{background:linear-gradient(135deg,#0F6E56,#2AA37F) !important;}
 
   /* ===== 推荐食谱页 ===== */
   .quick-entry{
@@ -521,12 +610,29 @@
   .recipe-target-card .rt-macro{display:flex; gap:18px; flex-wrap:wrap;}
   .recipe-target-card .rt-macro .m{font-size:12px; opacity:.95;}
   .recipe-target-card .rt-macro .m b{font-size:16px; font-weight:800; display:block;}
-  .recipe-tpl-switch{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
-  .tpl-chip{
-    font-size:12px; padding:7px 14px; border-radius:16px; cursor:pointer;
+  .recipe-combo-box{margin-bottom:16px; padding:14px 16px; border:1px solid var(--border); border-radius:14px; background:var(--card); box-shadow:var(--shadow-sm);}
+  .rcb-head{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px;}
+  .rcb-title{font-size:14px; font-weight:700; color:var(--text);}
+  .rcb-row{display:flex; align-items:flex-start; gap:10px; margin-bottom:8px;}
+  .rcb-row:last-child{margin-bottom:0;}
+  .rcb-label{font-size:12px; color:var(--sub); flex-shrink:0; padding-top:6px; width:52px; text-align:right;}
+  .rcb-chips{display:flex; flex-wrap:wrap; gap:6px; flex:1;}
+  .pref-chip{
+    font-size:12px; padding:5px 12px; border-radius:14px; cursor:pointer; user-select:none;
     border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
   }
-  .tpl-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .pref-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .rts-btn{
+    flex-shrink:0; display:flex; align-items:center; gap:5px; padding:8px 14px; border-radius:12px;
+    border:none; cursor:pointer; background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    color:#fff; font-size:13px; font-weight:700; box-shadow:var(--shadow-sm); transition:.15s;
+  }
+  .rts-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .rts-btn svg{width:14px; height:14px;}
+  .meal-tabs{display:flex; gap:8px; margin-bottom:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:5px; box-shadow:var(--shadow-sm);}
+  .meal-tab{flex:1; text-align:center; padding:9px 0; border-radius:10px; font-size:14px; font-weight:600; color:var(--sub); cursor:pointer; user-select:none; transition:.15s;}
+  .meal-tab.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:700; box-shadow:var(--shadow-sm);}
+  .rs-hint{font-size:11px; color:var(--sub); margin-bottom:10px; letter-spacing:.3px;}
   .meal-block{margin-bottom:16px;}
   .meal-block .meal-title{font-size:14px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
   .meal-block .meal-title .mt-dot{width:8px; height:8px; border-radius:50%;}
@@ -553,6 +659,51 @@
 
   /* ===== 食物计算器页 ===== */
   .food-body{padding:16px 28px 40px;}
+  /* 今日摄入详情页 */
+  .intake-body{padding:16px 20px 40px; max-width:560px; margin:0 auto;}
+  .intake-target{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:13px; color:var(--sub); padding:12px 14px; margin-bottom:12px;
+    background:var(--brand-soft); border-radius:12px;
+  }
+  .intake-target b{color:var(--text); font-weight:700;}
+  .intake-sum{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center;
+    padding:14px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
+    margin-bottom:16px;
+  }
+  .intake-sum .is-item .n{font-size:20px; font-weight:800; line-height:1.2;}
+  .intake-sum .is-item .u{font-size:11px; opacity:.85; margin-top:3px;}
+  .intake-sum .is-kcal{border-left:0.5px solid rgba(255,255,255,.3);}
+  .intake-head{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;
+    font-size:14px; color:var(--text);
+  }
+  .intake-head b{font-weight:700;}
+  .intake-head a{color:var(--brand); font-weight:600; cursor:pointer;}
+  .intake-empty{font-size:14px; color:var(--sub); text-align:center; padding:30px 0;}
+  .intake-list{display:flex; flex-direction:column; gap:0;}
+  .intake-row{
+    display:flex; align-items:center; gap:12px; padding:14px 12px;
+    border-bottom:0.5px solid var(--border); background:var(--card);
+  }
+  .intake-row .ir-info{flex:1; display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .intake-row .ir-name{font-size:15px; font-weight:600; color:var(--text); line-height:1.3;}
+  .intake-row .ir-meta{font-size:12px; color:var(--sub);}
+  .intake-row .ir-edit{display:flex; align-items:center; gap:6px;}
+  .intake-row .ir-edit .fls-qty{
+    width:72px; padding:7px 8px; font-size:14px; text-align:center;
+    border:0.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);
+  }
+  .intake-row .ir-edit .fls-unit{font-size:13px; color:var(--sub);}
+  .intake-row .ir-kcal{font-size:16px; font-weight:700; color:var(--brand); white-space:nowrap;}
+  .intake-row .ir-kcal span{font-size:11px; font-weight:400; color:var(--sub);}
+  .intake-row .ir-del{
+    color:#DC2626; cursor:pointer; font-size:13px; padding:7px 12px; border-radius:8px;
+    background:#FEE2E2; flex-shrink:0; transition:.15s;
+  }
+  .intake-row .ir-del:hover{background:#FECACA;}
+
   .food-search{
     display:flex; gap:10px; margin-bottom:14px;
   }
@@ -577,6 +728,55 @@
   .food-item .fi-kcal{font-size:12px; color:var(--sub); margin-top:3px;}
   .food-item .fi-kcal b{color:var(--brand);}
   .food-item.sel{border-color:var(--brand); background:var(--brand-soft);}
+  .combo-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .combo-toggle{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    margin-top:16px; padding:13px 16px; border-radius:14px; cursor:pointer;
+    border:1px dashed var(--brand-mid); background:var(--brand-soft);
+    font-size:13px; font-weight:600; color:var(--brand); transition:.15s;
+  }
+  .combo-toggle:hover{border-color:var(--brand); background:var(--brand-soft);}
+  .combo-toggle .ct-arrow{font-size:11px;}
+  .combo-item{
+    border:1px solid var(--border); border-radius:13px; padding:12px 14px;
+    background:linear-gradient(135deg,var(--brand-soft),var(--card)); cursor:pointer; transition:.15s;
+    box-shadow:var(--shadow-sm);
+  }
+  .combo-item:hover{border-color:var(--brand); transform:translateY(-1px);}
+  .combo-item .ci-name{font-size:13px; font-weight:700; color:var(--text);}
+  .combo-item .ci-sub{font-size:11.5px; color:var(--sub); margin-top:3px; line-height:1.5;}
+  .combo-item .ci-kcal{font-size:12px; color:var(--brand); font-weight:700; margin-top:5px;}
+  /* 食物份量选择弹层（bottom sheet） */
+  #foodPickerBox{position:fixed; inset:0; z-index:110; pointer-events:none;}
+  .fp-mask{
+    position:absolute; inset:0; background:rgba(23,25,35,.45); backdrop-filter:blur(2px);
+    pointer-events:auto; animation:fpFade .2s;
+  }
+  .fp-sheet{
+    position:absolute; left:50%; transform:translateX(-50%); bottom:0;
+    width:100%; max-width:680px; background:var(--card); border-radius:20px 20px 0 0;
+    padding:6px 20px 22px; pointer-events:auto; box-shadow:0 -8px 30px rgba(0,0,0,.15);
+    animation:fpUp .22s ease;
+  }
+  @keyframes fpUp{from{transform:translate(-50%,100%);} to{transform:translate(-50%,0);}}
+  @keyframes fpFade{from{opacity:0;} to{opacity:1;}}
+  .fp-sheet .sheet-grab{width:40px; height:4px; border-radius:2px; background:var(--border); margin:8px auto 14px;}
+  .fp-sheet .fp-name{font-size:16px; font-weight:700; color:var(--brand-deep); margin-bottom:14px;}
+  .fp-sheet .fp-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .fp-sheet .fp-row input{
+    flex:1; padding:12px 14px; border-radius:11px; border:1px solid var(--border);
+    background:var(--bg); font-size:16px; outline:none; color:var(--text);
+  }
+  .fp-sheet .fp-row input:focus{border-color:var(--brand);}
+  .fp-sheet .fp-unit{font-size:14px; color:var(--sub); white-space:nowrap;}
+  .fp-sheet .fp-btns{display:flex; gap:10px; margin-top:16px;}
+  .fp-sheet .fp-btns button{
+    flex:1; padding:13px; border-radius:12px; border:none; font-size:15px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .fp-add{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;}
+  .fp-cancel{background:var(--bg); color:var(--sub); border:1px solid var(--border)!important;}
+  .fp-add:hover{transform:translateY(-1px);}
+  /* 食谱页内联食物选择器（添加食物到某餐） */
   .food-picker{
     border:1px solid var(--brand); border-radius:14px; padding:16px;
     background:var(--brand-soft); margin-bottom:16px;
@@ -587,15 +787,7 @@
     flex:1; padding:11px 14px; border-radius:11px; border:1px solid var(--border);
     background:var(--card); font-size:15px; outline:none; color:var(--text);
   }
-  .food-picker .fp-row input:focus{border-color:var(--brand);}
   .food-picker .fp-unit{font-size:13px; color:var(--sub); white-space:nowrap;}
-  .food-picker .fp-btns{display:flex; gap:8px; margin-top:12px;}
-  .food-picker .fp-btns button{
-    flex:1; padding:11px; border-radius:11px; border:none; font-size:14px; font-weight:600; cursor:pointer; transition:.15s;
-  }
-  .fp-add{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;}
-  .fp-cancel{background:var(--card); color:var(--sub); border:1px solid var(--border)!important;}
-  .fp-add:hover{transform:translateY(-1px);}
   .food-photo-btn{
     width:100%; padding:13px; border-radius:12px; border:1.5px dashed var(--brand-mid);
     background:var(--card); color:var(--brand); font-size:14px; font-weight:600; cursor:pointer;
@@ -618,6 +810,9 @@
   }
   .food-list-summary .fls-t{font-size:13px; font-weight:700; color:var(--brand-deep); margin-bottom:8px;}
   .food-list-summary .fls-empty{font-size:13px; color:var(--sub);}
+  .fls-qty-row{display:flex; align-items:center; gap:4px; margin-top:4px;}
+  .fls-qty{width:64px; padding:4px 6px; font-size:13px; text-align:center; border:0.5px solid var(--border); border-radius:7px; background:var(--bg); color:var(--text);}
+  .fls-unit{font-size:12px; color:var(--sub);}
   .food-total{
     display:flex; gap:10px; text-align:center; padding:16px;
     border-radius:16px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
@@ -728,6 +923,95 @@
   .sc-cancel{background:var(--bg); color:var(--sub); border:1px solid var(--border) !important;}
   .sc-ok{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; box-shadow:var(--shadow-md);}
 
+  /* ===== 底部固定 TabBar ===== */
+  .tabbar{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:0;
+    width:100%; max-width:680px; z-index:60;
+    display:flex; align-items:stretch;
+    background:var(--card); border-top:0.5px solid var(--border);
+    box-shadow:0 -4px 16px rgba(23,25,35,.07);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar .tab{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:7px 0 6px; background:none; border:none; cursor:pointer;
+    color:var(--sub); font-size:11px; font-weight:500; transition:color .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tabbar .tab svg{width:22px; height:22px;}
+  .tabbar .tab.on{color:var(--brand); font-weight:600;}
+
+  /* ===== 首页三层结构 ===== */
+  .home-main{justify-content:flex-start;}
+  .intake-ring-card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px 20px 16px; margin-bottom:16px; box-shadow:var(--shadow-sm);
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .intake-ring-card .ring-title{font-size:13px; color:var(--sub); font-weight:600; margin-bottom:12px;}
+  .intake-ring-card .ring-wrap{position:relative; width:150px; height:150px; margin-bottom:4px; cursor:pointer;}
+  .intake-ring-card .ring-wrap svg{width:150px; height:150px; transform:rotate(-90deg);}
+  .intake-ring-card .ring-track{fill:none; stroke:var(--brand-soft); stroke-width:11;}
+  .intake-ring-card .ring-fill{fill:none; stroke:url(#ringGrad); stroke-width:11; stroke-linecap:round; transition:stroke-dashoffset .5s ease;}
+  .intake-ring-card .ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  }
+  .intake-ring-card .ring-center .rc-kcal{font-size:30px; font-weight:800; line-height:1; color:var(--text);}
+  .intake-ring-card .ring-center .rc-unit{font-size:11px; color:var(--sub); margin-top:5px;}
+  .intake-ring-card .ring-center .rc-hint{font-size:11px; color:var(--brand); margin-top:6px; font-weight:600;}
+  .intake-ring-card .ring-macros{display:flex; gap:14px; margin-top:12px; font-size:12px; color:var(--sub);}
+  .intake-ring-card .ring-macros b{color:var(--text); font-weight:700;}
+  .intake-ring-card .ring-empty{font-size:13px; color:var(--sub); text-align:center; padding:14px 0; line-height:1.8;}
+  .intake-ring-card .ring-empty a{color:var(--brand); font-weight:600; cursor:pointer;}
+  .intake-ring-card .ring-toggle{
+    width:100%; margin-top:14px; padding:12px 0; text-align:center;
+    font-size:14px; color:var(--brand); border-top:1px solid var(--border); cursor:pointer; font-weight:500;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .intake-ring-card .ring-toggle b{font-weight:700;}
+  .intake-ring-card .ring-toggle .rt-arrow{font-size:13px; color:var(--sub);}
+  .intake-ring-card .ring-detail{width:100%; margin-top:4px; border-top:1px solid var(--border); padding-top:6px;}
+  .intake-ring-card .ring-detail-empty{font-size:14px; color:var(--sub); text-align:center; padding:16px 0;}
+  .intake-ring-card .ring-detail-row{
+    display:flex; align-items:center; gap:12px; padding:12px 4px; border-bottom:0.5px solid var(--border);
+  }
+  .intake-ring-card .rd-info{flex:1; display:flex; flex-direction:column; gap:6px; min-width:0;}
+  .intake-ring-card .rd-name{color:var(--text); font-weight:600; font-size:14.5px; line-height:1.3;}
+  .intake-ring-card .rd-edit{display:flex; align-items:center; gap:6px;}
+  .intake-ring-card .rd-edit .fls-qty{width:72px; padding:7px 8px; font-size:14px; text-align:center; border:0.5px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text);}
+  .intake-ring-card .rd-edit .fls-unit{font-size:13px; color:var(--sub);}
+  .intake-ring-card .rd-kcal{color:var(--brand); font-weight:700; font-size:14px; white-space:nowrap;}
+  .intake-ring-card .rd-del{
+    color:#DC2626; cursor:pointer; font-size:13px; padding:7px 12px; border-radius:8px;
+    background:#FEE2E2; flex-shrink:0; transition:.15s;
+  }
+  .intake-ring-card .rd-del:hover{background:#FECACA;}
+
+  .home-cta{
+    width:100%; border:none; cursor:pointer; border-radius:var(--radius);
+    background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
+    color:#fff; padding:26px 20px; margin-bottom:16px;
+    box-shadow:var(--shadow-md); transition:.18s;
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+  }
+  .home-cta:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(38,33,92,.28);}
+  .home-cta .hc-emoji{font-size:32px; line-height:1; margin-bottom:8px;}
+  .home-cta .hc-t{font-size:20px; font-weight:800; line-height:1.2;}
+  .home-cta .hc-d{font-size:12px; opacity:.9; margin-top:4px;}
+
+  .home-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;}
+  .home-tile{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:16px 14px; cursor:pointer; box-shadow:var(--shadow-sm); transition:.15s;
+    display:flex; align-items:center; gap:11px;
+  }
+  .home-tile:hover{border-color:var(--brand); transform:translateY(-1px); box-shadow:var(--shadow-md);}
+  .home-tile .ht-ic{font-size:22px; flex-shrink:0; line-height:1;}
+  .home-tile .ht-t{font-size:14px; font-weight:600; color:var(--text);}
+  .home-reco{text-align:center; font-size:13px; color:var(--sub); padding:8px 0 2px;}
+  .home-reco b{color:var(--text); font-weight:600;}
+  .home-reco a{color:var(--brand); font-weight:600; cursor:pointer;}
+
   /* ===== 手机窄屏 ===== */
   @media (max-width:480px){
     .navbar{padding:16px 18px 12px;}
@@ -771,35 +1055,38 @@
       </button>
     </header>
 
-    <main class="main">
-      <div class="hero">
-        <h1>好好吃饭，多多喝水</h1>
-        <p>选择适合你的饮食方案，按体重精准计算三大营养素</p>
+    <main class="main home-main">
+      <!-- 第一层：今日摄入进度环 -->
+      <div class="intake-ring-card" id="homeIntakeRing"></div>
+
+      <!-- 第二层：主 CTA「今天吃什么」 -->
+      <button class="home-cta" onclick="goRecipe()">
+        <span class="hc-emoji">🍱</span>
+        <span class="hc-t">今天吃什么</span>
+        <span class="hc-d">按你的目标，自由组合一日三餐</span>
+      </button>
+
+      <!-- 第三层：次要入口 -->
+      <div class="home-grid">
+        <div class="home-tile" onclick="openFoodCalc()">
+          <span class="ht-ic">🍽️</span>
+          <span class="ht-t">记录食物</span>
+        </div>
+        <div class="home-tile" onclick="go('list')">
+          <span class="ht-ic">📋</span>
+          <span class="ht-t">我的方案</span>
+        </div>
+        <div class="home-tile" onclick="openBodyLog()">
+          <span class="ht-ic">📈</span>
+          <span class="ht-t">身体数据</span>
+        </div>
+        <div class="home-tile" onclick="showMe()">
+          <span class="ht-ic">⚙️</span>
+          <span class="ht-t">设置 · 我的</span>
+        </div>
       </div>
 
-      <div id="currentPlanBox"></div>
-
-      <div class="entries" id="homeEntries">
-        <div class="entry recommend" onclick="goRecommend()">
-          <div>
-            <div class="t">我还没想好，帮我推荐</div>
-            <div class="d">30 秒回答几个问题，推荐最适合你的方案</div>
-          </div>
-          <div class="arrow">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-
-        <div class="entry browse" onclick="go('list')">
-          <div>
-            <div class="t">我有想执行的方案</div>
-            <div class="d">直接浏览方案，选一个进入计算</div>
-          </div>
-          <div class="arrow">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </div>
-        </div>
-      </div>
+      <div class="home-reco" id="homeRecoEntry"></div>
     </main>
 
     <div class="foot">数据仅供膳食规划参考，不构成医疗建议</div>
@@ -906,6 +1193,17 @@
     <div class="food-body" id="foodBody"></div>
   </div>
 
+  <!-- ============ 今日摄入详情页 ============ -->
+  <div class="screen" id="screen-intake">
+    <header class="list-head">
+      <button class="back-btn" onclick="go('home')" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">今日摄入</div>
+    </header>
+    <div class="intake-body" id="intakeBody"></div>
+  </div>
+
   <!-- ============ 身体数据记录页 ============ -->
   <div class="screen" id="screen-bodylog">
     <header class="list-head">
@@ -918,6 +1216,26 @@
   </div>
 
 </div>
+
+<!-- ============ 底部固定 TabBar ============ -->
+<nav class="tabbar" id="tabbar">
+  <button class="tab on" data-tab="home" onclick="goTab('home')" aria-label="首页">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+    <span>首页</span>
+  </button>
+  <button class="tab" data-tab="record" onclick="goTab('record')" aria-label="记录">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    <span>记录</span>
+  </button>
+  <button class="tab" data-tab="recipe" onclick="goTab('recipe')" aria-label="食谱">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11h16a1 1 0 0 1 1 1v1a9 9 0 0 1-18 0v-1a1 1 0 0 1 1-1z"/><path d="M8 11V6a4 4 0 0 1 8 0v5"/></svg>
+    <span>食谱</span>
+  </button>
+  <button class="tab" data-tab="me" onclick="goTab('me')" aria-label="我的">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5"/></svg>
+    <span>我的</span>
+  </button>
+</nav>
 
 <!-- ============ 切换方案底部面板 ============ -->
 <div class="sheet-mask" id="sheetMask" onclick="closePlanSheet()"></div>
@@ -1223,6 +1541,33 @@ function go(name){
   }
   if(name==="list") renderFilters();
   if(name==="home") renderCurrentPlan();
+  renderTab();
+}
+
+/* ===== 底部固定 TabBar ===== */
+const TAB_MAP = { home:"home", food:"record", recipe:"recipe", me:"me" };
+
+function renderTab(){
+  const cur = TAB_MAP[curScreen];
+  document.querySelectorAll(".tabbar .tab").forEach(t=>{
+    t.classList.toggle("on", t.getAttribute("data-tab") === cur);
+  });
+}
+
+function goTab(name){
+  if(name === "home"){ go("home"); return; }
+  if(name === "record"){ openFoodCalc(); return; }
+  if(name === "recipe"){ goRecipe(); return; }
+  if(name === "me"){ showMe(); return; }
+}
+
+/* 进入食谱页：已有当日食谱则直接切换保留；否则走 openRecipe 完整守卫并生成 */
+function goRecipe(){
+  if(!recipeMeals || !recipeMeals.meals || recipePlanId !== getCurrentPlanId()){
+    openRecipe();
+  } else {
+    go("recipe");
+  }
 }
 
 /* ===== 当前选择方案 ===== */
@@ -1234,60 +1579,278 @@ function setCurrentPlan(id){
   try{ localStorage.setItem(CURRENT_PLAN_KEY, id); }catch(e){}
 }
 
+// 计算「今天」已记录食物的摄入总和
+function dailyIntakeSummary(){
+  const items = loadTodayItems();
+  let kcal=0, p=0, c=0, f=0;
+  items.forEach(it=>{
+    const fd = findFood(it.name);
+    if(!fd) return;
+    const qty = (it.servings !== undefined) ? it.servings : it.grams;
+    const v = foodKcal(fd, qty);
+    if(it.kcalAdj) v.kcal += it.kcalAdj;
+    kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
+  });
+  return {kcal, protein:p, carb:c, fat:f, count:items.length};
+}
+
+// 生成「今日推荐食谱」紧凑预览（取模板第一套，按体重缩放）
+function recipePreview(planId){
+  const profile = loadProfile();
+  const target = computeTarget(planId, profile);
+  const goal = planGoal(planId);
+  const tpls = MEAL_TEMPLATES.filter(t=>t.goal===goal);
+  const tpl = tpls[0];
+  if(!tpl) return {target, goal, meals:null};
+  const scaled = scaleTemplate(tpl, profile.weight);
+  const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
+    const t = mealTotal(scaled.meals[m]);
+    acc.kcal+=t.kcal; acc.protein+=t.protein; acc.carb+=t.carb; acc.fat+=t.fat;
+    return acc;
+  }, {kcal:0,protein:0,carb:0,fat:0});
+  return {target, goal, totals, meals:scaled.meals, tplName:tpl.name};
+}
+
 function renderCurrentPlan(){
-  const box = document.getElementById("currentPlanBox");
-  const homeEntries = document.getElementById("homeEntries");
+  const profile = loadProfile();
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
   const id = getCurrentPlanId();
-  const p = PLANS.find(x=>x.id===id);
+  // 无完整信息时若残留当前方案，一并清理，保证「清空 = 全部重来」（沿用旧逻辑）
+  if(!hasProfile && id){
+    setCurrentPlan("");
+  }
+  renderIntakeRing();
+}
+
+/* 首页第一层：今日摄入进度环（纯状态展示） */
+let homeIntakeOpen = false;  // 首页今日摄入明细是否展开
+/* 首页底部方案入口：已选方案 →「换个方案」；未选 →「帮我推荐」 */
+function renderHomeReco(id){
+  const el = document.getElementById("homeRecoEntry");
+  if(!el) return;
+  if(id){
+    const plan = PLANS.find(x=>x.id===id);
+    el.innerHTML = `当前方案：<b>${plan ? plan.name : "已选择"}</b> · <a onclick="go('list')">换个方案 →</a>`;
+  } else {
+    el.innerHTML = `还没想好选哪个方案？<a onclick="goRecommend()">帮我推荐 →</a>`;
+  }
+}
+
+function renderIntakeRing(){
+  const box = document.getElementById("homeIntakeRing");
+  if(!box) return;
+
+  const id = getCurrentPlanId();
+  const plan = PLANS.find(x=>x.id===id);
   const profile = loadProfile();
   const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
 
-  // 首页状态规则：个人信息完整 + 已选方案 → 方案/食谱态；否则一律回到「问卷+方案选择」初始态
-  if(p && hasProfile){
-    // 已选方案：隐藏「帮我推荐/我有想执行的方案」引导入口，只显示当前方案 + 食谱/热量快捷入口
-    if(homeEntries) homeEntries.style.display = "none";
-    box.innerHTML = `
-      <div class="current-card" onclick="openPlan('${p.id}','home')">
-        <div class="cc-label"><span class="dot"></span>当前选择方案</div>
-        <div class="cc-name">${p.name}</div>
-        <div class="cc-sub">${p.desc}</div>
-        <div class="cc-arrow">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-      </div>
-      <div class="entries" style="grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="quick-entry" onclick="openRecipe()">
-          <div class="qe-ic">🍱</div>
-          <div class="qe-t">今日推荐食谱</div>
-          <div class="qe-d">按目标配好一日三餐</div>
-        </div>
-        <div class="quick-entry" onclick="openFoodCalc()">
-          <div class="qe-ic">⚖️</div>
-          <div class="qe-t">食物热量计算</div>
-          <div class="qe-d">拍照或录食物算热量</div>
-        </div>
-        <div class="quick-entry" onclick="openBodyLog()" style="grid-column:1 / -1;">
-          <div class="qe-ic">📈</div>
-          <div class="qe-t">记录身体变化</div>
-          <div class="qe-d">记录体重、体脂率，追踪变化趋势</div>
-        </div>
-      </div>`;
-  } else {
-    // 初始态：无个人信息（含清空后）= 全新用户，一律回到「问卷 + 方案选择」，不显示任何方案名
-    if(homeEntries) homeEntries.style.display = "grid";
-    // 无个人信息时，若残留当前方案，一并清理，保证「清空 = 全部重来」
-    if(p) setCurrentPlan("");
-    box.innerHTML = `
-      <div class="current-empty" onclick="go('list')">
-        <div>
-          <div class="ce-t">还没有选择方案</div>
-          <div class="ce-d">去选一个适合自己的饮食方案吧</div>
-        </div>
-        <div class="ce-arrow">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-      </div>`;
+  renderHomeReco(id);
+
+  // 空态：未选方案 / 信息不完整，无法计算目标
+  if(!plan || !hasProfile){
+    const tip = !plan
+      ? `<div class="ring-empty">还没有选择饮食方案<br><a onclick="go('list')">去选方案</a> · <a onclick="goRecommend()">帮我推荐</a></div>`
+      : `<div class="ring-empty">先完善个人信息，才能计算每日目标<br><a onclick="go('me')">去「我的」填写</a></div>`;
+    box.innerHTML = `<div class="ring-title">今日摄入</div>${tip}`;
+    return;
   }
+
+  const target = computeTarget(id, profile);
+  const intake = dailyIntakeSummary();
+  const kcal = Math.round(intake.kcal);
+  const tKcal = Math.round(target.kcal) || 0;
+  const pct = tKcal > 0 ? Math.min(100, Math.round(kcal / tKcal * 100)) : 0;
+
+  const R = 52;
+  const C = 2 * Math.PI * R;
+  const offset = C * (1 - pct / 100);
+
+  const items = loadTodayItems();
+  const detailHtml = homeIntakeOpen ? `
+    <div class="ring-detail">
+      ${items.length===0 ? `<div class="ring-detail-empty">今天还没有记录，去「记录食物」添加</div>` : items.map((it,i)=>{
+        const fd = findFood(it.name);
+        if(!fd) return "";
+        const qty = (it.servings !== undefined) ? it.servings : it.grams;
+        const isSrv = isServingFood(fd);
+        const v = foodKcal(fd, qty);
+        if(it.kcalAdj) v.kcal += it.kcalAdj;
+        const qtyInput = isSrv
+          ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`
+          : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateHomeIntakeQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+        return `
+        <div class="ring-detail-row">
+          <div class="rd-info">
+            <div class="rd-name">${it.name}</div>
+            <div class="rd-edit">${qtyInput}</div>
+          </div>
+          <div class="rd-kcal">${Math.round(v.kcal)} kcal</div>
+          <div class="rd-del" onclick="removeHomeIntake(${i})">删除</div>
+        </div>`;
+      }).join("")}
+    </div>` : "";
+
+  box.innerHTML = `
+    <div class="ring-title">今日摄入</div>
+    <div class="ring-wrap" onclick="openIntake()">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#26215C"/>
+            <stop offset="100%" stop-color="#4A3FA8"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-track" cx="60" cy="60" r="${R}"/>
+        <circle class="ring-fill" cx="60" cy="60" r="${R}"
+          stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"/>
+      </svg>
+      <div class="ring-center">
+        <div class="rc-kcal">${kcal}</div>
+        <div class="rc-unit">/ ${tKcal} kcal</div>
+        <div class="rc-hint">点我看明细 ›</div>
+      </div>
+    </div>
+    <div class="ring-macros">
+      <span>碳 <b>${Math.round(intake.carb)}</b>g</span>
+      <span>蛋 <b>${Math.round(intake.protein)}</b>g</span>
+      <span>脂 <b>${Math.round(intake.fat)}</b>g</span>
+      <span><b>${pct}</b>%</span>
+    </div>
+    <div class="ring-toggle" onclick="toggleHomeIntake()">
+      今日已吃 <b>${items.length}</b> 项
+      <span class="rt-arrow">${homeIntakeOpen ? "收起 ▲" : "管理 ▼"}</span>
+    </div>
+    ${detailHtml}`;
+}
+
+// 首页明细展开/收起
+function toggleHomeIntake(){
+  homeIntakeOpen = !homeIntakeOpen;
+  renderIntakeRing();
+}
+// 首页明细里修改第 i 项数量
+function updateHomeIntakeQty(i, val){
+  const items = loadTodayItems();
+  const it = items[i];
+  if(!it) return;
+  const fd = findFood(it.name);
+  const v = parseFloat(val);
+  if(!fd || isNaN(v) || v <= 0) return;
+  if(it.servings !== undefined){ it.servings = v; } else { it.grams = v; }
+  const log = loadDailyLog();
+  const t = todayStr();
+  const rec = log.find(r=>r.date===t);
+  if(rec){ rec.items = items; saveDailyLog(log); }
+  renderIntakeRing();
+}
+// 首页明细里删除第 i 项
+function removeHomeIntake(i){
+  const items = loadTodayItems();
+  items.splice(i,1);
+  const log = loadDailyLog();
+  const t = todayStr();
+  const rec = log.find(r=>r.date===t);
+  if(rec){ rec.items = items; saveDailyLog(log); }
+  renderIntakeRing();
+}
+
+/* ===== 今日摄入详情页 ===== */
+function openIntake(){
+  renderIntakeDetail();
+  go("intake");
+}
+function renderIntakeDetail(){
+  const box = document.getElementById("intakeBody");
+  if(!box) return;
+
+  const id = getCurrentPlanId();
+  const plan = PLANS.find(x=>x.id===id);
+  const profile = loadProfile();
+  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
+  const target = (plan && hasProfile) ? computeTarget(id, profile) : null;
+
+  const items = loadTodayItems();
+  let kcal=0, p=0, c=0, f=0;
+  const rows = items.map((it,i)=>{
+    const fd = findFood(it.name);
+    if(!fd) return "";
+    const qty = (it.servings !== undefined) ? it.servings : it.grams;
+    const isSrv = isServingFood(fd);
+    const v = foodKcal(fd, qty);
+    if(it.kcalAdj) v.kcal += it.kcalAdj;
+    kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
+    const qtyInput = isSrv
+      ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">${fd.unit||"份"}</span>`
+      : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateIntakeDetailQty(${i}, this.value)" /><span class="fls-unit">克</span>`;
+    const meta = isSrv
+      ? `${it.note ? it.note+" · " : ""}${it.kcalAdj ? (it.kcalAdj>0?"+":"")+it.kcalAdj+" kcal" : ""}`
+      : humanizeGrams(it.name, qty);
+    return `
+      <div class="intake-row">
+        <div class="ir-info">
+          <div class="ir-name">${it.name}</div>
+          <div class="ir-meta">${meta}</div>
+          <div class="ir-edit">${qtyInput}</div>
+        </div>
+        <div class="ir-kcal">${Math.round(v.kcal)}<span> kcal</span></div>
+        <div class="ir-del" onclick="removeIntakeDetail(${i})">删除</div>
+      </div>`;
+  }).join("");
+
+  const summary = `
+    <div class="intake-sum">
+      <div class="is-item"><div class="n">${Math.round(c)}</div><div class="u">碳水 g</div></div>
+      <div class="is-item"><div class="n">${Math.round(p)}</div><div class="u">蛋白 g</div></div>
+      <div class="is-item"><div class="n">${Math.round(f)}</div><div class="u">脂肪 g</div></div>
+      <div class="is-item is-kcal"><div class="n">${Math.round(kcal)}</div><div class="u">总热量 kcal</div></div>
+    </div>`;
+
+  const targetBar = target ? `
+    <div class="intake-target">
+      <span>今日目标 <b>${Math.round(target.kcal)} kcal</b></span>
+      <span>已摄入 <b>${Math.round(kcal)} kcal</b>（${target.kcal>0?Math.round(kcal/target.kcal*100):0}%）</span>
+    </div>` : "";
+
+  box.innerHTML = `
+    ${targetBar}
+    ${summary}
+    <div class="intake-head">
+      <span>今天吃了 <b>${items.length}</b> 项</span>
+      <a onclick="openFoodCalc()">＋ 添加食物</a>
+    </div>
+    ${items.length===0
+      ? `<div class="intake-empty">今天还没有记录，点右上角「＋ 添加食物」开始</div>`
+      : `<div class="intake-list">${rows}</div>`}`;
+}
+
+function updateIntakeDetailQty(i, val){
+  const items = loadTodayItems();
+  const it = items[i];
+  if(!it) return;
+  const fd = findFood(it.name);
+  const v = parseFloat(val);
+  if(!fd || isNaN(v) || v <= 0) return;
+  if(it.servings !== undefined){ it.servings = v; } else { it.grams = v; }
+  saveTodayItemsRaw(items);
+  renderIntakeDetail();
+  renderIntakeRing();
+}
+function removeIntakeDetail(i){
+  const items = loadTodayItems();
+  items.splice(i,1);
+  saveTodayItemsRaw(items);
+  renderIntakeDetail();
+  renderIntakeRing();
+}
+// 直接写入今天记录（items 为完整数组）
+function saveTodayItemsRaw(items){
+  const log = loadDailyLog();
+  const t = todayStr();
+  const rec = log.find(r=>r.date===t);
+  if(rec){ rec.items = items; }
+  else { log.push({date:t, items}); }
+  saveDailyLog(log);
 }
 
 /* ===== 筛选 ===== */
@@ -1741,7 +2304,8 @@ function switchPlan(id){
     // 食谱页：重置并重新生成食谱
     recipePlanId = id;
     recipeTplIdx = 0;
-    recipeCustom = null;
+    recipeMeals = null;  // 方案变了，清空让 buildRecipe 重新生成
+    recipePref = { protein:"", staple:"" };
     buildRecipe();
   }
 }
@@ -1936,10 +2500,12 @@ function renderProfileForm(profile){
     }
     // 优先用草稿值（未提交输入），其次用已保存值
     const val = (profileDraft[f.key] !== undefined) ? profileDraft[f.key] : (profile[f.key]||"");
+    // 体重字段需联动减脂时长建议；其他 num 字段不需 oninput
+    const oninput = f.key === "weight" ? ` oninput="renderWeightHint()"` : "";
     return `
       <div class="form-group">
         <label><b>${f.label}</b></label>
-        <input class="form-input" type="number" id="profile_${f.key}" value="${val}" placeholder="${f.unit}" />
+        <input class="form-input" type="number" id="profile_${f.key}" value="${val}" placeholder="${f.unit}"${oninput} />
       </div>`;
   }).join("");
 
@@ -2604,8 +3170,8 @@ function renderMe(){
     <div class="me-section">
       <div class="st">关于</div>
       <div class="me-card">
-        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.logo}</span>🌰饮食</span><span class="val">v0.1</span></div>
-        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.book}</span>方案数据来源</span><span class="val">谭成义、凯圣王等公开教学 + 中国居民膳食指南</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.logo}</span>🌰饮食</span><span class="val">v0.2</span></div>
+        <div class="me-row"><span class="lbl"><span class="ic">${ICONS.book}</span>方案数据来源</span><span class="val">谭成义、凯圣王、努力的橙子等公开教学 + ISSN/卫健委标准 + 中国居民膳食指南</span></div>
       </div>
     </div>
   `;
@@ -2707,6 +3273,8 @@ function confirmClear(){
     compareMode = false;
     curPlanId = null;
     detailFrom = "list";
+    recipeMeals = null;    // 清空内存中的食谱，避免「今天吃什么」展示过期食谱
+    recipePlanId = "";
     renderMe();
     renderCurrentPlan();  // 刷新首页，回到「问卷 + 方案选择」状态
     go('home');           // 跳回首页
@@ -2728,18 +3296,47 @@ function loadCustomFoods(){
 }
 function saveCustomFoods(list){ localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }
 function allFoods(){
-  return FOODS.concat(loadCustomFoods());
+  return FOODS.concat(BRAND_FOODS).concat(loadCustomFoods());
 }
 function findFood(name){
   return allFoods().find(f=>f.name===name);
 }
+// 营养值可能是数值（旧数据/自定义食物）或范围 [lo,hi]（内置食物），统一取中值；null/undefined → 0
+function mid(v){
+  if(v === null || v === undefined) return 0;
+  if(Array.isArray(v)) return (v[0] + v[1]) / 2;
+  return v;
+}
+// 判断是否为「按份」的店面产品（有 serving 且非每100g模型）
+function isServingFood(f){
+  return f && f.serving !== undefined && f.unit !== undefined;
+}
+// 格式化成展示文本：范围显示「lo~hi」，纯数值原样返回
+function fmtRange(v){
+  if(Array.isArray(v)){
+    const lo = Number.isInteger(v[0]) ? v[0] : v[0];
+    const hi = Number.isInteger(v[1]) ? v[1] : v[1];
+    return `${lo}~${hi}`;
+  }
+  return String(v);
+}
 function foodKcal(f, grams){
+  // 按份产品（店面品牌）：grams 参数传的是「份数」，直接乘单份营养值
+  if(isServingFood(f)){
+    const servings = grams;  // 此时 grams 语义为份数
+    return {
+      kcal: f.kcal * servings,
+      protein: (f.protein==null?0:f.protein) * servings,
+      carb: (f.carb==null?0:f.carb) * servings,
+      fat: (f.fat==null?0:f.fat) * servings
+    };
+  }
   // 按每 100g 营养值，换算成实际克数的热量与三大营养素
   return {
-    kcal: f.kcal * grams / 100,
-    protein: f.protein * grams / 100,
-    carb: f.carb * grams / 100,
-    fat: f.fat * grams / 100
+    kcal: mid(f.kcal) * grams / 100,
+    protein: mid(f.protein) * grams / 100,
+    carb: mid(f.carb) * grams / 100,
+    fat: mid(f.fat) * grams / 100
   };
 }
 
@@ -2794,8 +3391,10 @@ function computeTarget(planId, profile){
 /* ---- 推荐食谱页 ---- */
 let recipeTplIdx = 0;
 let recipePlanId = "";
-let recipeMeals = null;   // 当前展示的一日三餐（已缩放）
-let recipeCustom = null;  // 用户手动替换后的三餐
+let recipeMeals = null;   // 当前的一日三餐（持久状态，切换餐次只改展示、不重生成）
+let recipePref = { protein:"", staple:"" };  // 自由组合偏好：想吃的主食/蛋白
+let recipeSeed = 0;       // 组合随机种子（每次「换一个」+1，保证每次生成不同）
+let recipeMealTab = "早餐";  // 当前选中的餐次（早餐/午餐/晚餐），用户每顿单独看
 
 function planGoal(planId){
   const p = PLANS.find(x=>x.id===planId);
@@ -2840,7 +3439,10 @@ function openRecipe(){
   }
   recipePlanId = id;
   recipeTplIdx = 0;
-  recipeCustom = null;
+  recipePref = { protein:"", staple:"" };
+  recipeSeed = 0;
+  recipeMealTab = "早餐";
+  recipeMeals = null;  // 进入时清空，buildRecipe 会重新生成一整天
   buildRecipe();
   go('recipe');
 }
@@ -2849,11 +3451,11 @@ function buildRecipe(){
   const profile = loadProfile();
   const target = computeTarget(recipePlanId, profile);
   const goal = planGoal(recipePlanId);
-  const tpls = MEAL_TEMPLATES.filter(t=>t.goal===goal);
-  const tpl = tpls[recipeTplIdx % tpls.length];
 
-  // 若用户已手动替换，用替换后的；否则用模板
-  recipeMeals = recipeCustom ? recipeCustom : scaleTemplate(tpl, profile.weight);
+  // 只在「没有三餐」或「需要重生成」时才生成；正常渲染直接用已保存的三餐
+  if(!recipeMeals || !recipeMeals.meals){
+    recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
+  }
 
   const plan = PLANS.find(x=>x.id===recipePlanId);
   const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
@@ -2864,53 +3466,259 @@ function buildRecipe(){
 
   const pct = (val, tgt)=> Math.min(100, Math.round(val/tgt*100));
 
+  // 偏好 chips（蛋白 + 主食）
+  const proteinOpts = Object.keys(FOOD_POOLS.PROTEIN_KEYS);
+  const stapleOpts = Object.keys(FOOD_POOLS.STAPLE_KEYS);
+  const chip = (label, val, cur, kind)=>`<span class="pref-chip ${cur===val?"on":""}" onclick="setPref('${kind}','${val}')">${label}</span>`;
+  const mealsOrder = ["早餐","午餐","晚餐"];
+  const tab = (m)=>`<div class="meal-tab ${recipeMealTab===m?"on":""}" onclick="switchMealTab('${m}')">${m}</div>`;
+
   document.getElementById("recipeBody").innerHTML = `
     <div class="recipe-target-card">
-      <div class="rt-label">今日营养目标 · ${plan.name}</div>
-      <div class="rt-name">${planGoal(recipePlanId)==="增肌"?"增肌期":"减脂期"}推荐食谱</div>
+      <div class="rt-label">${plan.name} · ${goal==="增肌"?"增肌期":"减脂期"}</div>
+      <div class="rt-name">这顿吃什么？</div>
       <div class="rt-macro">
         <div class="m">碳水<b>${Math.round(target.carb)}g</b></div>
         <div class="m">蛋白<b>${Math.round(target.protein)}g</b></div>
         <div class="m">脂肪<b>${Math.round(target.fat)}g</b></div>
-        <div class="m">热量<b>${Math.round(target.kcal)}kcal</b></div>
+        <div class="m">全天热量<b>${Math.round(target.kcal)}kcal</b></div>
       </div>
     </div>
 
-    ${tpls.length>1 ? `
-    <div class="recipe-tpl-switch" id="recipeTplSwitch">
-      ${tpls.map((t,i)=>`<span class="tpl-chip ${i===recipeTplIdx?"on":""}" onclick="switchRecipeTpl(${i})">${t.name}</span>`).join("")}
-    </div>` : ""}
+    <div class="meal-tabs">${mealsOrder.map(tab).join("")}</div>
+
+    <div class="recipe-combo-box">
+      <div class="rcb-head">
+        <span class="rcb-title">${recipeMealTab}想吃点什么？</span>
+        <button class="rts-btn" onclick="regenRecipe()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          换一换
+        </button>
+      </div>
+      <div class="rcb-row">
+        <span class="rcb-label">肉/蛋白</span>
+        <div class="rcb-chips">
+          <span class="pref-chip ${recipePref.protein===""?"on":""}" onclick="setPref('protein','')">不限</span>
+          ${proteinOpts.map(o=>chip(o, o, recipePref.protein, "protein")).join("")}
+        </div>
+      </div>
+      <div class="rcb-row">
+        <span class="rcb-label">主食</span>
+        <div class="rcb-chips">
+          <span class="pref-chip ${recipePref.staple===""?"on":""}" onclick="setPref('staple','')">不限</span>
+          ${stapleOpts.map(o=>chip(o, o, recipePref.staple, "staple")).join("")}
+        </div>
+      </div>
+    </div>
 
     <div id="recipeMeals"></div>
 
     <div class="recipe-sum" id="recipeSum"></div>
 
-    <button class="btn-primary" style="margin-top:16px;" onclick="openFoodCalc()">用计算器精确核对 / 添加食物</button>
-    <button class="add-custom" style="margin-top:10px;" onclick="resetRecipe()">恢复模板推荐</button>
+    <div class="recipe-actions">
+      <button class="btn-primary" onclick="addMealItem(recipeMealTab)">＋ 添加食物到${recipeMealTab}</button>
+      <button class="btn-primary btn-intake" onclick="addRecipeMealToIntake()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        一键加入今日摄入
+      </button>
+    </div>
+    <button class="add-custom" style="margin-top:10px;" onclick="resetRecipe()">重新生成</button>
   `;
   renderRecipeMeals();
 }
 
+function setPref(kind, val){
+  recipePref[kind] = val;
+  // 改偏好 → 重新生成一整天三餐（偏好影响所有餐的抽选）
+  const profile = loadProfile();
+  const goal = planGoal(recipePlanId);
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
+  buildRecipe();
+}
+
+function switchMealTab(meal){
+  recipeMealTab = meal;
+  buildRecipe();  // 重新渲染，只展示当前餐
+}
+
+function regenRecipe(){
+  recipeSeed++;         // 换种子
+  // 只重抽当前这一餐，其余餐保持不动（用户每顿单独看，不该顺手换掉其他餐）
+  const profile = loadProfile();
+  const goal = planGoal(recipePlanId);
+  const fresh = generateMeals(goal, profile.weight, recipePref, recipeSeed);
+  recipeMeals.meals[recipeMealTab] = fresh.meals[recipeMealTab];
+  buildRecipe();
+}
+
+// 把「当前餐」的所有食物一键加入今日摄入清单
+function addRecipeMealToIntake(){
+  const items = recipeMeals.meals[recipeMealTab] || [];
+  if(items.length === 0){ showToast("这一餐还没有食物"); return; }
+  foodList = loadTodayItems();  // 载入今天已记录，避免覆盖
+  let added = 0;
+  items.forEach(it=>{
+    const fd = findFood(it.n);
+    if(!fd) return;
+    if(isServingFood(fd)){
+      foodList.push({name:it.n, servings:1});
+    } else {
+      foodList.push({name:it.n, grams:it.g});
+    }
+    added++;
+  });
+  saveTodayItems();
+  const totalKcal = Math.round(items.reduce((s,it)=>{
+    const fd = findFood(it.n);
+    return s + (fd ? foodKcal(fd, isServingFood(fd)?1:it.g).kcal : 0);
+  }, 0));
+  showToast(`已将${recipeMealTab} ${added} 种食物加入今日摄入（约 ${totalKcal} kcal）`);
+}
+
 function switchRecipeTpl(i){
   recipeTplIdx = i;
-  recipeCustom = null;  // 切换模板时清除手动替换
   buildRecipe();
+}
+
+/* ===== 自由组合引擎：按偏好从食材池动态生成一日三餐 ===== */
+// 带种子的伪随机（保证同一次「换一个」内三餐/各餐的抽取稳定）
+function seededRand(seed){
+  let s = seed || 1;
+  return function(){
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  };
+}
+// 从 FOODS 中按分类取食材，排除命中 exclude 的
+function poolByCategory(cat){
+  return FOODS.filter(f=>f.category===cat && f.name);
+}
+// 按偏好标签从「蛋白质/主食」池里筛选食材名
+function filterByPref(cat, tag){
+  const map = (cat==="蛋白质") ? FOOD_POOLS.PROTEIN_KEYS : FOOD_POOLS.STAPLE_KEYS;
+  if(!tag || !map[tag]) return null;
+  const rule = map[tag];
+  const pool = poolByCategory(cat);
+  const hit = pool.filter(f=>{
+    if(rule.exclude && rule.exclude.some(e=>f.name.includes(e))) return false;
+    return rule.kw.some(kw=>f.name.includes(kw));
+  });
+  return hit.length ? hit : null;
+}
+// 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}，克数已按体重缩放）
+function generateMeals(goal, weight, pref, seed){
+  const struct = FOOD_POOLS.MEAL_STRUCT[goal] || FOOD_POOLS.MEAL_STRUCT["减脂"];
+  const rand = seededRand(seed * 7919 + 13);
+  const ratio = (weight || 70) / 70;
+  const out = { meals:{} };
+
+  // 减脂期：排除高脂蛋白 / 高糖高脂水果 / 精制主食；增肌期：排除高脂肥肉但仍保留一定脂肪来源
+  const isCut = goal === "减脂";
+  const FAT_PROTEIN = ["牛腩（熟）","肥牛卷（熟）","五花肉（熟）","腊肉","午餐肉","火腿肠","鹅肉（熟）","鸭肉（去皮熟）"];
+  const HIGH_FAT_PROTEIN = FAT_PROTEIN;  // 减脂/日常都尽量避开
+  const HIGH_SUGAR_FRUIT = ["榴莲","椰子肉","荔枝","龙眼","柿子","芒果","葡萄","西瓜","香蕉"];
+  const REFINED_STAPLE = ["油条","烧饼","年糕","糯米（熟）","白面包","凉皮"];
+
+  const vegPool = poolByCategory("蔬菜");
+  const fruitPool = poolByCategory("水果").filter(f=> isCut ? !HIGH_SUGAR_FRUIT.includes(f.name) : true);
+  const fatPool = (isCut ? ["橄榄油","菜籽油","牛油果","核桃","杏仁"] : ["橄榄油","花生油","芝麻油","牛油果","核桃","杏仁","黄油","猪油"])
+    .map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+  const breakfastVeg = FOOD_POOLS.BREAKFAST_VEG.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+
+  let proteinPool = pref.protein ? (filterByPref("蛋白质", pref.protein) || poolByCategory("蛋白质")) : poolByCategory("蛋白质");
+  let staplePool  = pref.staple  ? (filterByPref("主食", pref.staple)   || poolByCategory("主食"))   : poolByCategory("主食");
+
+  // 减脂/日常：过滤掉高脂蛋白；精制主食在减脂期排除
+  if(isCut || goal === "日常健康"){
+    proteinPool = proteinPool.filter(f=>!HIGH_FAT_PROTEIN.includes(f.name));
+  }
+  if(isCut){
+    staplePool = staplePool.filter(f=>!REFINED_STAPLE.includes(f.name));
+  }
+
+  // 正餐蛋白池排除「乳制品」（牛奶、酸奶、奶酪、乳清蛋白、豆浆属早餐/加餐），
+  // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除
+  const DAIRY_ONLY = ["低脂牛奶","全脂牛奶","希腊酸奶（无糖）","低脂酸奶","茅屋奶酪","乳清蛋白粉","豆浆（无糖）"];
+  proteinPool = proteinPool.filter(f=>!DAIRY_ONLY.includes(f.name));
+
+  // 「蛋」是早餐倾向偏好：正餐不能拿鸡蛋/鸭蛋当主蛋白（量太少），
+  // 此时正餐蛋白回退到全量瘦肉/鱼/虾池，早餐才用蛋
+  if(pref.protein === "蛋"){
+    proteinPool = poolByCategory("蛋白质").filter(f=>!DAIRY_ONLY.includes(f.name));
+    if(isCut || goal === "日常健康") proteinPool = proteinPool.filter(f=>!HIGH_FAT_PROTEIN.includes(f.name));
+  }
+
+  // 早餐专属池：只从「蛋/奶/豆/清淡」里抽，绝不让猪里脊、肥牛、五花肉等正餐大菜出现在早餐
+  const breakfastProtein = FOOD_POOLS.BREAKFAST_PROTEIN.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+  const breakfastStaple  = FOOD_POOLS.BREAKFAST_STAPLE.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+  // 若减脂，早餐主食去掉油条/白面包等精制高糖项
+  const bStaple = isCut ? breakfastStaple.filter(f=>!["白面包"].includes(f.name)) : breakfastStaple;
+
+  // 用户选了肉蛋白偏好时，早餐给出对应的清淡映射（选「鸡」→鸡蛋，「牛」→牛奶，「猪/羊/鱼/虾」→退到鸡蛋/豆浆）
+  const PREf_BREAKFAST_MAP = { "鸡":"鸡蛋（全蛋）", "牛":"低脂牛奶", "蛋":"鸡蛋（全蛋）", "豆/素":"豆浆（无糖）" };
+  let breakfastProteinPool = breakfastProtein;
+  if(pref.protein && PREf_BREAKFAST_MAP[pref.protein]){
+    const target = PREf_BREAKFAST_MAP[pref.protein];
+    const hit = breakfastProtein.find(f=>f.name===target);
+    if(hit) breakfastProteinPool = [hit, ...breakfastProtein.filter(f=>f.name!==target)];
+  }
+
+  // 记录已抽中的蛋白/主食，避免三餐重复同一食材（让组合更多样）
+  const usedProtein = new Set();
+  const usedStaple = new Set();
+
+  function pick(pool, used){
+    const avail = pool.filter(f=>!used.has(f.name));
+    const src = avail.length ? avail : pool;  // 若都抽过了则允许重复
+    const f = src[Math.floor(rand() * src.length)];
+    if(!f) return null;
+    used.add(f.name);
+    return f;
+  }
+
+  Object.keys(struct).forEach(meal=>{
+    const roles = struct[meal];
+    const items = [];
+    const isBreakfast = meal === "早餐";
+    // 早餐用早餐专属池，正餐用全量池
+    const pPool = isBreakfast ? breakfastProteinPool : proteinPool;
+    const sPool = isBreakfast ? bStaple : staplePool;
+    if(roles["主食"]){ const f = pick(sPool, usedStaple); if(f) items.push({n:f.name, g:Math.max(30, Math.round(roles["主食"]*ratio))}); }
+    if(roles["蛋白"]){ const f = pick(pPool, usedProtein); if(f) items.push({n:f.name, g:Math.max(50, Math.round(roles["蛋白"]*ratio))}); }
+    if(roles["蔬菜"]){ const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set()); if(f) items.push({n:f.name, g:Math.round(roles["蔬菜"]*ratio)}); }
+    if(roles["脂肪"]){ const f = pick(fatPool, new Set()); if(f) items.push({n:f.name, g:Math.round(roles["脂肪"]*ratio)}); }
+    // 水果不再作为固定角色塞进某顿饭（早餐吃苹果、午晚餐配香蕉都不是人人喜欢），
+    // 改为可选加餐：用户想加时点「＋添加食物」自行加入
+    out.meals[meal] = items;
+  });
+  return out;
+}
+// 计算一餐/一天的营养是否贴近目标（用于「换一个」时优先选更贴近的组合）
+function mealsNutrition(meals){
+  let kcal=0,p=0,c=0,f=0;
+  Object.values(meals).forEach(items=>{
+    const t = mealTotal(items);
+    kcal+=t.kcal; p+=t.protein; c+=t.carb; f+=t.fat;
+  });
+  return {kcal, protein:p, carb:c, fat:f};
 }
 
 function renderRecipeMeals(){
   const box = document.getElementById("recipeMeals");
   const mealColors = {"早餐":"#F59E0B","午餐":"#4A3FA8","晚餐":"#0F6E56"};
-  box.innerHTML = Object.keys(recipeMeals.meals).map(m=>`
+  const m = recipeMealTab;  // 只渲染当前选中的这一餐
+  const items = recipeMeals.meals[m] || [];
+  box.innerHTML = `
     <div class="meal-block">
       <div class="meal-title"><span class="mt-dot" style="background:${mealColors[m]||"#4A3FA8"};"></span>${m}</div>
-      ${recipeMeals.meals[m].map(it=>{
+      ${items.map(it=>{
         const fd = findFood(it.n);
         const v = fd ? foodKcal(fd, it.g) : {kcal:0,protein:0,carb:0,fat:0};
         return `
         <div class="food-row">
           <div style="flex:1;">
             <div class="fr-name">${it.n}</div>
-            <div class="fr-meta">${it.g}g · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
+            <div class="fr-meta">${fd ? humanizeGrams(it.n, it.g) : ("约 "+roundish(it.g)+"g")} · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
           </div>
           <div class="fr-kcal">${Math.round(v.kcal)} kcal</div>
           <div class="fr-del" onclick="removeMealItem('${m}','${it.n}')" title="移除">
@@ -2921,34 +3729,38 @@ function renderRecipeMeals(){
       <div class="food-row" style="border-style:dashed;justify-content:center;color:var(--brand);cursor:pointer;" onclick="addMealItem('${m}')">
         <span style="font-size:13px;font-weight:600;">＋ 添加食物到${m}</span>
       </div>
-    </div>`).join("");
+    </div>`;
   renderRecipeSum();
 }
 
 function renderRecipeSum(){
   const target = computeTarget(recipePlanId, loadProfile());
-  const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
-    const t = mealTotal(recipeMeals.meals[m]);
-    acc.kcal+=t.kcal; acc.protein+=t.protein; acc.carb+=t.carb; acc.fat+=t.fat;
-    return acc;
-  }, {kcal:0,protein:0,carb:0,fat:0});
+  const m = recipeMealTab;  // 只统计当前餐
+  const t = mealTotal(recipeMeals.meals[m] || []);
+  // 按餐次给出目标参考：早餐约 25%、午/晚餐各约 35-38%
+  const ratio = m==="早餐" ? 0.25 : (m==="午餐" ? 0.375 : 0.375);
+  const tK = target.kcal*ratio, tC = target.carb*ratio, tP = target.protein*ratio, tF = target.fat*ratio;
   const pct = v=>Math.min(100, Math.round(v*100));
   document.getElementById("recipeSum").innerHTML = `
-    <div class="rs-item"><div class="n">${Math.round(totals.kcal)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(totals.kcal/target.kcal)}%;"></i></div></div>
-    <div class="rs-item"><div class="n">${Math.round(totals.carb)}/${Math.round(target.carb)}</div><div class="u">碳水 g</div><div class="bar"><i style="width:${pct(totals.carb/target.carb)}%;"></i></div></div>
-    <div class="rs-item"><div class="n">${Math.round(totals.protein)}/${Math.round(target.protein)}</div><div class="u">蛋白 g</div><div class="bar"><i style="width:${pct(totals.protein/target.protein)}%;"></i></div></div>
-    <div class="rs-item"><div class="n">${Math.round(totals.fat)}/${Math.round(target.fat)}</div><div class="u">脂肪 g</div><div class="bar"><i style="width:${pct(totals.fat/target.fat)}%;"></i></div></div>
+    <div class="rs-hint">本餐营养参考（按全天目标 ${Math.round(ratio*100)}% 分配）</div>
+    <div class="rs-item"><div class="n">${Math.round(t.kcal)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(t.kcal/tK)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(t.carb)}/${Math.round(tC)}</div><div class="u">碳水 g</div><div class="bar"><i style="width:${pct(t.carb/tC)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(t.protein)}/${Math.round(tP)}</div><div class="u">蛋白 g</div><div class="bar"><i style="width:${pct(t.protein/tP)}%;"></i></div></div>
+    <div class="rs-item"><div class="n">${Math.round(t.fat)}/${Math.round(tF)}</div><div class="u">脂肪 g</div><div class="bar"><i style="width:${pct(t.fat/tF)}%;"></i></div></div>
   `;
 }
 
 function removeMealItem(meal, name){
   recipeMeals.meals[meal] = recipeMeals.meals[meal].filter(it=>it.n!==name);
-  recipeCustom = recipeMeals;
   renderRecipeMeals();
 }
 
 function resetRecipe(){
-  recipeCustom = null;
+  // 重新生成一整天三餐
+  const profile = loadProfile();
+  const goal = planGoal(recipePlanId);
+  recipeSeed = 0;
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
   buildRecipe();
 }
 
@@ -2973,7 +3785,7 @@ function renderFoodPicker(meal){
         ${foods.slice(0,40).map(f=>`
           <div class="food-item" onclick="pickMealFood('${meal}','${f.name}')">
             <div class="fi-name">${f.name}</div>
-            <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
+            <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
           </div>`).join("")}
       </div>
       <div class="fp-row" style="margin-top:12px;">
@@ -3001,11 +3813,11 @@ function pickMealFood(meal, name){
 }
 function renderMealFoodOptions(meal){
   const kw = document.getElementById("mealFoodSearch").value.trim();
-  const foods = allFoods().filter(f=>!kw || f.name.includes(kw));
+  const foods = allFoods().filter(f=>foodMatchKw(f, kw));
   document.getElementById("mealFoodOptions").innerHTML = foods.slice(0,40).map(f=>`
     <div class="food-item ${pickedMealFood===f.name?"sel":""}" onclick="pickMealFood('${meal}','${f.name}')">
       <div class="fi-name">${f.name}</div>
-      <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
+      <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
     </div>`).join("");
 }
 function confirmAddMealFood(){
@@ -3014,7 +3826,6 @@ function confirmAddMealFood(){
   const fd = findFood(name);
   if(!fd){ alert("请先选择一个食物"); return; }
   recipeMeals.meals[addMealTarget].push({n:name, g:grams});
-  recipeCustom = recipeMeals;
   renderRecipeMeals();
 }
 
@@ -3149,10 +3960,86 @@ function delBodyLog(idx){
 let foodCat = "全部";
 let foodKw = "";
 let pickedFood = null;
-let foodList = [];        // {name, grams}
+let foodList = [];        // {name, grams} —— 作为「今天」的摄入编辑缓冲，变更即持久化到每日记录
 let foodPhotos = [];      // 拍照存档（dataURL）
+let comboTag = "全部";    // 套餐分类筛选
+let comboOpen = false;     // 套餐区块是否展开
+
+// 模糊搜索别名：口语词 → 命中的品牌/分类关键词（搜「奶茶」「咖啡」等品类词也能找到对应品牌食物）
+const SEARCH_ALIASES = {
+  "奶茶": ["霸王茶姬","喜茶","奈雪","茶饮"],
+  "咖啡": ["瑞幸","咖啡","拿铁","美式"],
+  "汉堡": ["麦当劳","汉堡","巨无霸"],
+  "快餐": ["麦当劳","赛百味"],
+  "炸鸡": ["麦当劳","鸡翅","鸡腿","麦乐鸡"],
+  "三明治": ["赛百味","三明治"],
+  "茶饮": ["霸王茶姬","喜茶","奈雪"],
+  "轻食": ["赛百味"],
+};
+// 判断某食物是否命中搜索词（模糊：匹配名称/品牌/分类/别名）
+function foodMatchKw(f, kw){
+  if(!kw) return true;
+  const k = kw.trim().toLowerCase();
+  if(!k) return true;
+  const hay = [f.name, f.brand||"", f.category||""].join(" ").toLowerCase();
+  if(hay.includes(k)) return true;
+  // 别名命中：搜「奶茶」→ 匹配茶饮品牌
+  const aliasKw = Object.keys(SEARCH_ALIASES).find(a=>a.toLowerCase()===k);
+  if(aliasKw){
+    const hits = SEARCH_ALIASES[aliasKw];
+    return hits.some(h=>hay.includes(h.toLowerCase()));
+  }
+  // 部分别名：关键词包含在别名键里（如搜「奶」匹配「奶茶」）
+  for(const a of Object.keys(SEARCH_ALIASES)){
+    if(a.toLowerCase().includes(k)){
+      if(SEARCH_ALIASES[a].some(h=>hay.includes(h.toLowerCase()))) return true;
+    }
+  }
+  return false;
+}
+
+/* 轻量 toast 提示（不打断操作） */
+let _toastTimer = null;
+function showToast(msg){
+  let t = document.getElementById("globalToast");
+  if(!t){
+    t = document.createElement("div");
+    t.id = "globalToast";
+    t.className = "toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  requestAnimationFrame(()=>t.classList.add("show"));
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(()=>t.classList.remove("show"), 1600);
+}
+
+/* ---- 每日摄入记录（持久化） ---- */
+const DAILY_LOG_KEY = "lizi_daily_log";
+function loadDailyLog(){
+  try{ return JSON.parse(localStorage.getItem(DAILY_LOG_KEY)) || []; }
+  catch(e){ return []; }
+}
+function saveDailyLog(list){ localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }
+// 读取「今天」已记录的食物清单
+function loadTodayItems(){
+  const log = loadDailyLog();
+  const t = todayStr();
+  const rec = log.find(r=>r.date===t);
+  return rec ? rec.items : [];
+}
+// 把当前 foodList 写入「今天」的记录（不存在则新建，存在则替换）
+function saveTodayItems(){
+  const log = loadDailyLog();
+  const t = todayStr();
+  const idx = log.findIndex(r=>r.date===t);
+  if(idx>=0){ log[idx].items = foodList; }
+  else { log.push({date:t, items:foodList}); }
+  saveDailyLog(log);
+}
 
 function openFoodCalc(){
+  foodList = loadTodayItems();  // 打开时载入今天已记录的食物
   renderFoodCalc();
   go('food');
 }
@@ -3161,7 +4048,7 @@ function renderFoodCalc(){
   const cats = ["全部"].concat(Array.from(new Set(allFoods().map(f=>f.category))));
   const foods = allFoods().filter(f=>{
     const okCat = foodCat==="全部" || f.category===foodCat;
-    const okKw = !foodKw || f.name.includes(foodKw);
+    const okKw = foodMatchKw(f, foodKw);
     return okCat && okKw;
   });
 
@@ -3169,16 +4056,25 @@ function renderFoodCalc(){
     <div class="food-search">
       <input id="foodSearchInput" placeholder="搜索食物名称..." value="${foodKw}" oninput="foodKw=this.value;renderFoodCalc()" />
     </div>
+    <div class="food-note" style="font-size:11.5px;color:var(--sub);line-height:1.5;margin:2px 2px 10px;">数值为常见典型值范围（每 100g 可食部），因品种、做法不同有浮动，仅供参考。</div>
     <div class="food-cats">
       ${cats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" onclick="setFoodCat('${c}')">${c}</span>`).join("")}
     </div>
     <div class="food-grid" id="foodGrid">
-      ${foods.map(f=>`
+      ${foods.map(f=>{
+        const isSrv = isServingFood(f);
+        const kcalShow = isSrv ? f.kcal : fmtRange(f.kcal);
+        const unitShow = isSrv ? (f.unit || "份") : "100g";
+        const macroShow = isSrv
+          ? (f.protein!=null ? `蛋白${f.protein}g · 碳水${f.carb}g · 脂肪${f.fat}g` : `热量 ${f.kcal} kcal/${unitShow}`)
+          : `蛋白${fmtRange(f.protein)} · 碳水${fmtRange(f.carb)} · 脂肪${fmtRange(f.fat)}`;
+        return `
         <div class="food-item ${pickedFood===f.name?"sel":""}" onclick="pickFoodItem('${f.name}')">
-          <div class="fi-name">${f.name}</div>
-          <div class="fi-kcal"><b>${f.kcal}</b> kcal/100g</div>
-          <div class="fi-kcal" style="font-size:11px;">蛋白${f.protein} · 碳水${f.carb} · 脂肪${f.fat}</div>
-        </div>`).join("")}
+          <div class="fi-name">${f.name}${isSrv?`<span style="font-size:10px;color:var(--sub);font-weight:400;">·${f.brand}</span>`:""}</div>
+          <div class="fi-kcal"><b>${kcalShow}</b> kcal/${unitShow}</div>
+          <div class="fi-kcal" style="font-size:11px;">${macroShow}</div>
+        </div>`;
+      }).join("")}
     </div>
 
     <div id="foodPickerBox"></div>
@@ -3196,6 +4092,12 @@ function renderFoodCalc(){
 
     <button class="add-custom" onclick="toggleCustomForm()">＋ 添加自定义食物</button>
     <div id="customFormBox"></div>
+
+    <button class="combo-toggle" onclick="toggleCombo()">
+      <span>🍱 一键套餐（点一下就加整套）</span>
+      <span class="ct-arrow" id="comboToggleArrow">${comboOpen?"▲":"▼"}</span>
+    </button>
+    <div id="comboBox"></div>
   `;
 
   renderFoodPickerBox();
@@ -3203,9 +4105,69 @@ function renderFoodCalc(){
   renderFoodTotal();
   renderPhotoPreviews();
   renderCustomForm();
+  renderComboBox();
 }
 
 function setFoodCat(c){ foodCat = c; pickedFood = null; renderFoodCalc(); }
+
+/* ---- 一键套餐（组合餐） ---- */
+function comboKcal(combo){
+  // 计算套餐总热量（估算）
+  let kcal = 0;
+  combo.items.forEach(it=>{
+    const fd = findFood(it.n);
+    if(!fd) return;
+    if(it.servings !== undefined){
+      kcal += foodKcal(fd, it.servings).kcal;
+    } else {
+      kcal += foodKcal(fd, it.g || 0).kcal;
+    }
+  });
+  return Math.round(kcal);
+}
+function renderComboBox(){
+  const box = document.getElementById("comboBox");
+  if(!box) return;
+  if(!comboOpen){
+    box.innerHTML = "";
+    return;
+  }
+  const tags = ["全部"].concat(Array.from(new Set(MEAL_COMBOS.map(c=>c.tag))));
+  const combos = MEAL_COMBOS.filter(c=>comboTag==="全部" || c.tag===comboTag);
+  box.innerHTML = `
+    <div class="food-cats" style="margin-bottom:6px;">
+      ${tags.map(t=>`<span class="food-cat ${t===comboTag?"on":""}" onclick="setComboTag('${t}')">${t}</span>`).join("")}
+    </div>
+    <div class="combo-grid">
+      ${combos.map(c=>`
+        <div class="combo-item" onclick="addCombo(${MEAL_COMBOS.indexOf(c)})">
+          <div class="ci-name">${c.name}</div>
+          <div class="ci-sub">${c.items.map(it=>it.n.replace(/\(.*\)/,"").replace(/·.*/,"")).join(" + ")}</div>
+          <div class="ci-kcal">≈ ${comboKcal(c)} kcal</div>
+        </div>`).join("")}
+    </div>`;
+}
+function toggleCombo(){
+  comboOpen = !comboOpen;
+  renderFoodCalc();
+}
+function setComboTag(t){ comboTag = t; renderFoodCalc(); }
+function addCombo(idx){
+  const combo = MEAL_COMBOS[idx];
+  if(!combo) return;
+  combo.items.forEach(it=>{
+    const fd = findFood(it.n);
+    if(!fd) return;
+    if(it.servings !== undefined){
+      foodList.push({name:fd.name, servings:it.servings});
+    } else {
+      foodList.push({name:fd.name, grams:it.g || 100});
+    }
+  });
+  saveTodayItems();
+  renderFoodCalc();
+  showToast(`已加入「${combo.name}」${combo.items.length} 项`);
+}
 
 function pickFoodItem(name){
   pickedFood = name;
@@ -3220,36 +4182,153 @@ function renderFoodPickerBox(){
   const box = document.getElementById("foodPickerBox");
   if(!box) return;
   if(!pickedFood){
-    box.innerHTML = `<div style="font-size:13px;color:var(--sub);text-align:center;padding:8px 0 14px;">点上方食物，输入克数添加到清单</div>`;
+    box.innerHTML = "";
     return;
   }
   const fd = findFood(pickedFood);
+  const isSrv = isServingFood(fd);
+  const unitLabel = isSrv ? (fd.unit||"份") : "克";
+  const unitShow = isSrv ? (fd.unit||"份") : "100g";
+  const kcalShow = isSrv ? fd.kcal : fmtRange(fd.kcal);
+  const p = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[pickedFood] || null) : null;
+
+  // 按份店面产品：提供「规格备注 + 热量微调」，供用户手动记录糖度/加酱等差异
+  const adjBox = isSrv ? `
+    <div class="fp-row" style="margin-top:6px;">
+      <input id="foodNoteInput" type="text" placeholder="规格备注（选填，如：去酱 / 三分糖）" style="width:100%;text-align:left;padding:8px 10px;" />
+    </div>
+    <div class="fp-row" style="margin-top:4px;">
+      <span style="font-size:12px;color:var(--sub);">热量调整</span>
+      <input id="foodKcalAdjInput" type="number" placeholder="0" style="flex:1;text-align:center;" />
+      <span class="fp-unit">kcal</span>
+    </div>
+    <div style="font-size:11px;color:var(--sub);margin:2px 0 4px;">糖度/加酱等规格没有官方数据，可在此手动增减热量（正=加，负=减）。</div>` : "";
+
+  // 有份量参照的普通食物：提供「数量 + 单位」快捷输入，自动换算克数；也可切到「按克数」精确输入
+  const portionBox = p ? `
+    <div class="fp-row">
+      <input id="foodPortionInput" type="number" placeholder="数量" value="1" min="0.5" step="0.5" style="flex:1;" oninput="syncPortionToGrams()" />
+      <span class="fp-unit" id="foodPortionUnit">${p.unit}</span>
+      <span class="fp-unit" style="font-size:11px;color:var(--sub);">≈ ${p.g}g/${p.unit}</span>
+    </div>
+    <div style="font-size:11px;color:var(--sub);margin:4px 0 6px;">已自动换算为克数，可直接用，也可在下面微调：</div>` : "";
+
+  const gramsRow = p ? `
+    <div class="fp-row">
+      <input id="foodGramsInput" type="number" placeholder="克" value="${p.g}" oninput="syncGramsToPortion()" />
+      <span class="fp-unit">克</span>
+    </div>` : `
+    <div class="fp-row">
+      <input id="foodGramsInput" type="number" placeholder="${unitLabel}" value="${isSrv ? 1 : 100}" />
+      <span class="fp-unit">${unitLabel}</span>
+    </div>`;
+
   box.innerHTML = `
-    <div class="food-picker">
-      <div class="fp-name">${fd.name} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${fd.kcal} kcal / 100g）</span></div>
-      <div class="fp-row">
-        <input id="foodGramsInput" type="number" placeholder="克数" value="100" />
-        <span class="fp-unit">克</span>
-      </div>
+    <div class="fp-mask" onclick="closeFoodPicker()"></div>
+    <div class="fp-sheet">
+      <div class="sheet-grab"></div>
+      <div class="fp-name">${fd.name} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
+      ${portionBox}
+      ${gramsRow}
+      ${adjBox}
       <div class="fp-btns">
         <button class="fp-add" onclick="addFoodToList()">加入清单</button>
-        <button class="fp-cancel" onclick="pickedFood=null;renderFoodCalc()">取消</button>
+        <button class="fp-cancel" onclick="closeFoodPicker()">取消</button>
       </div>
     </div>`;
 }
 
-function addFoodToList(){
-  const grams = parseFloat(document.getElementById("foodGramsInput").value) || 100;
+// 关闭食物选择弹层
+function closeFoodPicker(){
+  pickedFood = null;
+  renderFoodPickerBox();
+  renderFoodCalc();
+}
+
+// 数量变化 → 自动换算并回填克数输入框
+function syncPortionToGrams(){
   const fd = findFood(pickedFood);
-  if(!fd || grams<=0) return;
-  foodList.push({name:fd.name, grams});
+  const p = (fd && typeof PORTIONS!=="undefined") ? PORTIONS[pickedFood] : null;
+  if(!p) return;
+  const n = parseFloat(document.getElementById("foodPortionInput").value) || 0;
+  const gEl = document.getElementById("foodGramsInput");
+  if(gEl) gEl.value = Math.round(n * p.g * 10) / 10;
+}
+// 克数变化 → 反推数量输入框（保留 1 位小数）
+function syncGramsToPortion(){
+  const fd = findFood(pickedFood);
+  const p = (fd && typeof PORTIONS!=="undefined") ? PORTIONS[pickedFood] : null;
+  if(!p) return;
+  const g = parseFloat(document.getElementById("foodGramsInput").value) || 0;
+  const pEl = document.getElementById("foodPortionInput");
+  if(pEl) pEl.value = Math.round(g / p.g * 10) / 10;
+}
+
+function addFoodToList(){
+  const fd = findFood(pickedFood);
+  if(!fd) return;
+  const isSrv = isServingFood(fd);
+  const p = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[pickedFood] || null) : null;
+
+  let qty;
+  if(isSrv){
+    qty = parseFloat(document.getElementById("foodGramsInput").value) || 1;
+  } else if(p){
+    // 有份量参照：优先用克数输入框（已由数量自动换算，或用户手动微调）
+    const gramsEl = document.getElementById("foodGramsInput");
+    const gramsVal = gramsEl ? parseFloat(gramsEl.value) : NaN;
+    const portionEl = document.getElementById("foodPortionInput");
+    const portionN = portionEl ? (parseFloat(portionEl.value) || 0) : 0;
+    const autoG = portionN * p.g;
+    // 若用户手动改过克数（与自动换算值不一致），以克数为准；否则用自动换算
+    qty = (gramsVal && Math.abs(gramsVal - autoG) > 0.5) ? gramsVal : (autoG || p.g);
+    if(qty <= 0) qty = p.g;
+  } else {
+    qty = parseFloat(document.getElementById("foodGramsInput").value) || 100;
+  }
+  if(qty <= 0) return;
+
+  if(isSrv){
+    const noteEl = document.getElementById("foodNoteInput");
+    const adjEl = document.getElementById("foodKcalAdjInput");
+    const note = noteEl ? noteEl.value.trim() : "";
+    const kcalAdj = adjEl ? (parseFloat(adjEl.value) || 0) : 0;
+    const item = {name:fd.name, servings:qty};
+    if(note) item.note = note;
+    if(kcalAdj) item.kcalAdj = kcalAdj;
+    foodList.push(item);
+  } else {
+    foodList.push({name:fd.name, grams:qty});
+  }
+  saveTodayItems();
+  const qtyShow = isSrv ? `${qty}${fd.unit||"份"}` : humanizeGrams(fd.name, qty);
+  showToast(`已加入「${fd.name}」${qtyShow}`);
   pickedFood = null;
   renderFoodCalc();
 }
 
 function removeFoodFromList(i){
   foodList.splice(i,1);
+  saveTodayItems();
   renderFoodCalc();
+  renderIntakeRing();  // 同步首页进度环
+}
+
+// 修改已选食物第 i 项的数量/克数（input onchange 触发）
+function updateFoodItemQty(i, val){
+  const it = foodList[i];
+  if(!it) return;
+  const fd = findFood(it.name);
+  const v = parseFloat(val);
+  if(!fd || isNaN(v) || v <= 0) return;
+  if(it.servings !== undefined){
+    it.servings = v;
+  } else {
+    it.grams = v;
+  }
+  saveTodayItems();
+  renderFoodCalc();
+  renderIntakeRing();
 }
 
 function renderFoodListSummary(){
@@ -3263,12 +4342,22 @@ function renderFoodListSummary(){
     <div class="fls-t">已选食物（${foodList.length} 项）</div>
     ${foodList.map((it,i)=>{
       const fd = findFood(it.name);
-      const v = foodKcal(fd, it.grams);
+      const qty = (it.servings !== undefined) ? it.servings : it.grams;
+      const v = foodKcal(fd, qty);
+      if(it.kcalAdj) v.kcal += it.kcalAdj;
+      const isSrv = isServingFood(fd);
+      const qtyInput = isSrv
+        ? `<input class="fls-qty" type="number" value="${qty}" min="0.5" step="0.5" onchange="updateFoodItemQty(${i}, this.value)" /> <span class="fls-unit">${fd.unit||"份"}</span>`
+        : `<input class="fls-qty" type="number" value="${Math.round(qty)}" min="1" step="5" onchange="updateFoodItemQty(${i}, this.value)" /> <span class="fls-unit">克</span>`;
+      const metaShow = isSrv
+        ? `${it.note ? it.note : ""}${it.kcalAdj ? `${it.note?" · ":""}${it.kcalAdj>0?"+":""}${it.kcalAdj} kcal` : ""}`
+        : (fd ? humanizeGrams(it.name, qty) : ("约 "+roundish(qty)+"g"));
       return `
       <div class="food-row" style="padding:10px 14px;">
         <div style="flex:1;">
           <div class="fr-name" style="font-size:13px;">${it.name}</div>
-          <div class="fr-meta">${it.grams}g</div>
+          <div class="fr-meta">${metaShow}</div>
+          <div class="fls-qty-row">${qtyInput}</div>
         </div>
         <div class="fr-kcal" style="font-size:13px;">${Math.round(v.kcal)} kcal</div>
         <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
@@ -3283,7 +4372,9 @@ function renderFoodTotal(){
   let kcal=0, p=0, c=0, f=0;
   foodList.forEach(it=>{
     const fd = findFood(it.name);
-    const v = foodKcal(fd, it.grams);
+    const qty = (it.servings !== undefined) ? it.servings : it.grams;
+    const v = foodKcal(fd, qty);
+    if(it.kcalAdj) v.kcal += it.kcalAdj;
     kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
   });
   box.innerHTML = `
@@ -3361,9 +4452,32 @@ function saveCustomFood(){
   renderFoodCalc();
 }
 
+/* ===== 数字输入框体验优化 =====
+   1. 禁止滚轮改变 number 值（避免滑动时数字意外跳跃）
+   2. 禁止负数：统一设置 min=0，输入负号时自动纠正 */
+document.addEventListener("focusin", function(e){
+  const t = e.target;
+  if(t && t.tagName === "INPUT" && t.type === "number"){
+    if(!t.hasAttribute("min")) t.setAttribute("min", "0");
+    // 阻止滚轮改变数值
+    t.addEventListener("wheel", function(ev){ ev.preventDefault(); }, {passive:false});
+  }
+});
+
+// 输入时清掉负号 / 非法字符（number 输入框的兜底）
+document.addEventListener("input", function(e){
+  const t = e.target;
+  if(t && t.tagName === "INPUT" && t.type === "number"){
+    if(t.value !== "" && parseFloat(t.value) < 0){
+      t.value = "";
+    }
+  }
+});
+
 /* ===== 初始化 ===== */
 renderFilters();
 renderCurrentPlan();
+renderTab();
 </script>
 </body>
 </html>

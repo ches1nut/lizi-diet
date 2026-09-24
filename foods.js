@@ -3,112 +3,363 @@
  * 单位：每 100g 可食部
  * 字段：name 名称 | category 分类 | kcal 热量(kcal) | protein 蛋白质(g) | carb 碳水(g) | fat 脂肪(g)
  *
+ * 数据格式：每个营养字段为范围 [最低, 最高]（约 ±10%），因为食物热量/营养素
+ * 本就有浮动（品种、成熟度、烹饪方式差异），用范围表达比精确值更真实。
+ * 计算时取范围中值，展示时显示「最低~最高」。
+ *
  * 数据来源说明：
  * 数值参考《中国食物成分表》(杨月欣 主编，第6版) 及 USDA FoodData Central 公开数据，
- * 均为常见食物的典型值（可能因品种/烹饪方式有差异），仅供膳食规划参考，非医疗建议。
+ * 均为常见食物的典型值范围（可能因品种/烹饪方式有差异），仅供膳食规划参考，非医疗建议。
  * 后续可替换为公开 API 或用户本地录入数据。
  */
 const FOODS = [
   // ---- 主食/谷物 ----
-  { name: "米饭（熟）", category: "主食", kcal: 116, protein: 2.6, carb: 25.9, fat: 0.3 },
-  { name: "馒头", category: "主食", kcal: 223, protein: 7.0, carb: 47.0, fat: 1.1 },
-  { name: "全麦面包", category: "主食", kcal: 246, protein: 8.5, carb: 41.0, fat: 3.0 },
-  { name: "白面包", category: "主食", kcal: 265, protein: 9.0, carb: 49.0, fat: 3.2 },
-  { name: "燕麦片（干）", category: "主食", kcal: 367, protein: 15.0, carb: 61.0, fat: 6.7 },
-  { name: "红薯（熟）", category: "主食", kcal: 90, protein: 1.4, carb: 20.7, fat: 0.2 },
-  { name: "紫薯（熟）", category: "主食", kcal: 82, protein: 1.6, carb: 18.9, fat: 0.2 },
-  { name: "土豆（熟）", category: "主食", kcal: 77, protein: 2.0, carb: 17.2, fat: 0.1 },
-  { name: "玉米（熟）", category: "主食", kcal: 112, protein: 4.0, carb: 22.8, fat: 1.2 },
-  { name: "意大利面（熟）", category: "主食", kcal: 131, protein: 5.0, carb: 25.0, fat: 1.1 },
-  { name: "糙米饭（熟）", category: "主食", kcal: 111, protein: 2.6, carb: 23.0, fat: 0.9 },
-  { name: "藜麦（熟）", category: "主食", kcal: 120, protein: 4.4, carb: 21.3, fat: 1.9 },
-  { name: "荞麦面（熟）", category: "主食", kcal: 99, protein: 3.4, carb: 20.4, fat: 0.5 },
-  { name: "小米粥", category: "主食", kcal: 46, protein: 1.4, carb: 8.4, fat: 0.7 },
-  { name: "南瓜（熟）", category: "主食", kcal: 26, protein: 0.7, carb: 6.5, fat: 0.1 },
+  { name: "米饭（熟）", category: "主食", kcal: [104, 128], protein: [2.3, 2.9], carb: [23, 28], fat: [0.3, 0.3] },
+  { name: "馒头", category: "主食", kcal: [201, 245], protein: [6.3, 7.7], carb: [42, 52], fat: [1.0, 1.2] },
+  { name: "全麦面包", category: "主食", kcal: [221, 271], protein: [7.7, 9.4], carb: [37, 45], fat: [2.7, 3.3] },
+  { name: "白面包", category: "主食", kcal: [238, 292], protein: [8.1, 9.9], carb: [44, 54], fat: [2.9, 3.5] },
+  { name: "燕麦片（干）", category: "主食", kcal: [330, 404], protein: [14, 16], carb: [55, 67], fat: [6.0, 7.4] },
+  { name: "红薯（熟）", category: "主食", kcal: [81, 99], protein: [1.3, 1.5], carb: [19, 23], fat: [0.2, 0.2] },
+  { name: "紫薯（熟）", category: "主食", kcal: [74, 90], protein: [1.4, 1.8], carb: [17, 21], fat: [0.2, 0.2] },
+  { name: "土豆（熟）", category: "主食", kcal: [69, 85], protein: [1.8, 2.2], carb: [15, 19], fat: [0.1, 0.1] },
+  { name: "玉米（熟）", category: "主食", kcal: [101, 123], protein: [3.6, 4.4], carb: [21, 25], fat: [1.1, 1.3] },
+  { name: "意大利面（熟）", category: "主食", kcal: [118, 144], protein: [4.5, 5.5], carb: [22, 28], fat: [1.0, 1.2] },
+  { name: "糙米饭（熟）", category: "主食", kcal: [100, 122], protein: [2.3, 2.9], carb: [21, 25], fat: [0.8, 1.0] },
+  { name: "藜麦（熟）", category: "主食", kcal: [108, 132], protein: [4.0, 4.8], carb: [19, 23], fat: [1.7, 2.1] },
+  { name: "荞麦面（熟）", category: "主食", kcal: [89, 109], protein: [3.1, 3.7], carb: [18, 22], fat: [0.5, 0.6] },
+  { name: "小米粥", category: "主食", kcal: [41, 51], protein: [1.3, 1.5], carb: [7.6, 9.2], fat: [0.6, 0.8] },
+  { name: "南瓜（熟）", category: "主食", kcal: [23, 29], protein: [0.6, 0.8], carb: [5.9, 7.2], fat: [0.1, 0.1] },
 
   // ---- 蛋白质/肉蛋奶 ----
-  { name: "鸡胸肉（熟）", category: "蛋白质", kcal: 165, protein: 31.0, carb: 0.0, fat: 3.6 },
-  { name: "鸡腿肉（去皮熟）", category: "蛋白质", kcal: 209, protein: 26.0, carb: 0.0, fat: 11.0 },
-  { name: "鸡蛋（全蛋）", category: "蛋白质", kcal: 144, protein: 13.0, carb: 1.1, fat: 9.5 },
-  { name: "鸡蛋清", category: "蛋白质", kcal: 52, protein: 11.0, carb: 0.7, fat: 0.2 },
-  { name: "瘦牛肉（熟）", category: "蛋白质", kcal: 250, protein: 26.0, carb: 0.0, fat: 15.0 },
-  { name: "瘦猪肉（熟）", category: "蛋白质", kcal: 240, protein: 27.0, carb: 0.0, fat: 14.0 },
-  { name: "猪里脊（熟）", category: "蛋白质", kcal: 155, protein: 20.0, carb: 0.0, fat: 8.0 },
-  { name: "羊肉（熟）", category: "蛋白质", kcal: 203, protein: 24.0, carb: 0.0, fat: 11.0 },
-  { name: "三文鱼（熟）", category: "蛋白质", kcal: 208, protein: 20.0, carb: 0.0, fat: 13.0 },
-  { name: "鳕鱼（熟）", category: "蛋白质", kcal: 88, protein: 20.4, carb: 0.0, fat: 0.5 },
-  { name: "龙利鱼（熟）", category: "蛋白质", kcal: 85, protein: 17.0, carb: 0.0, fat: 1.5 },
-  { name: "金枪鱼（水浸罐头）", category: "蛋白质", kcal: 116, protein: 26.0, carb: 0.0, fat: 0.8 },
-  { name: "虾（熟）", category: "蛋白质", kcal: 99, protein: 24.0, carb: 0.2, fat: 0.3 },
-  { name: "鱿鱼（熟）", category: "蛋白质", kcal: 92, protein: 15.6, carb: 3.1, fat: 1.4 },
-  { name: "北豆腐", category: "蛋白质", kcal: 98, protein: 8.1, carb: 3.8, fat: 5.4 },
-  { name: "南豆腐", category: "蛋白质", kcal: 76, protein: 6.2, carb: 3.2, fat: 4.0 },
-  { name: "豆腐干", category: "蛋白质", kcal: 140, protein: 16.0, carb: 4.0, fat: 7.0 },
-  { name: "低脂牛奶", category: "蛋白质", kcal: 42, protein: 3.3, carb: 5.0, fat: 1.0 },
-  { name: "全脂牛奶", category: "蛋白质", kcal: 61, protein: 3.0, carb: 4.8, fat: 3.3 },
-  { name: "希腊酸奶（无糖）", category: "蛋白质", kcal: 73, protein: 10.0, carb: 3.6, fat: 2.5 },
-  { name: "低脂酸奶", category: "蛋白质", kcal: 63, protein: 4.5, carb: 7.0, fat: 1.5 },
-  { name: "茅屋奶酪", category: "蛋白质", kcal: 98, protein: 11.0, carb: 3.4, fat: 4.3 },
-  { name: "乳清蛋白粉", category: "蛋白质", kcal: 400, protein: 80.0, carb: 8.0, fat: 5.0 },
+  { name: "鸡胸肉（熟）", category: "蛋白质", kcal: [148, 182], protein: [28, 34], carb: [0.0, 0.0], fat: [3.2, 4.0] },
+  { name: "鸡腿肉（去皮熟）", category: "蛋白质", kcal: [188, 230], protein: [23, 29], carb: [0.0, 0.0], fat: [9.9, 12] },
+  { name: "鸡蛋（全蛋）", category: "蛋白质", kcal: [130, 158], protein: [12, 14], carb: [1.0, 1.2], fat: [8.6, 10] },
+  { name: "鸡蛋清", category: "蛋白质", kcal: [47, 57], protein: [9.9, 12], carb: [0.6, 0.8], fat: [0.2, 0.2] },
+  { name: "瘦牛肉（熟）", category: "蛋白质", kcal: [225, 275], protein: [23, 29], carb: [0.0, 0.0], fat: [14, 16] },
+  { name: "瘦猪肉（熟）", category: "蛋白质", kcal: [216, 264], protein: [24, 30], carb: [0.0, 0.0], fat: [13, 15] },
+  { name: "猪里脊（熟）", category: "蛋白质", kcal: [140, 170], protein: [18, 22], carb: [0.0, 0.0], fat: [7.2, 8.8] },
+  { name: "羊肉（熟）", category: "蛋白质", kcal: [183, 223], protein: [22, 26], carb: [0.0, 0.0], fat: [9.9, 12] },
+  { name: "三文鱼（熟）", category: "蛋白质", kcal: [187, 229], protein: [18, 22], carb: [0.0, 0.0], fat: [12, 14] },
+  { name: "鳕鱼（熟）", category: "蛋白质", kcal: [79, 97], protein: [18, 22], carb: [0.0, 0.0], fat: [0.5, 0.6] },
+  { name: "龙利鱼（熟）", category: "蛋白质", kcal: [76, 94], protein: [15, 19], carb: [0.0, 0.0], fat: [1.4, 1.7] },
+  { name: "金枪鱼（水浸罐头）", category: "蛋白质", kcal: [104, 128], protein: [23, 29], carb: [0.0, 0.0], fat: [0.7, 0.9] },
+  { name: "虾（熟）", category: "蛋白质", kcal: [89, 109], protein: [22, 26], carb: [0.2, 0.2], fat: [0.3, 0.3] },
+  { name: "鱿鱼（熟）", category: "蛋白质", kcal: [83, 101], protein: [14, 17], carb: [2.8, 3.4], fat: [1.3, 1.5] },
+  { name: "北豆腐", category: "蛋白质", kcal: [88, 108], protein: [7.3, 8.9], carb: [3.4, 4.2], fat: [4.9, 5.9] },
+  { name: "南豆腐", category: "蛋白质", kcal: [68, 84], protein: [5.6, 6.8], carb: [2.9, 3.5], fat: [3.6, 4.4] },
+  { name: "豆腐干", category: "蛋白质", kcal: [126, 154], protein: [14, 18], carb: [3.6, 4.4], fat: [6.3, 7.7] },
+  { name: "低脂牛奶", category: "蛋白质", kcal: [38, 46], protein: [3.0, 3.6], carb: [4.5, 5.5], fat: [0.9, 1.1] },
+  { name: "全脂牛奶", category: "蛋白质", kcal: [55, 67], protein: [2.7, 3.3], carb: [4.3, 5.3], fat: [3.0, 3.6] },
+  { name: "希腊酸奶（无糖）", category: "蛋白质", kcal: [66, 80], protein: [9.0, 11], carb: [3.2, 4.0], fat: [2.2, 2.8] },
+  { name: "低脂酸奶", category: "蛋白质", kcal: [57, 69], protein: [4.0, 5.0], carb: [6.3, 7.7], fat: [1.4, 1.7] },
+  { name: "茅屋奶酪", category: "蛋白质", kcal: [88, 108], protein: [9.9, 12], carb: [3.1, 3.7], fat: [3.9, 4.7] },
+  { name: "乳清蛋白粉", category: "蛋白质", kcal: [360, 440], protein: [72, 88], carb: [7.2, 8.8], fat: [4.5, 5.5] },
 
   // ---- 蔬菜 ----
-  { name: "西兰花（熟）", category: "蔬菜", kcal: 35, protein: 2.4, carb: 7.0, fat: 0.4 },
-  { name: "菠菜（熟）", category: "蔬菜", kcal: 23, protein: 2.9, carb: 3.6, fat: 0.4 },
-  { name: "生菜", category: "蔬菜", kcal: 15, protein: 1.4, carb: 2.9, fat: 0.2 },
-  { name: "番茄", category: "蔬菜", kcal: 18, protein: 0.9, carb: 3.9, fat: 0.2 },
-  { name: "黄瓜", category: "蔬菜", kcal: 15, protein: 0.7, carb: 3.6, fat: 0.1 },
-  { name: "胡萝卜", category: "蔬菜", kcal: 41, protein: 0.9, carb: 9.6, fat: 0.2 },
-  { name: "青椒", category: "蔬菜", kcal: 20, protein: 0.9, carb: 4.6, fat: 0.2 },
-  { name: "彩椒", category: "蔬菜", kcal: 26, protein: 1.0, carb: 6.0, fat: 0.3 },
-  { name: "蘑菇", category: "蔬菜", kcal: 22, protein: 3.1, carb: 3.3, fat: 0.3 },
-  { name: "金针菇", category: "蔬菜", kcal: 26, protein: 2.4, carb: 6.0, fat: 0.4 },
-  { name: "茄子（熟）", category: "蔬菜", kcal: 23, protein: 1.0, carb: 4.9, fat: 0.2 },
-  { name: "西葫芦", category: "蔬菜", kcal: 18, protein: 1.2, carb: 3.4, fat: 0.2 },
-  { name: "卷心菜", category: "蔬菜", kcal: 22, protein: 1.5, carb: 4.6, fat: 0.2 },
-  { name: "白菜", category: "蔬菜", kcal: 17, protein: 1.5, carb: 3.2, fat: 0.1 },
-  { name: "芹菜", category: "蔬菜", kcal: 16, protein: 1.2, carb: 3.1, fat: 0.2 },
-  { name: "洋葱", category: "蔬菜", kcal: 40, protein: 1.1, carb: 9.3, fat: 0.1 },
-  { name: "芦笋（熟）", category: "蔬菜", kcal: 22, protein: 2.4, carb: 4.1, fat: 0.2 },
-  { name: "荷兰豆", category: "蔬菜", kcal: 42, protein: 2.8, carb: 7.6, fat: 0.3 },
+  { name: "西兰花（熟）", category: "蔬菜", kcal: [32, 38], protein: [2.2, 2.6], carb: [6.3, 7.7], fat: [0.4, 0.4] },
+  { name: "菠菜（熟）", category: "蔬菜", kcal: [21, 25], protein: [2.6, 3.2], carb: [3.2, 4.0], fat: [0.4, 0.4] },
+  { name: "生菜", category: "蔬菜", kcal: [14, 16], protein: [1.3, 1.5], carb: [2.6, 3.2], fat: [0.2, 0.2] },
+  { name: "番茄", category: "蔬菜", kcal: [16, 20], protein: [0.8, 1.0], carb: [3.5, 4.3], fat: [0.2, 0.2] },
+  { name: "黄瓜", category: "蔬菜", kcal: [14, 16], protein: [0.6, 0.8], carb: [3.2, 4.0], fat: [0.1, 0.1] },
+  { name: "胡萝卜", category: "蔬菜", kcal: [37, 45], protein: [0.8, 1.0], carb: [8.6, 11], fat: [0.2, 0.2] },
+  { name: "青椒", category: "蔬菜", kcal: [18, 22], protein: [0.8, 1.0], carb: [4.1, 5.1], fat: [0.2, 0.2] },
+  { name: "彩椒", category: "蔬菜", kcal: [23, 29], protein: [0.9, 1.1], carb: [5.4, 6.6], fat: [0.3, 0.3] },
+  { name: "蘑菇", category: "蔬菜", kcal: [20, 24], protein: [2.8, 3.4], carb: [3.0, 3.6], fat: [0.3, 0.3] },
+  { name: "金针菇", category: "蔬菜", kcal: [23, 29], protein: [2.2, 2.6], carb: [5.4, 6.6], fat: [0.4, 0.4] },
+  { name: "茄子（熟）", category: "蔬菜", kcal: [21, 25], protein: [0.9, 1.1], carb: [4.4, 5.4], fat: [0.2, 0.2] },
+  { name: "西葫芦", category: "蔬菜", kcal: [16, 20], protein: [1.1, 1.3], carb: [3.1, 3.7], fat: [0.2, 0.2] },
+  { name: "卷心菜", category: "蔬菜", kcal: [20, 24], protein: [1.4, 1.7], carb: [4.1, 5.1], fat: [0.2, 0.2] },
+  { name: "白菜", category: "蔬菜", kcal: [15, 19], protein: [1.4, 1.7], carb: [2.9, 3.5], fat: [0.1, 0.1] },
+  { name: "芹菜", category: "蔬菜", kcal: [14, 18], protein: [1.1, 1.3], carb: [2.8, 3.4], fat: [0.2, 0.2] },
+  { name: "洋葱", category: "蔬菜", kcal: [36, 44], protein: [1.0, 1.2], carb: [8.4, 10], fat: [0.1, 0.1] },
+  { name: "芦笋（熟）", category: "蔬菜", kcal: [20, 24], protein: [2.2, 2.6], carb: [3.7, 4.5], fat: [0.2, 0.2] },
+  { name: "荷兰豆", category: "蔬菜", kcal: [38, 46], protein: [2.5, 3.1], carb: [6.8, 8.4], fat: [0.3, 0.3] },
 
   // ---- 水果 ----
-  { name: "苹果", category: "水果", kcal: 52, protein: 0.3, carb: 13.8, fat: 0.2 },
-  { name: "香蕉", category: "水果", kcal: 89, protein: 1.1, carb: 22.8, fat: 0.3 },
-  { name: "橙子", category: "水果", kcal: 47, protein: 0.9, carb: 11.8, fat: 0.1 },
-  { name: "蓝莓", category: "水果", kcal: 57, protein: 0.7, carb: 14.5, fat: 0.3 },
-  { name: "草莓", category: "水果", kcal: 32, protein: 0.7, carb: 7.7, fat: 0.3 },
-  { name: "葡萄", category: "水果", kcal: 69, protein: 0.7, carb: 18.1, fat: 0.2 },
-  { name: "西瓜", category: "水果", kcal: 30, protein: 0.6, carb: 7.6, fat: 0.2 },
-  { name: "猕猴桃", category: "水果", kcal: 61, protein: 1.1, carb: 14.7, fat: 0.5 },
-  { name: "梨", category: "水果", kcal: 50, protein: 0.4, carb: 13.1, fat: 0.1 },
-  { name: "桃", category: "水果", kcal: 42, protein: 0.9, carb: 10.1, fat: 0.1 },
-  { name: "芒果", category: "水果", kcal: 60, protein: 0.8, carb: 15.0, fat: 0.4 },
-  { name: "火龙果", category: "水果", kcal: 55, protein: 1.1, carb: 13.3, fat: 0.2 },
+  { name: "苹果", category: "水果", kcal: [47, 57], protein: [0.3, 0.3], carb: [12, 15], fat: [0.2, 0.2] },
+  { name: "香蕉", category: "水果", kcal: [80, 98], protein: [1.0, 1.2], carb: [21, 25], fat: [0.3, 0.3] },
+  { name: "橙子", category: "水果", kcal: [42, 52], protein: [0.8, 1.0], carb: [11, 13], fat: [0.1, 0.1] },
+  { name: "蓝莓", category: "水果", kcal: [51, 63], protein: [0.6, 0.8], carb: [13, 16], fat: [0.3, 0.3] },
+  { name: "草莓", category: "水果", kcal: [29, 35], protein: [0.6, 0.8], carb: [6.9, 8.5], fat: [0.3, 0.3] },
+  { name: "葡萄", category: "水果", kcal: [62, 76], protein: [0.6, 0.8], carb: [16, 20], fat: [0.2, 0.2] },
+  { name: "西瓜", category: "水果", kcal: [27, 33], protein: [0.5, 0.7], carb: [6.8, 8.4], fat: [0.2, 0.2] },
+  { name: "猕猴桃", category: "水果", kcal: [55, 67], protein: [1.0, 1.2], carb: [13, 16], fat: [0.5, 0.6] },
+  { name: "梨", category: "水果", kcal: [45, 55], protein: [0.4, 0.4], carb: [12, 14], fat: [0.1, 0.1] },
+  { name: "桃", category: "水果", kcal: [38, 46], protein: [0.8, 1.0], carb: [9.1, 11], fat: [0.1, 0.1] },
+  { name: "芒果", category: "水果", kcal: [54, 66], protein: [0.7, 0.9], carb: [14, 16], fat: [0.4, 0.4] },
+  { name: "火龙果", category: "水果", kcal: [50, 61], protein: [1.0, 1.2], carb: [12, 15], fat: [0.2, 0.2] },
 
   // ---- 坚果/脂肪 ----
-  { name: "花生", category: "坚果", kcal: 567, protein: 25.8, carb: 16.1, fat: 49.2 },
-  { name: "杏仁", category: "坚果", kcal: 579, protein: 21.2, carb: 21.6, fat: 49.9 },
-  { name: "核桃", category: "坚果", kcal: 654, protein: 15.2, carb: 13.7, fat: 65.2 },
-  { name: "腰果", category: "坚果", kcal: 553, protein: 18.2, carb: 30.2, fat: 43.8 },
-  { name: "开心果", category: "坚果", kcal: 560, protein: 20.2, carb: 27.2, fat: 45.3 },
-  { name: "奇亚籽", category: "坚果", kcal: 486, protein: 16.5, carb: 42.1, fat: 30.7 },
-  { name: "花生酱", category: "坚果", kcal: 588, protein: 25.0, carb: 20.0, fat: 50.0 },
-  { name: "橄榄油", category: "油脂", kcal: 884, protein: 0.0, carb: 0.0, fat: 100.0 },
-  { name: "椰子油", category: "油脂", kcal: 862, protein: 0.0, carb: 0.0, fat: 100.0 },
-  { name: "黄油", category: "油脂", kcal: 717, protein: 0.9, carb: 0.1, fat: 81.1 },
-  { name: "牛油果", category: "水果", kcal: 160, protein: 2.0, carb: 8.5, fat: 14.7 },
-  { name: "黑巧克力（70%）", category: "零食", kcal: 598, protein: 7.8, carb: 46.0, fat: 43.0 },
+  { name: "花生", category: "坚果", kcal: [510, 624], protein: [23, 28], carb: [14, 18], fat: [44, 54] },
+  { name: "杏仁", category: "坚果", kcal: [521, 637], protein: [19, 23], carb: [19, 24], fat: [45, 55] },
+  { name: "核桃", category: "坚果", kcal: [589, 719], protein: [14, 17], carb: [12, 15], fat: [59, 72] },
+  { name: "腰果", category: "坚果", kcal: [498, 608], protein: [16, 20], carb: [27, 33], fat: [39, 48] },
+  { name: "开心果", category: "坚果", kcal: [504, 616], protein: [18, 22], carb: [24, 30], fat: [41, 50] },
+  { name: "奇亚籽", category: "坚果", kcal: [437, 535], protein: [15, 18], carb: [38, 46], fat: [28, 34] },
+  { name: "花生酱", category: "坚果", kcal: [529, 647], protein: [22, 28], carb: [18, 22], fat: [45, 55] },
+  { name: "橄榄油", category: "油脂", kcal: [796, 972], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [90, 110] },
+  { name: "椰子油", category: "油脂", kcal: [776, 948], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [90, 110] },
+  { name: "黄油", category: "油脂", kcal: [645, 789], protein: [0.8, 1.0], carb: [0.1, 0.1], fat: [73, 89] },
+  { name: "牛油果", category: "水果", kcal: [144, 176], protein: [1.8, 2.2], carb: [7.7, 9.4], fat: [13, 16] },
+  { name: "黑巧克力（70%）", category: "零食", kcal: [538, 658], protein: [7.0, 8.6], carb: [41, 51], fat: [39, 47] },
 
   // ---- 零食/其他 ----
-  { name: "苏打饼干", category: "零食", kcal: 408, protein: 8.4, carb: 76.2, fat: 7.7 },
-  { name: "薯片", category: "零食", kcal: 548, protein: 6.6, carb: 51.0, fat: 36.0 },
-  { name: "可乐", category: "饮料", kcal: 43, protein: 0.0, carb: 10.6, fat: 0.0 },
-  { name: "橙汁（无糖）", category: "饮料", kcal: 45, protein: 0.7, carb: 10.4, fat: 0.2 },
-  { name: "黑咖啡", category: "饮料", kcal: 2, protein: 0.1, carb: 0.0, fat: 0.0 },
-  { name: "蜂蜜", category: "调味", kcal: 321, protein: 0.4, carb: 80.0, fat: 0.0 },
-  { name: "白砂糖", category: "调味", kcal: 400, protein: 0.0, carb: 100.0, fat: 0.0 },
-  { name: "酱油", category: "调味", kcal: 63, protein: 5.6, carb: 10.0, fat: 0.0 },
-  { name: "蛋黄酱", category: "调味", kcal: 680, protein: 1.0, carb: 3.5, fat: 74.0 },
+  { name: "苏打饼干", category: "零食", kcal: [367, 449], protein: [7.6, 9.2], carb: [69, 84], fat: [6.9, 8.5] },
+  { name: "薯片", category: "零食", kcal: [493, 603], protein: [5.9, 7.3], carb: [46, 56], fat: [32, 40] },
+  { name: "可乐", category: "饮料", kcal: [39, 47], protein: [0.0, 0.0], carb: [9.5, 12], fat: [0.0, 0.0] },
+  { name: "橙汁（无糖）", category: "饮料", kcal: [40, 50], protein: [0.6, 0.8], carb: [9.4, 11], fat: [0.2, 0.2] },
+  { name: "黑咖啡", category: "饮料", kcal: [1.8, 2.2], protein: [0.1, 0.1], carb: [0.0, 0.0], fat: [0.0, 0.0] },
+  { name: "蜂蜜", category: "调味", kcal: [289, 353], protein: [0.4, 0.4], carb: [72, 88], fat: [0.0, 0.0] },
+  { name: "白砂糖", category: "调味", kcal: [360, 440], protein: [0.0, 0.0], carb: [90, 110], fat: [0.0, 0.0] },
+  { name: "酱油", category: "调味", kcal: [57, 69], protein: [5.0, 6.2], carb: [9.0, 11], fat: [0.0, 0.0] },
+  { name: "蛋黄酱", category: "调味", kcal: [612, 748], protein: [0.9, 1.1], carb: [3.1, 3.9], fat: [67, 81] },
+
+  // ---- 中式主食/小吃（健身人群高频，参考《中国食物成分表》典型值） ----
+  { name: "猪肉大葱蒸饺", category: "沙县小吃", kcal: [200, 244], protein: [8.5, 10], carb: [24, 30], fat: [7.5, 9.5] },
+  { name: "素蒸饺", category: "沙县小吃", kcal: [171, 209], protein: [5.5, 6.5], carb: [26, 32], fat: [4.5, 5.5] },
+  { name: "馄饨/云吞（带汤）", category: "沙县小吃", kcal: [189, 231], protein: [7.5, 9.5], carb: [24, 30], fat: [6.0, 7.5] },
+  { name: "花生酱拌面", category: "沙县小吃", kcal: [153, 187], protein: [5.5, 6.5], carb: [22, 28], fat: [4.5, 5.5] },
+  { name: "葱油拌面", category: "沙县小吃", kcal: [198, 242], protein: [5.0, 6.0], carb: [28, 34], fat: [7.0, 8.5] },
+  { name: "牛肉拉面（兰州拉面）", category: "兰州拉面", kcal: [108, 132], protein: [5.5, 6.5], carb: [15, 19], fat: [2.5, 3.5] },
+  { name: "黄焖鸡米饭（鸡肉焖）", category: "黄焖鸡米饭", kcal: [135, 165], protein: [12, 15], carb: [8.0, 10], fat: [6.0, 7.5] },
+  { name: "卤鸡腿（去皮）", category: "卤味", kcal: [171, 209], protein: [23, 28], carb: [0.0, 0.5], fat: [8.0, 10] },
+  { name: "卤蛋", category: "卤味", kcal: [135, 165], protein: [11, 13], carb: [2.0, 2.5], fat: [8.5, 10] },
+  { name: "卤豆干", category: "卤味", kcal: [140, 172], protein: [15, 18], carb: [4.0, 5.0], fat: [7.0, 8.5] },
+  { name: "炸鸡排", category: "炸鸡/小食", kcal: [243, 297], protein: [15, 19], carb: [15, 18], fat: [14, 17] },
+  { name: "麻辣烫（综合荤素）", category: "麻辣烫", kcal: [99, 121], protein: [6.5, 8.0], carb: [8.0, 10], fat: [4.5, 5.5] },
+  { name: "蛋炒饭", category: "米饭套餐", kcal: [162, 198], protein: [5.0, 6.0], carb: [24, 30], fat: [4.5, 5.5] },
+  { name: "盖浇饭（鱼香肉丝）", category: "米饭套餐", kcal: [144, 176], protein: [6.0, 7.5], carb: [18, 22], fat: [5.0, 6.0] },
+  { name: "煎饼果子", category: "煎饼/饼类", kcal: [216, 264], protein: [7.5, 9.0], carb: [27, 33], fat: [8.0, 10] },
+  { name: "鸡蛋灌饼", category: "煎饼/饼类", kcal: [252, 308], protein: [8.0, 10], carb: [26, 32], fat: [12, 15] },
+  { name: "肉夹馍", category: "煎饼/饼类", kcal: [270, 330], protein: [11, 13], carb: [28, 34], fat: [13, 16] },
+  { name: "小笼包", category: "沙县小吃", kcal: [207, 253], protein: [9.0, 11], carb: [22, 26], fat: [9.0, 11] },
+  // ================= 扩充：更多常见基础食材 =================
+
+  // ---- 主食/谷物 补充 ----
+  { name: "面条（熟）", category: "主食", kcal: [99, 121], protein: [3.5, 4.3], carb: [20, 24], fat: [0.7, 0.9] },
+  { name: "河粉（熟）", category: "主食", kcal: [97, 119], protein: [1.9, 2.3], carb: [21, 26], fat: [0.3, 0.4] },
+  { name: "米粉（熟）", category: "主食", kcal: [92, 112], protein: [1.7, 2.1], carb: [20, 25], fat: [0.2, 0.3] },
+  { name: "年糕", category: "主食", kcal: [130, 160], protein: [2.6, 3.2], carb: [30, 36], fat: [0.4, 0.5] },
+  { name: "糯米（熟）", category: "主食", kcal: [110, 134], protein: [2.4, 3.0], carb: [24, 30], fat: [0.4, 0.5] },
+  { name: "白粥", category: "主食", kcal: [36, 44], protein: [1.0, 1.2], carb: [7.7, 9.5], fat: [0.1, 0.2] },
+  { name: "皮蛋瘦肉粥", category: "主食", kcal: [58, 70], protein: [3.1, 3.9], carb: [9.0, 11], fat: [1.2, 1.6] },
+  { name: "绿豆（熟）", category: "主食", kcal: [95, 117], protein: [6.2, 7.6], carb: [16, 20], fat: [0.3, 0.4] },
+  { name: "红豆（熟）", category: "主食", kcal: [105, 129], protein: [5.8, 7.0], carb: [19, 23], fat: [0.3, 0.4] },
+  { name: "鹰嘴豆（熟）", category: "主食", kcal: [148, 180], protein: [7.6, 9.2], carb: [23, 29], fat: [2.2, 2.8] },
+  { name: "山药（熟）", category: "主食", kcal: [52, 64], protein: [1.7, 2.1], carb: [11, 13], fat: [0.1, 0.2] },
+  { name: "芋头（熟）", category: "主食", kcal: [71, 87], protein: [1.9, 2.3], carb: [15, 19], fat: [0.2, 0.3] },
+  { name: "莲藕（熟）", category: "主食", kcal: [65, 79], protein: [1.8, 2.2], carb: [14, 17], fat: [0.2, 0.3] },
+  { name: "油条", category: "主食", kcal: [345, 421], protein: [6.9, 8.4], carb: [46, 56], fat: [15, 19] },
+  { name: "烧饼", category: "主食", kcal: [270, 330], protein: [8.0, 9.8], carb: [42, 52], fat: [8.0, 10] },
+  { name: "包子（肉馅）", category: "主食", kcal: [210, 258], protein: [8.5, 10], carb: [30, 38], fat: [6.0, 8.0] },
+  { name: "饺子（猪肉馅）", category: "主食", kcal: [200, 244], protein: [8.5, 10], carb: [24, 30], fat: [8.0, 10] },
+  { name: "馄饨（鲜肉）", category: "主食", kcal: [175, 215], protein: [7.0, 8.6], carb: [22, 28], fat: [6.0, 8.0] },
+  { name: "凉皮", category: "主食", kcal: [105, 129], protein: [2.8, 3.4], carb: [21, 26], fat: [1.2, 1.6] },
+  { name: "米线（熟）", category: "主食", kcal: [88, 108], protein: [1.5, 1.9], carb: [19, 23], fat: [0.3, 0.4] },
+
+  // ---- 蛋白质 补充 ----
+  { name: "鸭肉（去皮熟）", category: "蛋白质", kcal: [186, 228], protein: [25, 31], carb: [0.0, 0.0], fat: [8.8, 11] },
+  { name: "鹅肉（熟）", category: "蛋白质", kcal: [243, 297], protein: [22, 26], carb: [0.0, 0.0], fat: [16, 20] },
+  { name: "鸡翅（熟）", category: "蛋白质", kcal: [203, 249], protein: [21, 25], carb: [0.0, 0.0], fat: [13, 16] },
+  { name: "火鸡胸肉（熟）", category: "蛋白质", kcal: [135, 165], protein: [28, 34], carb: [0.0, 0.0], fat: [1.9, 2.4] },
+  { name: "鸭蛋", category: "蛋白质", kcal: [163, 199], protein: [12, 14], carb: [1.2, 1.5], fat: [12, 15] },
+  { name: "鹌鹑蛋", category: "蛋白质", kcal: [147, 179], protein: [12, 14], carb: [2.0, 2.4], fat: [10, 12] },
+  { name: "牛腩（熟）", category: "蛋白质", kcal: [261, 319], protein: [20, 24], carb: [0.0, 0.0], fat: [19, 23] },
+  { name: "肥牛卷（熟）", category: "蛋白质", kcal: [295, 361], protein: [19, 23], carb: [0.0, 0.0], fat: [24, 29] },
+  { name: "五花肉（熟）", category: "蛋白质", kcal: [325, 397], protein: [15, 19], carb: [0.0, 0.0], fat: [29, 35] },
+  { name: "腊肉", category: "蛋白质", kcal: [470, 574], protein: [17, 21], carb: [2.0, 2.4], fat: [43, 53] },
+  { name: "午餐肉", category: "蛋白质", kcal: [229, 279], protein: [12, 14], carb: [7.0, 8.6], fat: [17, 21] },
+  { name: "火腿肠", category: "蛋白质", kcal: [215, 263], protein: [11, 14], carb: [8.0, 10], fat: [16, 19] },
+  { name: "带鱼（熟）", category: "蛋白质", kcal: [127, 155], protein: [17, 21], carb: [0.0, 0.0], fat: [5.9, 7.2] },
+  { name: "鲈鱼（熟）", category: "蛋白质", kcal: [105, 129], protein: [18, 22], carb: [0.0, 0.0], fat: [3.2, 4.0] },
+  { name: "草鱼（熟）", category: "蛋白质", kcal: [112, 138], protein: [17, 21], carb: [0.0, 0.0], fat: [4.5, 5.5] },
+  { name: "黄花鱼（熟）", category: "蛋白质", kcal: [99, 121], protein: [17, 21], carb: [0.0, 0.0], fat: [2.9, 3.5] },
+  { name: "扇贝（熟）", category: "蛋白质", kcal: [69, 85], protein: [11, 13], carb: [3.0, 3.6], fat: [0.5, 0.6] },
+  { name: "蛤蜊（熟）", category: "蛋白质", kcal: [55, 67], protein: [8.0, 10], carb: [2.5, 3.1], fat: [0.8, 1.0] },
+  { name: "螃蟹（熟）", category: "蛋白质", kcal: [87, 107], protein: [15, 19], carb: [0.0, 0.0], fat: [2.5, 3.1] },
+  { name: "鲍鱼（熟）", category: "蛋白质", kcal: [73, 89], protein: [12, 14], carb: [3.0, 3.6], fat: [0.8, 1.0] },
+  { name: "海参（熟）", category: "蛋白质", kcal: [28, 34], protein: [4.0, 5.0], carb: [1.5, 1.9], fat: [0.2, 0.3] },
+  { name: "黄豆（熟）", category: "蛋白质", kcal: [150, 184], protein: [13, 16], carb: [8.0, 10], fat: [8.0, 10] },
+  { name: "黑豆（熟）", category: "蛋白质", kcal: [158, 194], protein: [13, 16], carb: [9.0, 11], fat: [8.0, 10] },
+  { name: "腐竹（干）", category: "蛋白质", kcal: [423, 517], protein: [41, 50], carb: [18, 22], fat: [21, 26] },
+  { name: "豆浆（无糖）", category: "蛋白质", kcal: [28, 34], protein: [2.7, 3.3], carb: [1.5, 1.9], fat: [1.4, 1.8] },
+  { name: "内酯豆腐", category: "蛋白质", kcal: [47, 57], protein: [4.0, 5.0], carb: [1.5, 1.9], fat: [2.5, 3.1] },
+  { name: "豆干", category: "蛋白质", kcal: [132, 162], protein: [14, 18], carb: [4.0, 5.0], fat: [6.0, 8.0] },
+  { name: "毛豆（熟）", category: "蛋白质", kcal: [115, 141], protein: [10, 13], carb: [7.0, 8.6], fat: [4.5, 5.5] },
+  { name: "鹰嘴豆泥", category: "蛋白质", kcal: [153, 187], protein: [7.0, 8.6], carb: [18, 22], fat: [6.0, 8.0] },
+
+  // ---- 蔬菜 补充 ----
+  { name: "空心菜", category: "蔬菜", kcal: [20, 24], protein: [2.0, 2.4], carb: [3.0, 3.6], fat: [0.3, 0.4] },
+  { name: "油麦菜", category: "蔬菜", kcal: [15, 19], protein: [1.4, 1.8], carb: [2.0, 2.4], fat: [0.4, 0.5] },
+  { name: "韭菜", category: "蔬菜", kcal: [25, 31], protein: [2.0, 2.4], carb: [4.0, 4.8], fat: [0.4, 0.5] },
+  { name: "豆芽（绿豆芽）", category: "蔬菜", kcal: [16, 20], protein: [1.7, 2.1], carb: [2.0, 2.4], fat: [0.1, 0.2] },
+  { name: "蒜薹", category: "蔬菜", kcal: [31, 39], protein: [2.0, 2.4], carb: [6.0, 7.2], fat: [0.3, 0.4] },
+  { name: "大葱", category: "蔬菜", kcal: [27, 33], protein: [1.6, 2.0], carb: [5.0, 6.0], fat: [0.3, 0.4] },
+  { name: "生姜", category: "蔬菜", kcal: [41, 51], protein: [1.3, 1.5], carb: [8.0, 10], fat: [0.5, 0.6] },
+  { name: "大蒜", category: "蔬菜", kcal: [126, 154], protein: [4.4, 5.4], carb: [26, 32], fat: [0.2, 0.3] },
+  { name: "香菜", category: "蔬菜", kcal: [31, 39], protein: [1.8, 2.2], carb: [5.0, 6.0], fat: [0.5, 0.6] },
+  { name: "茼蒿", category: "蔬菜", kcal: [21, 25], protein: [1.9, 2.3], carb: [3.0, 3.6], fat: [0.3, 0.4] },
+  { name: "苦瓜", category: "蔬菜", kcal: [19, 23], protein: [1.0, 1.2], carb: [3.5, 4.3], fat: [0.2, 0.3] },
+  { name: "冬瓜", category: "蔬菜", kcal: [11, 13], protein: [0.4, 0.5], carb: [2.0, 2.4], fat: [0.2, 0.3] },
+  { name: "丝瓜", category: "蔬菜", kcal: [20, 24], protein: [1.0, 1.2], carb: [3.5, 4.3], fat: [0.2, 0.3] },
+  { name: "豆角（豇豆）", category: "蔬菜", kcal: [30, 38], protein: [2.5, 3.1], carb: [5.0, 6.0], fat: [0.3, 0.4] },
+  { name: "四季豆（熟）", category: "蔬菜", kcal: [28, 34], protein: [1.8, 2.2], carb: [5.0, 6.0], fat: [0.2, 0.3] },
+  { name: "莴笋", category: "蔬菜", kcal: [14, 18], protein: [1.0, 1.2], carb: [2.5, 3.1], fat: [0.1, 0.2] },
+  { name: "白萝卜", category: "蔬菜", kcal: [18, 22], protein: [0.9, 1.1], carb: [3.5, 4.3], fat: [0.1, 0.2] },
+  { name: "竹笋（熟）", category: "蔬菜", kcal: [22, 26], protein: [2.5, 3.1], carb: [3.0, 3.6], fat: [0.2, 0.3] },
+  { name: "木耳（水发）", category: "蔬菜", kcal: [24, 30], protein: [1.5, 1.9], carb: [4.5, 5.5], fat: [0.2, 0.3] },
+  { name: "香菇", category: "蔬菜", kcal: [26, 32], protein: [2.2, 2.6], carb: [4.0, 4.8], fat: [0.3, 0.4] },
+  { name: "平菇", category: "蔬菜", kcal: [24, 30], protein: [1.9, 2.3], carb: [3.5, 4.3], fat: [0.3, 0.4] },
+  { name: "杏鲍菇", category: "蔬菜", kcal: [31, 39], protein: [1.3, 1.5], carb: [6.0, 7.2], fat: [0.3, 0.4] },
+  { name: "海带（熟）", category: "蔬菜", kcal: [13, 17], protein: [1.0, 1.2], carb: [2.0, 2.4], fat: [0.1, 0.2] },
+  { name: "紫菜（干）", category: "蔬菜", kcal: [207, 253], protein: [26, 32], carb: [22, 28], fat: [1.0, 1.2] },
+  { name: "裙带菜（熟）", category: "蔬菜", kcal: [16, 20], protein: [1.2, 1.4], carb: [2.5, 3.1], fat: [0.1, 0.2] },
+
+  // ---- 水果 补充 ----
+  { name: "柚子", category: "水果", kcal: [38, 46], protein: [0.7, 0.9], carb: [8.5, 10], fat: [0.2, 0.3] },
+  { name: "橘子", category: "水果", kcal: [42, 52], protein: [0.8, 1.0], carb: [9.5, 12], fat: [0.2, 0.3] },
+  { name: "柠檬", category: "水果", kcal: [29, 35], protein: [1.0, 1.2], carb: [6.5, 8.0], fat: [0.2, 0.3] },
+  { name: "菠萝", category: "水果", kcal: [44, 54], protein: [0.5, 0.6], carb: [10, 13], fat: [0.2, 0.3] },
+  { name: "哈密瓜", category: "水果", kcal: [34, 42], protein: [0.5, 0.6], carb: [7.5, 9.2], fat: [0.1, 0.2] },
+  { name: "香瓜", category: "水果", kcal: [26, 32], protein: [0.4, 0.5], carb: [5.5, 6.8], fat: [0.1, 0.2] },
+  { name: "椰子肉", category: "水果", kcal: [231, 283], protein: [3.0, 3.6], carb: [10, 12], fat: [21, 25] },
+  { name: "樱桃", category: "水果", kcal: [46, 56], protein: [1.0, 1.2], carb: [10, 13], fat: [0.2, 0.3] },
+  { name: "石榴", category: "水果", kcal: [63, 77], protein: [1.3, 1.5], carb: [14, 17], fat: [0.2, 0.3] },
+  { name: "柿子", category: "水果", kcal: [70, 86], protein: [0.4, 0.5], carb: [17, 21], fat: [0.2, 0.3] },
+  { name: "荔枝", category: "水果", kcal: [66, 80], protein: [0.9, 1.1], carb: [15, 19], fat: [0.2, 0.3] },
+  { name: "龙眼", category: "水果", kcal: [60, 74], protein: [1.2, 1.4], carb: [14, 17], fat: [0.2, 0.3] },
+  { name: "榴莲", category: "水果", kcal: [133, 163], protein: [2.6, 3.2], carb: [24, 30], fat: [3.3, 4.1] },
+  { name: "山竹", category: "水果", kcal: [69, 85], protein: [0.6, 0.8], carb: [17, 21], fat: [0.2, 0.3] },
+  { name: "百香果", category: "水果", kcal: [55, 67], protein: [1.8, 2.2], carb: [12, 15], fat: [0.6, 0.8] },
+  { name: "圣女果", category: "水果", kcal: [22, 26], protein: [1.0, 1.2], carb: [4.0, 4.8], fat: [0.2, 0.3] },
+
+  // ---- 坚果 补充 ----
+  { name: "碧根果", category: "坚果", kcal: [657, 803], protein: [8.0, 10], carb: [12, 14], fat: [68, 82] },
+  { name: "夏威夷果", category: "坚果", kcal: [674, 824], protein: [7.0, 8.6], carb: [10, 13], fat: [69, 84] },
+  { name: "松子", category: "坚果", kcal: [640, 782], protein: [13, 16], carb: [12, 14], fat: [65, 79] },
+  { name: "榛子", category: "坚果", kcal: [600, 734], protein: [14, 18], carb: [13, 16], fat: [57, 70] },
+  { name: "板栗（熟）", category: "坚果", kcal: [182, 222], protein: [3.5, 4.3], carb: [38, 46], fat: [1.5, 1.9] },
+  { name: "南瓜子", category: "坚果", kcal: [559, 683], protein: [29, 35], carb: [13, 16], fat: [48, 58] },
+  { name: "葵花籽", category: "坚果", kcal: [582, 712], protein: [19, 23], carb: [16, 20], fat: [52, 64] },
+  { name: "芝麻", category: "坚果", kcal: [531, 649], protein: [18, 22], carb: [18, 22], fat: [46, 56] },
+  { name: "亚麻籽", category: "坚果", kcal: [500, 612], protein: [18, 22], carb: [24, 30], fat: [38, 46] },
+
+  // ---- 油脂 补充 ----
+  { name: "菜籽油", category: "油脂", kcal: [884, 899], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [99, 100] },
+  { name: "花生油", category: "油脂", kcal: [884, 899], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [99, 100] },
+  { name: "芝麻油", category: "油脂", kcal: [884, 899], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [99, 100] },
+  { name: "猪油", category: "油脂", kcal: [884, 899], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [99, 100] },
+
+  // ---- 零食 补充 ----
+  { name: "薯条（炸）", category: "零食", kcal: [290, 356], protein: [3.4, 4.2], carb: [40, 48], fat: [14, 18] },
+  { name: "爆米花（原味）", category: "零食", kcal: [380, 464], protein: [11, 13], carb: [72, 88], fat: [4.0, 5.0] },
+  { name: "薯片（原味）", category: "零食", kcal: [520, 636], protein: [6.0, 7.4], carb: [52, 64], fat: [32, 40] },
+  { name: "饼干（曲奇）", category: "零食", kcal: [470, 574], protein: [6.0, 7.4], carb: [62, 76], fat: [22, 27] },
+  { name: "蛋糕（奶油）", category: "零食", kcal: [320, 392], protein: [5.0, 6.2], carb: [45, 55], fat: [14, 17] },
+  { name: "冰淇淋（奶油）", category: "零食", kcal: [200, 244], protein: [3.5, 4.3], carb: [24, 30], fat: [10, 13] },
+  { name: "果冻", category: "零食", kcal: [70, 86], protein: [0.1, 0.2], carb: [17, 21], fat: [0.0, 0.1] },
+  { name: "辣条", category: "零食", kcal: [440, 538], protein: [8.0, 10], carb: [48, 58], fat: [25, 31] },
+  { name: "肉脯", category: "零食", kcal: [320, 392], protein: [32, 40], carb: [30, 36], fat: [8.0, 10] },
+  { name: "海苔（干）", category: "零食", kcal: [260, 318], protein: [25, 31], carb: [32, 40], fat: [4.0, 5.0] },
+
+  // ---- 饮料 补充 ----
+  { name: "奶茶（全糖）", category: "饮料", kcal: [62, 76], protein: [1.0, 1.2], carb: [10, 12], fat: [2.0, 2.4] },
+  { name: "柠檬茶（甜）", category: "饮料", kcal: [40, 48], protein: [0.1, 0.2], carb: [9.5, 12], fat: [0.0, 0.1] },
+  { name: "运动饮料", category: "饮料", kcal: [24, 30], protein: [0.0, 0.0], carb: [5.8, 7.2], fat: [0.0, 0.0] },
+  { name: "椰子水", category: "饮料", kcal: [19, 23], protein: [0.4, 0.5], carb: [4.0, 4.8], fat: [0.2, 0.3] },
+  { name: "无糖可乐", category: "饮料", kcal: [0, 0], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [0.0, 0.0] },
+  { name: "苏打水", category: "饮料", kcal: [0, 0], protein: [0.0, 0.0], carb: [0.0, 0.0], fat: [0.0, 0.0] },
+  { name: "啤酒", category: "饮料", kcal: [32, 40], protein: [0.3, 0.4], carb: [3.0, 3.6], fat: [0.0, 0.0] },
+  { name: "红酒", category: "饮料", kcal: [72, 88], protein: [0.1, 0.2], carb: [2.5, 3.1], fat: [0.0, 0.0] },
+
+  // ---- 调味 补充 ----
+  { name: "番茄酱", category: "调味", kcal: [100, 122], protein: [1.3, 1.5], carb: [22, 28], fat: [0.2, 0.3] },
+  { name: "蚝油", category: "调味", kcal: [112, 138], protein: [4.0, 5.0], carb: [23, 28], fat: [0.2, 0.3] },
+  { name: "生抽", category: "调味", kcal: [60, 74], protein: [5.5, 6.7], carb: [8.0, 10], fat: [0.1, 0.2] },
+  { name: "老抽", category: "调味", kcal: [65, 79], protein: [5.0, 6.2], carb: [10, 12], fat: [0.1, 0.2] },
+  { name: "醋", category: "调味", kcal: [30, 38], protein: [2.0, 2.4], carb: [5.0, 6.0], fat: [0.0, 0.0] },
+  { name: "豆瓣酱", category: "调味", kcal: [150, 184], protein: [8.0, 10], carb: [18, 22], fat: [6.0, 8.0] },
+  { name: "辣椒酱", category: "调味", kcal: [120, 146], protein: [3.0, 3.6], carb: [20, 24], fat: [3.0, 4.0] },
+  { name: "沙拉酱", category: "调味", kcal: [680, 832], protein: [1.0, 1.2], carb: [8.0, 10], fat: [70, 86] },
+  { name: "千岛酱", category: "调味", kcal: [470, 574], protein: [1.0, 1.2], carb: [12, 15], fat: [47, 57] },
+  { name: "咖喱块", category: "调味", kcal: [500, 612], protein: [8.0, 10], carb: [42, 52], fat: [34, 42] },
+  { name: "鸡精", category: "调味", kcal: [190, 232], protein: [30, 36], carb: [15, 19], fat: [2.0, 2.4] },
+  // ===== 基础食材细化（肉/海鲜/菌菇/豆制品/乳制品/杂粮） =====
+  { name: "鸡肝（熟）", category: "蛋白质", kcal: [167, 204], protein: [24, 29], carb: [1, 1.5], fat: [6, 8] },
+  { name: "猪蹄（熟）", category: "蛋白质", kcal: [260, 318], protein: [23, 28], carb: [0, 0], fat: [18, 22] },
+  { name: "猪肝（熟）", category: "蛋白质", kcal: [129, 158], protein: [19, 23], carb: [5, 6], fat: [3, 4] },
+  { name: "猪肚（熟）", category: "蛋白质", kcal: [110, 134], protein: [15, 18], carb: [0, 0], fat: [5, 6] },
+  { name: "牛腱子（熟）", category: "蛋白质", kcal: [190, 232], protein: [28, 34], carb: [0, 0], fat: [8, 10] },
+  { name: "牛里脊（熟）", category: "蛋白质", kcal: [165, 202], protein: [28, 34], carb: [0, 0], fat: [5, 7] },
+  { name: "羊排（熟）", category: "蛋白质", kcal: [294, 360], protein: [20, 24], carb: [0, 0], fat: [24, 29] },
+  { name: "鸭胸肉（去皮熟）", category: "蛋白质", kcal: [140, 171], protein: [24, 29], carb: [0, 0], fat: [4, 6] },
+  { name: "秋刀鱼（熟）", category: "蛋白质", kcal: [240, 293], protein: [18, 22], carb: [0, 0], fat: [18, 22] },
+  { name: "生蚝（熟）", category: "蛋白质", kcal: [73, 89], protein: [9, 11], carb: [5, 6], fat: [2, 3] },
+  { name: "金针菇（熟）", category: "蔬菜", kcal: [26, 32], protein: [2, 3], carb: [4, 5], fat: [0.2, 0.3] },
+  { name: "杏鲍菇（熟）", category: "蔬菜", kcal: [31, 38], protein: [2, 3], carb: [5, 6], fat: [0.3, 0.4] },
+  { name: "口蘑（熟）", category: "蔬菜", kcal: [29, 35], protein: [3, 4], carb: [3, 4], fat: [0.5, 0.6] },
+  { name: "平菇（熟）", category: "蔬菜", kcal: [24, 29], protein: [2, 3], carb: [3, 4], fat: [0.3, 0.4] },
+  { name: "木耳（泡发）", category: "蔬菜", kcal: [21, 26], protein: [1, 2], carb: [4, 5], fat: [0.1, 0.2] },
+  { name: "银耳（泡发）", category: "蔬菜", kcal: [25, 30], protein: [0.5, 0.8], carb: [6, 7], fat: [0.1, 0.2] },
+  { name: "豆腐皮（千张）", category: "蛋白质", kcal: [409, 500], protein: [44, 54], carb: [5, 6], fat: [25, 30] },
+  { name: "嫩豆腐", category: "蛋白质", kcal: [62, 76], protein: [5, 6], carb: [3, 4], fat: [3, 4] },
+  { name: "北豆腐（老豆腐）", category: "蛋白质", kcal: [100, 122], protein: [9, 11], carb: [4, 5], fat: [5, 6] },
+  { name: "香干", category: "蛋白质", kcal: [140, 171], protein: [15, 18], carb: [4, 5], fat: [7, 9] },
+  { name: "素鸡", category: "蛋白质", kcal: [194, 237], protein: [16, 20], carb: [5, 6], fat: [12, 15] },
+  { name: "无糖酸奶", category: "蛋白质", kcal: [56, 68], protein: [3, 4], carb: [4, 5], fat: [3, 4] },
+  { name: "脱脂牛奶", category: "蛋白质", kcal: [34, 41], protein: [3.2, 3.5], carb: [4.8, 5.2], fat: [0.1, 0.3] },
+  { name: "奶酪（切达）", category: "蛋白质", kcal: [403, 493], protein: [24, 29], carb: [1, 2], fat: [33, 41] },
+  { name: "小米（熟）", category: "主食", kcal: [110, 134], protein: [3, 4], carb: [24, 29], fat: [0.5, 1] },
+  { name: "糙米（熟）", category: "主食", kcal: [112, 137], protein: [2.5, 3], carb: [24, 29], fat: [1, 1.5] },
+  { name: "黑米（熟）", category: "主食", kcal: [110, 134], protein: [3, 4], carb: [24, 29], fat: [1, 1.5] },
+  { name: "意面（熟）", category: "主食", kcal: [158, 193], protein: [5, 6], carb: [30, 37], fat: [1, 1.5] },
+
+  // ===== 健身/代餐类 =====
+  { name: "乳清蛋白粉（1勺约30g）", category: "蛋白质", kcal: [375, 410], protein: [70, 80], carb: [5, 10], fat: [5, 8] },
+  { name: "鸡胸肉丸（即食）", category: "蛋白质", kcal: [120, 146], protein: [20, 24], carb: [5, 6], fat: [2, 3] },
+  { name: "即食鸡胸肉", category: "蛋白质", kcal: [120, 146], protein: [24, 29], carb: [1, 2], fat: [2, 3] },
+  { name: "蛋白棒", category: "零食", kcal: [370, 450], protein: [25, 35], carb: [30, 40], fat: [10, 15] },
+  { name: "魔芋丝（熟）", category: "蔬菜", kcal: [8, 12], protein: [0.2, 0.3], carb: [2, 3], fat: [0, 0] },
+  { name: "魔芋代餐面", category: "主食", kcal: [15, 20], protein: [0.3, 0.5], carb: [3, 4], fat: [0, 0] },
+  { name: "燕麦代餐粉", category: "主食", kcal: [380, 410], protein: [12, 15], carb: [60, 70], fat: [8, 10] },
+  { name: "无糖豆浆", category: "蛋白质", kcal: [30, 40], protein: [3, 3.5], carb: [1.5, 2], fat: [1.5, 2] },
+  // ===== 家常菜/中式菜品（估，每100g，含烹饪用油） =====
+  { name: "番茄炒蛋（估）", category: "家常菜", kcal: [110, 140], protein: [6, 8], carb: [4, 6], fat: [7, 10] },
+  { name: "青椒炒肉（估）", category: "家常菜", kcal: [160, 200], protein: [10, 12], carb: [4, 6], fat: [11, 15] },
+  { name: "鱼香肉丝（估）", category: "家常菜", kcal: [150, 190], protein: [9, 11], carb: [8, 11], fat: [9, 13] },
+  { name: "宫保鸡丁（估）", category: "家常菜", kcal: [180, 220], protein: [14, 17], carb: [8, 10], fat: [10, 14] },
+  { name: "红烧肉（估）", category: "家常菜", kcal: [280, 340], protein: [9, 11], carb: [6, 8], fat: [24, 29] },
+  { name: "糖醋里脊（估）", category: "家常菜", kcal: [230, 280], protein: [12, 15], carb: [18, 22], fat: [12, 15] },
+  { name: "回锅肉（估）", category: "家常菜", kcal: [250, 300], protein: [11, 13], carb: [4, 6], fat: [21, 25] },
+  { name: "麻婆豆腐（估）", category: "家常菜", kcal: [130, 160], protein: [8, 10], carb: [5, 7], fat: [8, 11] },
+  { name: "水煮肉片（估）", category: "家常菜", kcal: [200, 250], protein: [13, 16], carb: [6, 8], fat: [14, 18] },
+  { name: "鱼香茄子（估）", category: "家常菜", kcal: [130, 160], protein: [2, 3], carb: [12, 15], fat: [8, 11] },
+  { name: "地三鲜（估）", category: "家常菜", kcal: [130, 160], protein: [2, 3], carb: [14, 17], fat: [7, 10] },
+  { name: "干煸豆角（估）", category: "家常菜", kcal: [90, 110], protein: [3, 4], carb: [8, 10], fat: [5, 7] },
+  { name: "蒜蓉西兰花（估）", category: "家常菜", kcal: [60, 75], protein: [3, 4], carb: [6, 7], fat: [3, 4] },
+  { name: "手撕包菜（估）", category: "家常菜", kcal: [55, 70], protein: [1.5, 2], carb: [7, 8], fat: [3, 4] },
+  { name: "酸辣土豆丝（估）", category: "家常菜", kcal: [85, 105], protein: [2, 2.5], carb: [14, 17], fat: [3, 4] },
+  { name: "清蒸鲈鱼（估）", category: "家常菜", kcal: [95, 115], protein: [16, 19], carb: [1, 2], fat: [3, 4] },
+  { name: "红烧鲫鱼（估）", category: "家常菜", kcal: [130, 160], protein: [14, 17], carb: [2, 3], fat: [7, 9] },
+  { name: "白灼虾（估）", category: "家常菜", kcal: [90, 105], protein: [18, 20], carb: [0, 1], fat: [1, 2] },
+  { name: "辣子鸡丁（估）", category: "家常菜", kcal: [220, 270], protein: [15, 18], carb: [6, 8], fat: [15, 19] },
+  { name: "西红柿鸡蛋汤（估）", category: "家常菜", kcal: [35, 45], protein: [3, 4], carb: [3, 4], fat: [2, 3] },
+  { name: "紫菜蛋花汤（估）", category: "家常菜", kcal: [20, 28], protein: [2, 3], carb: [2, 3], fat: [1, 2] },
+  { name: "冬瓜排骨汤（估）", category: "家常菜", kcal: [70, 90], protein: [7, 9], carb: [2, 3], fat: [4, 5] },
+  { name: "鲫鱼豆腐汤（估）", category: "家常菜", kcal: [55, 70], protein: [6, 8], carb: [2, 3], fat: [3, 4] },
+  { name: "凉拌黄瓜（估）", category: "家常菜", kcal: [35, 45], protein: [1, 1.5], carb: [4, 5], fat: [2, 3] },
+  { name: "凉拌木耳（估）", category: "家常菜", kcal: [50, 65], protein: [1.5, 2], carb: [6, 7], fat: [2, 3] },
+  { name: "皮蛋豆腐（估）", category: "家常菜", kcal: [80, 100], protein: [8, 10], carb: [2, 3], fat: [4, 5] },
+  { name: "蛋炒饭（估）", category: "家常菜", kcal: [165, 200], protein: [5, 6], carb: [22, 27], fat: [6, 8] },
+  { name: "扬州炒饭（估）", category: "家常菜", kcal: [175, 210], protein: [7, 8], carb: [22, 26], fat: [7, 9] },
+  { name: "牛肉炒饭（估）", category: "家常菜", kcal: [180, 215], protein: [8, 10], carb: [21, 25], fat: [7, 9] },
+  { name: "番茄牛腩（估）", category: "家常菜", kcal: [160, 200], protein: [13, 16], carb: [6, 8], fat: [9, 12] },
+  { name: "土豆炖牛肉（估）", category: "家常菜", kcal: [120, 150], protein: [10, 12], carb: [10, 12], fat: [5, 6] },
+  { name: "小鸡炖蘑菇（估）", category: "家常菜", kcal: [130, 160], protein: [13, 16], carb: [3, 4], fat: [7, 9] },
+  { name: "可乐鸡翅（估）", category: "家常菜", kcal: [220, 270], protein: [15, 18], carb: [12, 15], fat: [12, 15] },
+  { name: "蒜苔炒肉（估）", category: "家常菜", kcal: [120, 150], protein: [8, 10], carb: [8, 10], fat: [7, 9] },
+  { name: "芹菜炒牛肉（估）", category: "家常菜", kcal: [110, 135], protein: [11, 13], carb: [5, 6], fat: [5, 7] },
+  { name: "韭菜炒蛋（估）", category: "家常菜", kcal: [120, 150], protein: [8, 10], carb: [4, 5], fat: [8, 11] },
 ];
 
 /**
@@ -183,5 +434,676 @@ const MEAL_TEMPLATES = [
       "午餐": [ {n:"荞麦面（熟）",g:200}, {n:"虾（熟）",g:120}, {n:"黄瓜",g:150}, {n:"番茄",g:100}, {n:"橄榄油",g:5} ],
       "晚餐": [ {n:"南瓜（熟）",g:200}, {n:"鳕鱼（熟）",g:120}, {n:"卷心菜",g:200}, {n:"橄榄油",g:5} ]
     }
-  }
+  },
+
+  // ===== 减脂 · 扩充 =====
+  {
+    goal: "减脂", name: "西式轻卡餐",
+    meals: {
+      "早餐": [ {n:"全麦面包",g:60}, {n:"茅屋奶酪",g:80}, {n:"番茄",g:100}, {n:"黑咖啡",g:200} ],
+      "午餐": [ {n:"意大利面（熟）",g:150}, {n:"鳕鱼（熟）",g:150}, {n:"芦笋（熟）",g:150}, {n:"橄榄油",g:5} ],
+      "晚餐": [ {n:"土豆（熟）",g:200}, {n:"鸡胸肉（熟）",g:150}, {n:"西兰花（熟）",g:200}, {n:"橄榄油",g:5} ]
+    }
+  },
+  {
+    goal: "减脂", name: "地中海风减脂餐",
+    meals: {
+      "早餐": [ {n:"希腊酸奶（无糖）",g:200}, {n:"燕麦片（干）",g:30}, {n:"蓝莓",g:80}, {n:"杏仁",g:10} ],
+      "午餐": [ {n:"藜麦（熟）",g:150}, {n:"龙利鱼（熟）",g:150}, {n:"彩椒",g:150}, {n:"橄榄油",g:8} ],
+      "晚餐": [ {n:"红薯（熟）",g:180}, {n:"虾（熟）",g:150}, {n:"菠菜（熟）",g:200}, {n:"橄榄油",g:5} ]
+    }
+  },
+  {
+    goal: "减脂", name: "家常快手减脂餐",
+    meals: {
+      "早餐": [ {n:"鸡蛋（全蛋）",g:100}, {n:"全麦面包",g:60}, {n:"低脂牛奶",g:250}, {n:"苹果",g:100} ],
+      "午餐": [ {n:"紫薯（熟）",g:180}, {n:"虾（熟）",g:150}, {n:"荷兰豆",g:150}, {n:"橄榄油",g:5} ],
+      "晚餐": [ {n:"玉米（熟）",g:150}, {n:"瘦猪肉（熟）",g:120}, {n:"白菜",g:200}, {n:"橄榄油",g:5} ]
+    }
+  },
+
+  // ===== 增肌 · 扩充 =====
+  {
+    goal: "增肌", name: "增肌多蛋白餐",
+    meals: {
+      "早餐": [ {n:"鸡蛋（全蛋）",g:150}, {n:"全脂牛奶",g:300}, {n:"全麦面包",g:100}, {n:"香蕉",g:100} ],
+      "午餐": [ {n:"米饭（熟）",g:300}, {n:"鸡腿肉（去皮熟）",g:200}, {n:"西兰花（熟）",g:200}, {n:"橄榄油",g:10} ],
+      "晚餐": [ {n:"红薯（熟）",g:280}, {n:"瘦牛肉（熟）",g:200}, {n:"青椒",g:150}, {n:"橄榄油",g:10} ]
+    }
+  },
+  {
+    goal: "增肌", name: "增肌鱼虾餐",
+    meals: {
+      "早餐": [ {n:"燕麦片（干）",g:70}, {n:"鸡蛋（全蛋）",g:150}, {n:"全脂牛奶",g:300}, {n:"蓝莓",g:80} ],
+      "午餐": [ {n:"米饭（熟）",g:300}, {n:"三文鱼（熟）",g:180}, {n:"菠菜（熟）",g:200}, {n:"橄榄油",g:10} ],
+      "晚餐": [ {n:"意大利面（熟）",g:250}, {n:"虾（熟）",g:200}, {n:"芦笋（熟）",g:150}, {n:"橄榄油",g:10} ]
+    }
+  },
+  {
+    goal: "增肌", name: "增肌豆谷餐",
+    meals: {
+      "早餐": [ {n:"燕麦片（干）",g:70}, {n:"鸡蛋（全蛋）",g:150}, {n:"低脂牛奶",g:300}, {n:"猕猴桃",g:100} ],
+      "午餐": [ {n:"藜麦（熟）",g:250}, {n:"北豆腐",g:200}, {n:"荷兰豆",g:150}, {n:"橄榄油",g:10} ],
+      "晚餐": [ {n:"糙米饭（熟）",g:250}, {n:"豆腐干",g:150}, {n:"西兰花（熟）",g:200}, {n:"橄榄油",g:8} ]
+    }
+  },
+
+  // ===== 日常健康 · 扩充 =====
+  {
+    goal: "日常健康", name: "家常便当餐",
+    meals: {
+      "早餐": [ {n:"鸡蛋（全蛋）",g:100}, {n:"全麦面包",g:60}, {n:"低脂牛奶",g:250}, {n:"橙子",g:120} ],
+      "午餐": [ {n:"米饭（熟）",g:200}, {n:"鸡腿肉（去皮熟）",g:120}, {n:"青椒",g:150}, {n:"胡萝卜",g:100}, {n:"橄榄油",g:6} ],
+      "晚餐": [ {n:"红薯（熟）",g:180}, {n:"虾（熟）",g:120}, {n:"西兰花（熟）",g:150}, {n:"蘑菇",g:100}, {n:"橄榄油",g:5} ]
+    }
+  },
+  {
+    goal: "日常健康", name: "素食轻负担餐",
+    meals: {
+      "早餐": [ {n:"小米粥",g:300}, {n:"鸡蛋（全蛋）",g:100}, {n:"香蕉",g:100}, {n:"低脂牛奶",g:200} ],
+      "午餐": [ {n:"糙米饭（熟）",g:180}, {n:"北豆腐",g:150}, {n:"金针菇",g:150}, {n:"白菜",g:150}, {n:"橄榄油",g:6} ],
+      "晚餐": [ {n:"南瓜（熟）",g:200}, {n:"豆腐干",g:120}, {n:"卷心菜",g:200}, {n:"橄榄油",g:5} ]
+    }
+  },
 ];
+
+
+/**
+ * 份量参照表：把「克数」换算成生活化的「几碗 / 几个 / 几块 / 几勺」
+ * 字段：unit 常见参照单位 | g 每单位约克数
+ * 用于食谱和食物清单的实操性展示（克数对普通人没概念，换算成生活化量才可操作）
+ */
+const PORTIONS = {
+  // 主食
+  "米饭（熟）":      { unit:"碗", g:200 },   // 1 碗≈200g 熟饭
+  "糙米饭（熟）":    { unit:"碗", g:200 },
+  "藜麦（熟）":      { unit:"碗", g:150 },
+  "小米粥":          { unit:"碗", g:250 },
+  "馒头":            { unit:"个", g:100 },   // 1 个标准馒头≈100g
+  "全麦面包":        { unit:"片", g:35 },    // 1 片≈35g
+  "白面包":          { unit:"片", g:35 },
+  "燕麦片（干）":    { unit:"碗", g:40 },    // 1 碗泡发≈40g 干
+  "意大利面（熟）":  { unit:"盘", g:200 },
+  "荞麦面（熟）":    { unit:"碗", g:200 },
+  "红薯（熟）":      { unit:"个", g:200 },   // 中等大小
+  "紫薯（熟）":      { unit:"个", g:150 },
+  "土豆（熟）":      { unit:"个", g:150 },
+  "玉米（熟）":      { unit:"根", g:200 },   // 1 根中等玉米
+  "南瓜（熟）":      { unit:"块", g:150 },
+  // 蛋白质
+  "鸡胸肉（熟）":    { unit:"掌心", g:100 }, // 1 掌心≈100g 熟肉
+  "鸡腿肉（去皮熟）":{ unit:"个", g:150 },   // 1 个鸡腿≈150g
+  "鸡蛋（全蛋）":    { unit:"个", g:50 },    // 1 个鸡蛋≈50g
+  "鸡蛋清":          { unit:"个", g:33 },    // 1 个蛋清≈33g
+  "瘦牛肉（熟）":    { unit:"掌心", g:100 },
+  "瘦猪肉（熟）":    { unit:"掌心", g:100 },
+  "猪里脊（熟）":    { unit:"掌心", g:100 },
+  "羊肉（熟）":      { unit:"掌心", g:100 },
+  "三文鱼（熟）":    { unit:"掌心", g:100 },
+  "鳕鱼（熟）":      { unit:"掌心", g:100 },
+  "龙利鱼（熟）":    { unit:"掌心", g:100 },
+  "金枪鱼（水浸罐头）":{ unit:"小罐", g:80 },
+  "虾（熟）":        { unit:"份", g:100 },   // 1 份虾≈100g（约 8-10 只）
+  "鱿鱼（熟）":      { unit:"掌心", g:100 },
+  "北豆腐":          { unit:"块", g:100 },   // 1 小块≈100g
+  "南豆腐":          { unit:"块", g:100 },
+  "豆腐干":          { unit:"块", g:50 },
+  "低脂牛奶":        { unit:"杯", g:250 },
+  "全脂牛奶":        { unit:"杯", g:250 },
+  "希腊酸奶（无糖）":{ unit:"杯", g:150 },
+  "低脂酸奶":        { unit:"杯", g:200 },
+  "茅屋奶酪":        { unit:"杯", g:100 },
+  "乳清蛋白粉":      { unit:"勺", g:30 },    // 1 勺≈30g
+  // 蔬菜（按「盘/把」估）
+  "西兰花（熟）":    { unit:"盘", g:200 },
+  "菠菜（熟）":      { unit:"盘", g:200 },
+  "生菜":            { unit:"盘", g:100 },
+  "番茄":            { unit:"个", g:150 },   // 1 个中等番茄≈150g
+  "黄瓜":            { unit:"根", g:150 },
+  "胡萝卜":          { unit:"根", g:100 },
+  "青椒":            { unit:"个", g:80 },
+  "彩椒":            { unit:"个", g:100 },
+  "蘑菇":            { unit:"把", g:100 },
+  "金针菇":          { unit:"把", g:100 },
+  "茄子（熟）":      { unit:"根", g:200 },
+  "西葫芦":          { unit:"根", g:200 },
+  "卷心菜":          { unit:"盘", g:200 },
+  "白菜":            { unit:"盘", g:200 },
+  "芹菜":            { unit:"根", g:80 },
+  "洋葱":            { unit:"个", g:100 },
+  "芦笋（熟）":      { unit:"把", g:100 },
+  "荷兰豆":          { unit:"把", g:100 },
+  // 水果
+  "苹果":            { unit:"个", g:200 },
+  "香蕉":            { unit:"根", g:120 },
+  "橙子":            { unit:"个", g:180 },
+  "蓝莓":            { unit:"小碗", g:100 },
+  "草莓":            { unit:"个", g:15 },    // 1 个≈15g
+  "葡萄":            { unit:"串", g:150 },
+  "西瓜":            { unit:"块", g:300 },
+  "猕猴桃":          { unit:"个", g:80 },
+  "梨":              { unit:"个", g:200 },
+  "桃":              { unit:"个", g:200 },
+  "芒果":            { unit:"个", g:200 },
+  "火龙果":          { unit:"个", g:300 },
+  "牛油果":          { unit:"个", g:150 },
+  // 坚果
+  "花生":            { unit:"小把", g:30 },
+  "杏仁":            { unit:"小把", g:30 },
+  "核桃":            { unit:"个", g:10 },    // 1 个核桃仁≈10g
+  "腰果":            { unit:"小把", g:30 },
+  "开心果":          { unit:"小把", g:30 },
+  "奇亚籽":          { unit:"勺", g:15 },
+  "花生酱":          { unit:"勺", g:15 },
+  // 油脂
+  "橄榄油":          { unit:"勺", g:10 },    // 1 汤勺≈10g
+  "椰子油":          { unit:"勺", g:10 },
+  "黄油":            { unit:"小块", g:10 },
+  // 零食
+  "黑巧克力（70%）": { unit:"块", g:20 },
+  "苏打饼干":        { unit:"片", g:10 },
+  "薯片":            { unit:"小袋", g:30 },
+  // 饮料
+  "可乐":            { unit:"杯", g:330 },
+  "橙汁（无糖）":    { unit:"杯", g:250 },
+  "黑咖啡":          { unit:"杯", g:200 },
+  // 调味
+  "蜂蜜":            { unit:"勺", g:20 },
+  "白砂糖":          { unit:"勺", g:10 },
+  "酱油":            { unit:"勺", g:15 },
+  "蛋黄酱":          { unit:"勺", g:15 },
+
+  // ===== 扩充食材的份量参照 =====
+  // 主食补充
+  "面条（熟）":      { unit:"碗", g:200 },
+  "河粉（熟）":      { unit:"碗", g:200 },
+  "米粉（熟）":      { unit:"碗", g:200 },
+  "年糕":            { unit:"块", g:100 },
+  "糯米（熟）":      { unit:"碗", g:200 },
+  "白粥":            { unit:"碗", g:250 },
+  "皮蛋瘦肉粥":      { unit:"碗", g:300 },
+  "绿豆（熟）":      { unit:"碗", g:150 },
+  "红豆（熟）":      { unit:"碗", g:150 },
+  "鹰嘴豆（熟）":    { unit:"碗", g:150 },
+  "山药（熟）":      { unit:"段", g:100 },
+  "芋头（熟）":      { unit:"个", g:150 },
+  "莲藕（熟）":      { unit:"节", g:100 },
+  "油条":            { unit:"根", g:60 },
+  "烧饼":            { unit:"个", g:80 },
+  "包子（肉馅）":    { unit:"个", g:80 },
+  "饺子（猪肉馅）":  { unit:"个", g:25 },
+  "馄饨（鲜肉）":    { unit:"个", g:20 },
+  "凉皮":            { unit:"份", g:250 },
+  "米线（熟）":      { unit:"碗", g:200 },
+  // 蛋白质补充
+  "鸭肉（去皮熟）":  { unit:"掌心", g:100 },
+  "鹅肉（熟）":      { unit:"掌心", g:100 },
+  "鸡翅（熟）":      { unit:"个", g:60 },
+  "火鸡胸肉（熟）":  { unit:"掌心", g:100 },
+  "鸭蛋":            { unit:"个", g:70 },
+  "鹌鹑蛋":          { unit:"个", g:10 },
+  "牛腩（熟）":      { unit:"掌心", g:100 },
+  "肥牛卷（熟）":    { unit:"盘", g:150 },
+  "五花肉（熟）":    { unit:"掌心", g:100 },
+  "腊肉":            { unit:"片", g:20 },
+  "午餐肉":          { unit:"片", g:30 },
+  "火腿肠":          { unit:"根", g:60 },
+  "带鱼（熟）":      { unit:"段", g:100 },
+  "鲈鱼（熟）":      { unit:"条", g:150 },
+  "草鱼（熟）":      { unit:"掌心", g:100 },
+  "黄花鱼（熟）":    { unit:"条", g:150 },
+  "扇贝（熟）":      { unit:"个", g:20 },
+  "蛤蜊（熟）":      { unit:"个", g:20 },
+  "螃蟹（熟）":      { unit:"只", g:150 },
+  "鲍鱼（熟）":      { unit:"个", g:50 },
+  "海参（熟）":      { unit:"条", g:100 },
+  "黄豆（熟）":      { unit:"碗", g:150 },
+  "黑豆（熟）":      { unit:"碗", g:150 },
+  "腐竹（干）":      { unit:"条", g:20 },
+  "豆浆（无糖）":    { unit:"杯", g:250 },
+  "内酯豆腐":        { unit:"盒", g:300 },
+  "豆干":            { unit:"块", g:50 },
+  "毛豆（熟）":      { unit:"碗", g:150 },
+  "鹰嘴豆泥":        { unit:"勺", g:30 },
+  // 蔬菜补充
+  "空心菜":          { unit:"盘", g:200 },
+  "油麦菜":          { unit:"盘", g:200 },
+  "韭菜":            { unit:"把", g:100 },
+  "豆芽（绿豆芽）":  { unit:"盘", g:200 },
+  "蒜薹":            { unit:"把", g:100 },
+  "大葱":            { unit:"根", g:60 },
+  "生姜":            { unit:"块", g:15 },
+  "大蒜":            { unit:"瓣", g:5 },
+  "香菜":            { unit:"把", g:20 },
+  "茼蒿":            { unit:"盘", g:200 },
+  "苦瓜":            { unit:"根", g:150 },
+  "冬瓜":            { unit:"块", g:200 },
+  "丝瓜":            { unit:"根", g:200 },
+  "豆角（豇豆）":    { unit:"把", g:100 },
+  "四季豆（熟）":    { unit:"盘", g:200 },
+  "莴笋":            { unit:"根", g:200 },
+  "白萝卜":          { unit:"根", g:200 },
+  "竹笋（熟）":      { unit:"把", g:100 },
+  "木耳（水发）":    { unit:"碗", g:100 },
+  "香菇":            { unit:"个", g:20 },
+  "平菇":            { unit:"把", g:100 },
+  "杏鲍菇":          { unit:"个", g:100 },
+  "海带（熟）":      { unit:"盘", g:200 },
+  "紫菜（干）":      { unit:"张", g:3 },
+  "裙带菜（熟）":    { unit:"盘", g:200 },
+  // 水果补充
+  "柚子":            { unit:"瓣", g:100 },
+  "橘子":            { unit:"个", g:80 },
+  "柠檬":            { unit:"个", g:80 },
+  "菠萝":            { unit:"块", g:150 },
+  "哈密瓜":          { unit:"块", g:200 },
+  "香瓜":            { unit:"个", g:200 },
+  "椰子肉":          { unit:"块", g:100 },
+  "樱桃":            { unit:"个", g:10 },
+  "石榴":            { unit:"个", g:250 },
+  "柿子":            { unit:"个", g:150 },
+  "荔枝":            { unit:"颗", g:20 },
+  "龙眼":            { unit:"颗", g:10 },
+  "榴莲":            { unit:"瓣", g:100 },
+  "山竹":            { unit:"个", g:80 },
+  "百香果":          { unit:"个", g:50 },
+  "圣女果":          { unit:"个", g:15 },
+  // 坚果补充
+  "碧根果":          { unit:"小把", g:30 },
+  "夏威夷果":        { unit:"小把", g:30 },
+  "松子":            { unit:"小把", g:30 },
+  "榛子":            { unit:"小把", g:30 },
+  "板栗（熟）":      { unit:"个", g:15 },
+  "南瓜子":          { unit:"小把", g:30 },
+  "葵花籽":          { unit:"小把", g:30 },
+  "芝麻":            { unit:"勺", g:10 },
+  "亚麻籽":          { unit:"勺", g:15 },
+  // 油脂补充
+  "菜籽油":          { unit:"勺", g:10 },
+  "花生油":          { unit:"勺", g:10 },
+  "芝麻油":          { unit:"勺", g:10 },
+  "猪油":            { unit:"勺", g:10 },
+  // 零食补充
+  "薯条（炸）":      { unit:"份", g:100 },
+  "爆米花（原味）":  { unit:"桶", g:80 },
+  "薯片（原味）":    { unit:"小袋", g:30 },
+  "饼干（曲奇）":    { unit:"片", g:15 },
+  "蛋糕（奶油）":    { unit:"块", g:80 },
+  "冰淇淋（奶油）":  { unit:"杯", g:100 },
+  "果冻":            { unit:"个", g:50 },
+  "辣条":            { unit:"包", g:100 },
+  "肉脯":            { unit:"片", g:20 },
+  "海苔（干）":      { unit:"片", g:5 },
+  // 饮料补充
+  "奶茶（全糖）":    { unit:"杯", g:500 },
+  "柠檬茶（甜）":    { unit:"杯", g:500 },
+  "运动饮料":        { unit:"瓶", g:500 },
+  "椰子水":          { unit:"杯", g:330 },
+  "无糖可乐":        { unit:"罐", g:330 },
+  "苏打水":          { unit:"瓶", g:330 },
+  "啤酒":            { unit:"瓶", g:500 },
+  "红酒":            { unit:"杯", g:150 },
+  // 调味补充
+  "番茄酱":          { unit:"勺", g:15 },
+  "蚝油":            { unit:"勺", g:15 },
+  "生抽":            { unit:"勺", g:15 },
+  "老抽":            { unit:"勺", g:15 },
+  "醋":              { unit:"勺", g:15 },
+  "豆瓣酱":          { unit:"勺", g:15 },
+  "辣椒酱":          { unit:"勺", g:15 },
+  "沙拉酱":          { unit:"勺", g:15 },
+  "千岛酱":          { unit:"勺", g:15 },
+  "咖喱块":          { unit:"块", g:20 },
+  "鸡精":            { unit:"勺", g:5 },
+  // 连锁小吃/中式快餐补充
+  "猪肉大葱蒸饺":    { unit:"笼", g:200 },   // 1 笼≈8-10 个
+  "素蒸饺":          { unit:"笼", g:200 },
+  "馄饨/云吞（带汤）":{ unit:"碗", g:300 },
+  "花生酱拌面":      { unit:"碗", g:250 },
+  "葱油拌面":        { unit:"碗", g:250 },
+  "牛肉拉面（兰州拉面）":{ unit:"碗", g:400 },
+  "黄焖鸡米饭（鸡肉焖）":{ unit:"份", g:400 },
+  "卤鸡腿（去皮）":  { unit:"个", g:120 },
+  "卤蛋":            { unit:"个", g:50 },
+  "卤豆干":          { unit:"块", g:60 },
+  "炸鸡排":          { unit:"块", g:150 },
+  "麻辣烫（综合荤素）":{ unit:"碗", g:400 },
+  "蛋炒饭":          { unit:"盘", g:300 },
+  "盖浇饭（鱼香肉丝）":{ unit:"份", g:400 },
+  "煎饼果子":        { unit:"个", g:200 },
+  "鸡蛋灌饼":        { unit:"个", g:200 },
+  "肉夹馍":          { unit:"个", g:150 },
+  "小笼包":          { unit:"笼", g:150 },   // 1 笼≈6 个
+  "番茄炒蛋（估）":  { unit:"份", g:200 },
+  "青椒炒肉（估）":  { unit:"份", g:200 },
+  "鱼香肉丝（估）":  { unit:"份", g:200 },
+  "宫保鸡丁（估）":  { unit:"份", g:200 },
+  "红烧肉（估）":    { unit:"份", g:200 },
+  "糖醋里脊（估）":  { unit:"份", g:200 },
+  "回锅肉（估）":    { unit:"份", g:200 },
+  "麻婆豆腐（估）":  { unit:"份", g:200 },
+  "水煮肉片（估）":  { unit:"份", g:250 },
+  "鱼香茄子（估）":  { unit:"份", g:200 },
+  "地三鲜（估）":    { unit:"份", g:200 },
+  "干煸豆角（估）":  { unit:"份", g:200 },
+  "蒜蓉西兰花（估）":{ unit:"份", g:150 },
+  "手撕包菜（估）":  { unit:"份", g:200 },
+  "酸辣土豆丝（估）":{ unit:"份", g:200 },
+  "清蒸鲈鱼（估）":  { unit:"份", g:250 },
+  "红烧鲫鱼（估）":  { unit:"份", g:250 },
+  "白灼虾（估）":    { unit:"份", g:200 },
+  "辣子鸡丁（估）":  { unit:"份", g:200 },
+  "西红柿鸡蛋汤（估）":{ unit:"碗", g:300 },
+  "紫菜蛋花汤（估）":{ unit:"碗", g:300 },
+  "冬瓜排骨汤（估）":{ unit:"碗", g:350 },
+  "鲫鱼豆腐汤（估）":{ unit:"碗", g:350 },
+  "凉拌黄瓜（估）":  { unit:"份", g:150 },
+  "凉拌木耳（估）":  { unit:"份", g:150 },
+  "皮蛋豆腐（估）":  { unit:"份", g:150 },
+  "蛋炒饭（估）":    { unit:"盘", g:300 },
+  "扬州炒饭（估）":  { unit:"盘", g:300 },
+  "牛肉炒饭（估）":  { unit:"盘", g:300 },
+  "番茄牛腩（估）":  { unit:"份", g:250 },
+  "土豆炖牛肉（估）":{ unit:"份", g:250 },
+  "小鸡炖蘑菇（估）":{ unit:"份", g:250 },
+  "可乐鸡翅（估）":  { unit:"份", g:200 },
+  "蒜苔炒肉（估）":  { unit:"份", g:200 },
+  "芹菜炒牛肉（估）":{ unit:"份", g:200 },
+  "韭菜炒蛋（估）":  { unit:"份", g:150 },
+  "乳清蛋白粉（1勺约30g）":{ unit:"勺", g:30 },
+  "鸡胸肉丸（即食）":{ unit:"个", g:30 },
+  "即食鸡胸肉":      { unit:"袋", g:100 },
+  "蛋白棒":          { unit:"根", g:60 },
+  "魔芋丝（熟）":    { unit:"袋", g:200 },
+  "魔芋代餐面":      { unit:"袋", g:200 },
+  "燕麦代餐粉":      { unit:"勺", g:40 },
+  "无糖豆浆":        { unit:"杯", g:250 },
+  "金针菇（熟）":    { unit:"把", g:150 },
+  "杏鲍菇（熟）":    { unit:"个", g:150 },
+  "口蘑（熟）":      { unit:"个", g:20 },
+  "平菇（熟）":      { unit:"把", g:150 },
+  "木耳（泡发）":    { unit:"把", g:100 },
+  "银耳（泡发）":    { unit:"朵", g:100 },
+  "豆腐皮（千张）":  { unit:"张", g:100 },
+  "嫩豆腐":          { unit:"盒", g:300 },
+  "北豆腐（老豆腐）":{ unit:"块", g:300 },
+  "香干":            { unit:"块", g:50 },
+  "素鸡":            { unit:"个", g:100 },
+  "奶酪（切达）":    { unit:"片", g:20 },
+  "无糖酸奶":        { unit:"杯", g:100 },
+  "脱脂牛奶":        { unit:"杯", g:250 },
+  "全脂牛奶":        { unit:"杯", g:250 },
+  "牛腱子（熟）":    { unit:"掌心", g:100 },
+  "牛里脊（熟）":    { unit:"掌心", g:100 },
+  "羊排（熟）":      { unit:"块", g:150 },
+  "鸭胸肉（去皮熟）":{ unit:"掌心", g:100 },
+  "鸡肝（熟）":      { unit:"副", g:80 },
+  "猪肝（熟）":      { unit:"掌心", g:100 },
+  "猪肚（熟）":      { unit:"掌心", g:100 },
+  "猪蹄（熟）":      { unit:"块", g:150 },
+  "秋刀鱼（熟）":    { unit:"条", g:120 },
+  "生蚝（熟）":      { unit:"个", g:40 },
+  "小米（熟）":      { unit:"碗", g:200 },
+  "糙米（熟）":      { unit:"碗", g:200 },
+  "黑米（熟）":      { unit:"碗", g:200 },
+  "意面（熟）":      { unit:"碗", g:200 },
+  "紫薯（熟）":      { unit:"个", g:150 },
+};
+
+/**
+ * 把克数「取整到日常量级」，去掉伪精确感
+ * 例：roundish(214) → 200；roundish(150) → 150；roundish(5) → 5；roundish(12) → 10
+ * 规则：≥100 取整到 10；10~100 取整到 5；<10 取整到 1
+ */
+function roundish(g){
+  if(g >= 100) return Math.round(g / 50) * 50;   // ≥100 → 取整到 50（214→200）
+  if(g >= 20) return Math.round(g / 5) * 5;      // 20~100 → 取整到 5
+  return Math.round(g);                            // <20 → 取整到 1
+}
+
+/**
+ * 把克数换算成生活化份量文案
+ * 例：humanizeGrams("米饭（熟）", 214) → "约 1 碗（约 200g）"
+ * 例：humanizeGrams("橄榄油", 5) → "半勺（约 5g）"
+ * 找不到参照时回退为「约 Xg」
+ */
+function humanizeGrams(name, grams){
+  const p = PORTIONS[name];
+  const g = roundish(grams);
+  if(!p) return `约 ${g}g`;
+  const n = grams / p.g;
+  // 「掌心」是描述性量词，前面要加「个」；「碗/杯/勺/盘/把/份」等自带量词感
+  const u = (p.unit === "掌心") ? "个掌心" : p.unit;
+  let qty;
+  if(n < 0.4){
+    qty = "不到半" + u;
+  } else if(n < 0.75){
+    qty = "半" + u;
+  } else if(n < 1.25){
+    qty = "约 1 " + u;
+  } else if(n < 1.75){
+    qty = "约 1 " + u + "半";
+  } else if(n < 2.5){
+    qty = "约 2 " + u;
+  } else {
+    qty = "约 " + Math.round(n) + " " + u;
+  }
+  return `${qty}（约 ${g}g）`;
+}
+
+/**
+ * 店面产品数据库（品牌连锁 · 按「份」计量）
+ *
+ * 与 FOODS（每 100g）不同，这些产品官方只公布「单份」的营养数据，
+ * 所以这里直接存单份总热量与三大营养素，`serving` 为一份的参考重量/容量。
+ * 数据来源：品牌官网营养计算器 / 官方营养标签（2025-2026 更新），
+ * 均为官方公布值，非估算。仅供参考，实际因杯型/配方调整可能有浮动。
+ */
+const BRAND_FOODS = [
+  // ===== 瑞幸咖啡 luckin coffee（官网官方标注） =====
+  { name:"瑞幸·标准美式", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:11,  protein:null,   carb:null,   fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·加浓美式", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:14,  protein:null,   carb:null,   fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·生椰拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:179, protein:null,   carb:null,  fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·拿铁",     brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:268, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·茉莉花香拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:76, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·冰吸生椰拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:196, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·小黄油拿铁",   brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:250, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·生椰三重奏拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:470, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·轻椰茉莉拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:120, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·丝绒拿铁",     brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:376, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·橙C美式",      brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:128, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·苹果C美式",    brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:133, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·海盐焦糖拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:206, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·桂花米酿拿铁", brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:198, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+  { name:"瑞幸·绿沙沙拿铁",   brand:"瑞幸咖啡", category:"瑞幸咖啡", kcal:197, protein:null, carb:null, fat:null, serving:480, unit:"杯" },
+
+  // ===== 麦当劳（官网营养计算器，2025-04 更新） =====
+  // 汉堡卷类
+  { name:"麦当劳·巨无霸", brand:"麦当劳", category:"麦当劳", kcal:513, protein:27, carb:42, fat:26, serving:214, unit:"个" },
+  { name:"麦当劳·麦辣鸡腿汉堡", brand:"麦当劳", category:"麦当劳", kcal:485, protein:24, carb:42, fat:24, serving:1, unit:"个" },
+  { name:"麦当劳·双层吉士汉堡", brand:"麦当劳", category:"麦当劳", kcal:429, protein:27, carb:31, fat:22, serving:1, unit:"个" },
+  { name:"麦当劳·板烧鸡腿堡", brand:"麦当劳", category:"麦当劳", kcal:391, protein:23, carb:35, fat:17, serving:1, unit:"个" },
+  { name:"麦当劳·麦香鸡", brand:"麦当劳", category:"麦当劳", kcal:370, protein:15, carb:39, fat:17, serving:1, unit:"个" },
+  { name:"麦当劳·麦香鱼", brand:"麦当劳", category:"麦当劳", kcal:325, protein:16, carb:35, fat:13, serving:1, unit:"个" },
+  { name:"麦当劳·吉士汉堡包", brand:"麦当劳", category:"麦当劳", kcal:294, protein:16, carb:30, fat:12, serving:1, unit:"个" },
+  { name:"麦当劳·汉堡包", brand:"麦当劳", category:"麦当劳", kcal:248, protein:13, carb:29, fat:8, serving:1, unit:"个" },
+  // 小食类
+  { name:"麦当劳·麦辣鸡翅(2块)", brand:"麦当劳", category:"麦当劳", kcal:224, protein:13, carb:9, fat:15, serving:1, unit:"份" },
+  { name:"麦当劳·麦乐鸡(5块)", brand:"麦当劳", category:"麦当劳", kcal:213, protein:12, carb:13, fat:12, serving:1, unit:"份" },
+  { name:"麦当劳·玉米杯(小)", brand:"麦当劳", category:"麦当劳", kcal:53, protein:2, carb:7, fat:1, serving:1, unit:"份" },
+  { name:"麦当劳·薯条(小)", brand:"麦当劳", category:"麦当劳", kcal:210, protein:3, carb:28, fat:9, serving:1, unit:"份" },
+  { name:"麦当劳·薯条(中)", brand:"麦当劳", category:"麦当劳", kcal:289, protein:4, carb:38, fat:12, serving:1, unit:"份" },
+  { name:"麦当劳·薯条(大)", brand:"麦当劳", category:"麦当劳", kcal:379, protein:6, carb:50, fat:16, serving:1, unit:"份" },
+
+  // ===== 霸王茶姬 CHAGEE（官方「产品身份证」，CTI华测检测） =====
+  // 伯牙绝弦官方热量表：中杯/大杯 × 冷/热 × 4 档糖度。默认取「中杯·冷·不另外加糖」低负担规格。
+  { name:"霸王茶姬·伯牙绝弦(中杯·不另外加糖·冷)", brand:"霸王茶姬", category:"霸王茶姬", kcal:130, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"霸王茶姬·伯牙绝弦(中杯·标准糖·冷)",   brand:"霸王茶姬", category:"霸王茶姬", kcal:211, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"霸王茶姬·伯牙绝弦(大杯·不另外加糖·冷)", brand:"霸王茶姬", category:"霸王茶姬", kcal:171, protein:null, carb:null, fat:null, serving:650, unit:"杯" },
+  { name:"霸王茶姬·伯牙绝弦(大杯·标准糖·冷)",   brand:"霸王茶姬", category:"霸王茶姬", kcal:268, protein:null, carb:null, fat:null, serving:650, unit:"杯" },
+
+  // ===== 喜茶 HEYTEA（官方配方揭秘 + 第三方检测，标准规格） =====
+  // 热量为官方「帕梅拉推荐/配方揭秘」标注的标准杯型、去冰、不另外加糖值。
+  { name:"喜茶·多肉葡萄(去冰·不另外加糖)", brand:"喜茶", category:"喜茶", kcal:140, protein:null, carb:34, fat:null, serving:500, unit:"杯" },
+  { name:"喜茶·月观",               brand:"喜茶", category:"喜茶", kcal:103, protein:4.4, carb:null, fat:5.5, serving:500, unit:"杯" },
+  { name:"喜茶·绿妍青柠茶",          brand:"喜茶", category:"喜茶", kcal:20,  protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"喜茶·烤黑糖波波牛乳(推荐冰·不另外加糖)", brand:"喜茶", category:"喜茶", kcal:390, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+
+  // ===== 奈雪的茶 NAYUKI（点单小程序官方明示） =====
+  { name:"奈雪·霸气芝士草莓(中杯·不另外加糖)", brand:"奈雪的茶", category:"奈雪的茶", kcal:170, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+
+  // ===== 赛百味 Subway（官网产品页标注热量） =====
+  { name:"赛百味·香烤牛火火轻盈三明治", brand:"赛百味", category:"赛百味", kcal:296, protein:null, carb:null, fat:null, serving:1, unit:"份" },
+  // ===== 蜜雪冰城（官方标注） =====
+  { name:"蜜雪冰城·冰鲜柠檬水", brand:"蜜雪冰城", category:"蜜雪冰城", kcal:60,  protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"蜜雪冰城·珍珠奶茶", brand:"蜜雪冰城", category:"蜜雪冰城", kcal:260, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"蜜雪冰城·柠檬红茶", brand:"蜜雪冰城", category:"蜜雪冰城", kcal:80,  protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  // ===== 肯德基 KFC（官方标注） =====
+  { name:"肯德基·吮指原味鸡(1块)", brand:"肯德基", category:"肯德基", kcal:320, protein:null, carb:null, fat:null, serving:1, unit:"块" },
+  { name:"肯德基·香辣鸡腿堡", brand:"肯德基", category:"肯德基", kcal:470, protein:null, carb:null, fat:null, serving:1, unit:"个" },
+  { name:"肯德基·新奥尔良烤鸡腿堡", brand:"肯德基", category:"肯德基", kcal:420, protein:null, carb:null, fat:null, serving:1, unit:"个" },
+  { name:"肯德基·黄金鸡块(5块)", brand:"肯德基", category:"肯德基", kcal:280, protein:null, carb:null, fat:null, serving:1, unit:"份" },
+  { name:"肯德基·薯条(小)", brand:"肯德基", category:"肯德基", kcal:220, protein:null, carb:null, fat:null, serving:1, unit:"份" },
+  // ===== 喜茶（官方标注，补充） =====
+  { name:"喜茶·芝芝莓莓(不另外加糖)", brand:"喜茶", category:"喜茶", kcal:170, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  { name:"喜茶·多肉杨梅(不另外加糖)", brand:"喜茶", category:"喜茶", kcal:150, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  // ===== 奈雪的茶（官方标注，补充） =====
+  { name:"奈雪·霸气橙子(不另外加糖)", brand:"奈雪的茶", category:"奈雪的茶", kcal:130, protein:null, carb:null, fat:null, serving:500, unit:"杯" },
+  // ===== 赛百味 Subway（官方标注，补充） =====
+  { name:"赛百味·火鸡胸三明治(6寸)", brand:"赛百味", category:"赛百味", kcal:280, protein:null, carb:null, fat:null, serving:1, unit:"份" },
+  { name:"赛百味·金枪鱼三明治(6寸)", brand:"赛百味", category:"赛百味", kcal:320, protein:null, carb:null, fat:null, serving:1, unit:"份" },
+];
+
+/**
+ * 一键套餐（组合餐）
+ * 健身人群在外常吃的「点单组合」，一键批量加入食物清单。
+ * 结构：
+ * {
+ *   name: 套餐名,
+ *   tag: 分类标签（如「沙县小吃」「兰州拉面」「快餐」），
+ *   note: 说明（可含「可去酱/少糖」提示）,
+ *   items: [ { n: 食物名(引用 FOODS/BRAND_FOODS 的 name), g: 克数 或 servings: 份数 } ]
+ * }
+ * 份量按普通成年男性一顿的常见量设计，实际可手动增删。
+ */
+const MEAL_COMBOS = [
+  // ===== 沙县小吃 =====
+  { name:"沙县·鸡腿饭", tag:"沙县小吃", note:"沙县经典搭配，鸡腿可去皮减少脂肪", items:[
+    { n:"卤鸡腿（去皮）", g:120 }, { n:"卤蛋", g:50 }, { n:"卤豆干", g:60 }, { n:"米饭（熟）", g:200 }
+  ]},
+  { name:"沙县·拌面套餐", tag:"沙县小吃", note:"花生酱拌面 + 馄饨，碳水偏多，减脂期减半", items:[
+    { n:"花生酱拌面", g:250 }, { n:"馄饨/云吞（带汤）", g:200 }
+  ]},
+  { name:"沙县·蒸饺套餐", tag:"沙县小吃", note:"蒸饺 + 卤蛋，简单饱腹", items:[
+    { n:"猪肉大葱蒸饺", g:200 }, { n:"卤蛋", g:50 }
+  ]},
+
+  // ===== 兰州拉面 =====
+  { name:"兰州拉面·牛肉面+蛋", tag:"兰州拉面", note:"加卤蛋补充蛋白质，汤少喝更清淡", items:[
+    { n:"牛肉拉面（兰州拉面）", g:400 }, { n:"卤蛋", g:50 }
+  ]},
+
+  // ===== 黄焖鸡 / 麻辣烫 =====
+  { name:"黄焖鸡米饭套餐", tag:"中式快餐", note:"黄焖鸡配米饭，蔬菜少可另加青菜", items:[
+    { n:"黄焖鸡米饭（鸡肉焖）", g:350 }, { n:"米饭（熟）", g:150 }
+  ]},
+  { name:"麻辣烫·荤素均衡", tag:"中式快餐", note:"麻辣烫自助选，此套餐为综合荤素典型值", items:[
+    { n:"麻辣烫（综合荤素）", g:450 }
+  ]},
+
+  // ===== 早餐 =====
+  { name:"早餐·煎饼果子+豆浆", tag:"早餐", note:"加鸡蛋更抗饿，减脂期酱料减量", items:[
+    { n:"煎饼果子", g:200 }
+  ]},
+  { name:"早餐·鸡蛋灌饼", tag:"早餐", note:"配豆浆更均衡", items:[
+    { n:"鸡蛋灌饼", g:180 }
+  ]},
+  { name:"早餐·小笼包+蛋", tag:"早餐", note:"小笼包油脂偏高，配卤蛋补充蛋白", items:[
+    { n:"小笼包", g:150 }, { n:"卤蛋", g:50 }
+  ]},
+
+  // ===== 麦当劳 =====
+  { name:"麦当劳·经典套餐", tag:"快餐", note:"巨无霸 + 中薯 + 可乐（饮料未计入，自行留意）", items:[
+    { n:"麦当劳·巨无霸", servings:1 }, { n:"麦当劳·薯条(中)", servings:1 }
+  ]},
+  { name:"麦当劳·减脂轻选", tag:"快餐", note:"板烧鸡腿堡 + 玉米杯，比薯条更低负担", items:[
+    { n:"麦当劳·板烧鸡腿堡", servings:1 }, { n:"麦当劳·玉米杯(小)", servings:1 }
+  ]},
+];
+
+/**
+ * 自由组合引擎配置（推荐食谱 · 动态生成）
+ *
+ * 不再依赖写死的固定模板，而是按「食材池 + 偏好过滤」动态拼装一日三餐。
+ * 用户可指定想吃的主食/蛋白（如「牛肉」「鸡」「鱼」「虾」「豆/素」），
+ * 引擎据此从对应食材池随机抽取，组合出营养结构合理的三餐。
+ *
+ * 结构：
+ * {
+ *   PROTEIN_KEYS: { 偏好标签: [关键词数组] } —— 用于把用户偏好匹配到 FOODS 的蛋白
+ *   STAPLE_KEYS:  { 偏好标签: [关键词数组] } —— 主食偏好
+ *   MEAL_STRUCT:  { goal: { 餐: { 角色: 克数基准 } } } —— 三餐结构（70kg 基准）
+ * }
+ */
+const FOOD_POOLS = {
+  // 蛋白偏好关键词：标签 -> 命中 FOODS.category==="蛋白质" 的 name 关键词
+  // 注意：需排除「牛奶/酸奶/奶酪/乳清蛋白」等乳制品对「牛」的干扰（乳制品归「豆/素」偏好）
+  // 匹配用「精确优先」策略：先按 exact 精确词，再按 kw 包含词；蛋类/鱼类的交叉词单独排除
+  PROTEIN_KEYS: {
+    "鸡":     { kw:["鸡", "火鸡"], exclude:["鸡蛋", "鸭蛋", "鹌鹑蛋"] },
+    "牛":     { kw:["牛肉", "牛腩", "肥牛"], exclude:[] },
+    "猪":     { kw:["猪", "五花肉", "腊肉", "午餐肉", "火腿"], exclude:[] },
+    "羊":     { kw:["羊肉"], exclude:[] },
+    "鱼":     { kw:["三文鱼", "鳕鱼", "龙利鱼", "金枪鱼", "带鱼", "鲈鱼", "草鱼", "黄花鱼", "鱼"], exclude:["鱿鱼"] },
+    "虾蟹贝": { kw:["虾", "蟹", "扇贝", "蛤蜊", "鲍鱼", "海参", "鱿鱼"], exclude:[] },
+    "蛋":     { kw:["鸡蛋", "鸭蛋", "鹌鹑蛋"], exclude:[] },
+    "豆/素":  { kw:["豆腐", "豆干", "豆浆", "腐竹", "黄豆", "黑豆", "毛豆", "鹰嘴豆", "奶酪", "酸奶", "牛奶", "乳清蛋白"], exclude:[] },
+  },
+  // 主食偏好关键词
+  STAPLE_KEYS: {
+    "米饭": { kw:["米饭", "糙米饭", "小米粥", "白粥", "皮蛋瘦肉粥"], exclude:[] },
+    "面食": { kw:["馒头", "面包", "面条", "河粉", "米粉", "米线", "凉皮", "烧饼", "油条", "包子", "饺子", "馄饨", "年糕", "糯米"], exclude:["意大利面", "荞麦面"] },
+    "薯类": { kw:["红薯", "紫薯", "土豆", "山药", "芋头", "南瓜", "莲藕"], exclude:[] },
+    "杂粮": { kw:["燕麦", "藜麦", "荞麦", "玉米", "绿豆", "红豆", "鹰嘴豆"], exclude:[] },
+    "意面": { kw:["意大利面"], exclude:[] },
+  },
+  // 三餐结构（70kg 基准克数）：每餐 = 主食 + 蛋白 + 蔬菜（+ 早餐水果/奶，午餐晚餐脂肪）
+  // 早餐的「蛋白」只从 BREAKFAST_PROTEIN 池抽（蛋/奶/豆），正餐才用全量肉鱼虾池
+  MEAL_STRUCT: {
+    "减脂": {
+      "早餐": { "主食": 60, "蛋白": 100, "蔬菜": 100, "水果": 100 },
+      "午餐": { "主食": 150, "蛋白": 150, "蔬菜": 200, "脂肪": 5 },
+      "晚餐": { "主食": 120, "蛋白": 120, "蔬菜": 200, "脂肪": 5 },
+    },
+    "增肌": {
+      "早餐": { "主食": 80, "蛋白": 150, "蔬菜": 80, "水果": 120 },
+      "午餐": { "主食": 280, "蛋白": 200, "蔬菜": 200, "脂肪": 10 },
+      "晚餐": { "主食": 240, "蛋白": 180, "蔬菜": 200, "脂肪": 10 },
+    },
+    "日常健康": {
+      "早餐": { "主食": 60, "蛋白": 100, "蔬菜": 80, "水果": 100 },
+      "午餐": { "主食": 200, "蛋白": 120, "蔬菜": 200, "脂肪": 7 },
+      "晚餐": { "主食": 150, "蛋白": 120, "蔬菜": 200, "脂肪": 5 },
+    },
+  },
+
+  // 早餐友好食材池：早餐不吃「猪里脊/肥牛/五花肉」这类正餐大菜，
+  // 只从符合中国人早餐习惯的食材里抽（蛋、奶、豆、麦片、面包、粥、包子等）。
+  // 若用户指定了「鸡/牛/猪」等肉蛋白偏好，早餐优先用清淡形态（鸡蛋/瘦肉），
+  // 绝不会出现「早餐吃猪里脊」这类反常识组合。
+  BREAKFAST_PROTEIN: [
+    "鸡蛋（全蛋）", "鸡蛋清", "低脂牛奶", "全脂牛奶", "希腊酸奶（无糖）",
+    "低脂酸奶", "茅屋奶酪", "豆浆（无糖）", "北豆腐", "内酯豆腐", "卤蛋",
+  ],
+  BREAKFAST_STAPLE: [
+    "燕麦片（干）", "全麦面包", "白面包", "小米粥", "白粥", "馒头",
+    "包子（肉馅）", "饺子（猪肉馅）", "馄饨（鲜肉）", "玉米（熟）", "红薯（熟）", "南瓜（熟）",
+  ],
+  // 早餐蔬菜：清淡可直接吃的常见配菜（番茄/黄瓜/生菜/菠菜等），排除冬瓜、竹笋等需炖煮的正餐菜
+  // 注意：圣女果虽常作蔬菜吃，但库里归「水果」，为避免「早餐又有水果」的观感，此处不放
+  BREAKFAST_VEG: [
+    "番茄", "黄瓜", "生菜", "菠菜（熟）", "西兰花（熟）", "胡萝卜", "彩椒",
+    "卷心菜", "白菜", "油麦菜", "芹菜", "蘑菇",
+  ],
+};
+
