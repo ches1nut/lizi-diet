@@ -5,7 +5,35 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>🌰 diet</title>
 <style>
+  /* ===== 配色主题（三套，均做过对比度校验）=====
+     默认主题写在 :root（暖橙食欲 B）—— 这样即使 JS 被禁用也不会闪一下别的颜色。
+     A / C 通过 <html data-theme> 覆盖。
+     --tint 是「品牌色的 RGB 三元组」，供 rgba(var(--tint), .28) 这类带透明度的
+     阴影/光晕使用 —— 否则换主题后阴影还会是紫色的。 */
   :root{
+    /* 主题 B 暖橙食欲（默认）：暖色最贴「吃」这件事 */
+    --brand:#9A3412;
+    --brand-deep:#7C2D12;
+    --brand-2:#C2410C;
+    --brand-soft:#FDF1E8;
+    --brand-mid:#F3C7A6;
+    --accent:#D97706;
+    --bg:#FBF7F4;
+    --card:#ffffff;
+    --text:#241C17;
+    --sub:#736A64;
+    --border:#EFE2D8;
+    --tint:154,52,18;
+    /* 语义色（与主题无关，三套共用）：此前 --color-background-success 只被引用、从未定义，
+       导致「减脂」徽章与 fit-hint.ok 的底色一直是空的 */
+    --color-background-success:#E6F4EF;
+    --shadow-sm:0 1px 2px rgba(23,25,35,.04), 0 2px 8px rgba(23,25,35,.05);
+    --shadow-md:0 4px 12px rgba(23,25,35,.06), 0 12px 32px rgba(var(--tint),.12);
+    --radius:18px;
+    --tabbar-h:58px;
+  }
+  /* 主题 A 深紫精炼：冷静克制，偏工具感 */
+  :root[data-theme="A"]{
     --brand:#26215C;
     --brand-deep:#1B1747;
     --brand-2:#4A3FA8;
@@ -17,11 +45,26 @@
     --text:#1f2329;
     --sub:#6b7280;
     --border:#E6E8F0;
-    --shadow-sm:0 1px 2px rgba(23,25,35,.04), 0 2px 8px rgba(23,25,35,.05);
-    --shadow-md:0 4px 12px rgba(23,25,35,.06), 0 12px 32px rgba(38,33,92,.12);
-    --radius:18px;
-    --tabbar-h:58px;
+    --tint:38,33,92;
   }
+  /* 主题 C 健康绿：清爽，偏「轻食/健康」 */
+  :root[data-theme="C"]{
+    --brand:#14532D;
+    --brand-deep:#0B3A1F;
+    --brand-2:#15803D;
+    --brand-soft:#E9F4EC;
+    --brand-mid:#B4DCC2;
+    --accent:#CA8A04;
+    --bg:#F5F9F6;
+    --card:#ffffff;
+    --text:#16211A;
+    --sub:#5F6B62;
+    --border:#DEE9E1;
+    --tint:20,83,45;
+  }
+  /* 品牌色图标：图标 SVG 源码里写死了紫色描边，这里统一交给主题变量。
+     用 class + CSS 而不是把属性值改成 var() —— 呈现属性里的 var() 在部分浏览器不生效。 */
+  .ic-brand, .ic-brand *{stroke:var(--brand);}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{height:100%;}
   body{
@@ -46,7 +89,7 @@
     width:38px; height:38px; border-radius:12px;
     background:linear-gradient(135deg,var(--brand) 0%,var(--brand-2) 100%);
     display:flex; align-items:center; justify-content:center; font-size:19px;
-    box-shadow:0 4px 12px rgba(38,33,92,.28);
+    box-shadow:0 4px 12px rgba(var(--tint),.28);
   }
   .brand .name{font-size:17px; font-weight:700; letter-spacing:.2px;}
   .me-btn{
@@ -244,7 +287,7 @@
     transition:.15s; font-weight:500;
   }
   .filter.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;
-    box-shadow:0 4px 10px rgba(38,33,92,.25);}
+    box-shadow:0 4px 10px rgba(var(--tint),.25);}
 
   .plan-list{padding:14px 28px 100px; display:grid; gap:14px;}
   .plan-card{
@@ -270,7 +313,7 @@
     width:calc(100% - 56px); max-width:624px; border-radius:16px;
     background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
     padding:14px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px;
-    box-shadow:0 8px 24px rgba(38,33,92,.32);
+    box-shadow:0 8px 24px rgba(var(--tint),.32);
   }
   .compare-bar .info{font-size:13px; font-weight:500;}
   .compare-bar .info .cnt{font-weight:800; font-size:15px;}
@@ -429,7 +472,7 @@
     border:1px solid var(--border); background:var(--card);
     font-size:15px; color:var(--text); outline:none; transition:.15s;
   }
-  .form-input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(38,33,92,.12);}
+  .form-input:focus{border-color:var(--brand); box-shadow:0 0 0 3px rgba(var(--tint),.12);}
   .form-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .seg{display:flex; gap:8px; flex-wrap:wrap;}
   .seg-item{
@@ -438,7 +481,7 @@
     font-size:13px; transition:.15s; font-weight:500;
   }
   .seg-item.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;
-    box-shadow:0 4px 10px rgba(38,33,92,.25);}
+    box-shadow:0 4px 10px rgba(var(--tint),.25);}
 
   .profile-tip{
     background:var(--brand-soft); border-radius:14px; padding:14px 18px;
@@ -533,6 +576,20 @@
   .me-row .act{color:var(--brand); font-size:14px; cursor:pointer; flex-shrink:0; font-weight:500;}
   .me-row .act:hover{opacity:.7;}
   .me-tip{font-size:12px; color:var(--sub); line-height:1.6; margin-top:8px; padding:0 4px;}
+  /* 配色主题选择器 */
+  .theme-opt{
+    display:flex; align-items:center; gap:12px; padding:13px 18px; cursor:pointer; transition:.15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .theme-opt + .theme-opt{border-top:1px solid var(--border);}
+  .theme-opt:hover{background:var(--bg);}
+  .theme-opt .theme-swatch{width:30px; height:30px; border-radius:10px; flex-shrink:0; box-shadow:var(--shadow-sm);}
+  .theme-opt .theme-txt{flex:1; display:flex; flex-direction:column; min-width:0;}
+  .theme-opt .theme-txt b{font-size:14px; font-weight:600; color:var(--text); line-height:1.5;}
+  .theme-opt .theme-txt i{font-size:11px; color:var(--sub); font-style:normal; line-height:1.5;}
+  .theme-opt .theme-check{font-size:14px; font-weight:800; color:var(--brand); width:16px; text-align:center;}
+  .theme-opt.on{background:var(--brand-soft);}
+  .theme-opt.on .theme-txt b{color:var(--brand);}
   .me-danger{color:#DC2626;}
 
   .btn-primary{
@@ -655,10 +712,56 @@
   .meal-tabs{display:flex; gap:8px; margin-bottom:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:5px; box-shadow:var(--shadow-sm);}
   .meal-tab{flex:1; text-align:center; padding:9px 0; border-radius:10px; font-size:14px; font-weight:600; color:var(--sub); cursor:pointer; user-select:none; transition:.15s;}
   .meal-tab.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:700; box-shadow:var(--shadow-sm);}
-  .rs-hint{font-size:11px; color:var(--sub); margin-bottom:10px; letter-spacing:.3px;}
+  .rs-hint{font-size:11px; color:var(--sub); letter-spacing:.3px;}
   .meal-block{margin-bottom:16px;}
   .meal-block .meal-title{font-size:14px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
   .meal-block .meal-title .mt-dot{width:8px; height:8px; border-radius:50%;}
+  /* 餐次「未完成 / ✓ 已完成」状态（生成→执行闭环）。放在餐次名之后、
+     「换一换」之前 —— 换一换有 margin-left:auto 负责右对齐，不要再包一层容器 */
+  .meal-done{
+    display:inline-flex; align-items:center; flex-shrink:0;
+    padding:3px 10px; border-radius:999px; cursor:pointer; line-height:1.5;
+    border:1px solid var(--border); background:var(--card);
+    font-size:11px; font-weight:600; color:var(--sub); transition:.15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .meal-done:hover{border-color:var(--brand-mid); color:var(--brand);}
+  .meal-done.on{background:var(--brand); border-color:transparent; color:#fff;}
+  .meal-done:active{transform:scale(.95);}
+  /* 每餐营养汇总行 */
+  .meal-sum{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    margin:0 0 8px; padding:9px 14px; border-radius:12px;
+    background:var(--brand-soft); font-size:11px; color:var(--brand); font-weight:600;
+  }
+  .meal-sum b{font-size:14px; font-weight:800; margin-right:2px;}
+  .meal-sum .ms-macros{color:var(--sub); font-weight:600;}
+  /* 加餐为空时的说明（加餐不参与三餐分配，不显示 0 kcal 汇总行） */
+  .meal-empty-hint{
+    margin:0 0 8px; padding:11px 14px; border-radius:12px; font-size:11.5px; line-height:1.7;
+    background:var(--bg); border:1px dashed var(--border); color:var(--sub);
+  }
+  /* 「今日执行」进度条（生成→执行闭环 + 剩余额度语言） */
+  .exec-bar{
+    margin-bottom:14px; padding:13px 15px; border-radius:16px;
+    background:var(--card); border:1px solid var(--border); box-shadow:var(--shadow-sm);
+  }
+  .exec-top{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:9px;}
+  .exec-title{font-size:12.5px; font-weight:600; color:var(--sub);}
+  .exec-title b{color:var(--text); font-weight:800;}
+  .exec-remain{font-size:12px; font-weight:600; color:var(--sub);}
+  .exec-remain b{font-size:17px; font-weight:800; color:var(--brand); margin:0 1px;}
+  .exec-remain.over b{color:#C93E0F;}
+  .exec-track{height:7px; border-radius:99px; background:var(--brand-soft); overflow:hidden;}
+  .exec-track i{display:block; height:100%; border-radius:99px;
+    background:linear-gradient(90deg,var(--brand),var(--brand-2)); transition:width .3s;}
+  .exec-track i.over{background:#C93E0F;}
+  .exec-chips{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;}
+  .exec-chip{
+    font-size:11px; font-weight:600; padding:3px 10px; border-radius:999px;
+    background:var(--bg); color:var(--sub); border:1px solid var(--border);
+  }
+  .exec-chip.on{background:var(--brand); color:#fff; border-color:transparent;}
   .food-row{
     display:flex; align-items:center; gap:12px; padding:13px 16px; margin-bottom:8px;
     border:1px solid var(--border); border-radius:14px; background:var(--card);
@@ -671,13 +774,16 @@
   .food-row .fr-del:hover{color:#DC2626; background:#FEE2E2;}
   .food-row .fr-del svg{width:16px; height:16px;}
   .recipe-sum{
-    display:flex; gap:10px; padding:14px 16px; margin-top:16px;
+    display:flex; flex-wrap:wrap; gap:10px; padding:14px 16px; margin-top:16px;
     border-radius:14px; background:var(--brand-soft); text-align:center;
   }
+  /* .rs-hint 是标题行，必须独占一行 —— 容器是 flex，不加 flex-basis 会被当成
+     第 5 个格子挤在左侧窄列里（整句话竖着断行），四项数据也被压到右边 */
+  .recipe-sum .rs-hint{flex:0 0 100%; text-align:left;}
   .recipe-sum .rs-item{flex:1;}
   .recipe-sum .rs-item .n{font-size:17px; font-weight:800; color:var(--brand-deep);}
   .recipe-sum .rs-item .u{font-size:11px; color:var(--sub); margin-top:2px;}
-  .recipe-sum .rs-item .bar{height:5px; border-radius:3px; background:#E4E2F8; margin-top:8px; overflow:hidden;}
+  .recipe-sum .rs-item .bar{height:5px; border-radius:3px; background:var(--brand-mid); margin-top:8px; overflow:hidden;}
   .recipe-sum .rs-item .bar i{display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2));}
 
   /* ===== 食物计算器页 ===== */
@@ -690,6 +796,16 @@
     background:var(--brand-soft); border-radius:12px;
   }
   .intake-target b{color:var(--text); font-weight:700;}
+  /* 超出目标时的额度提示（剩余额度语言的负向态） */
+  .intake-target .it-over b{color:#C93E0F;}
+  .intake-target .it-remain b{color:var(--brand); font-weight:800;}
+  .intake-progress{
+    height:7px; border-radius:99px; background:var(--brand-soft);
+    overflow:hidden; margin:-6px 0 12px;
+  }
+  .intake-progress i{display:block; height:100%; border-radius:99px;
+    background:linear-gradient(90deg,var(--brand),var(--brand-2)); transition:width .3s;}
+  .intake-progress i.over{background:#C93E0F;}
   .intake-sum{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px; text-align:center;
     padding:14px; border-radius:14px; background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff;
@@ -992,6 +1108,9 @@
   }
   .intake-ring-card .ring-center .rc-kcal{font-size:30px; font-weight:800; line-height:1; color:var(--text);}
   .intake-ring-card .ring-center .rc-unit{font-size:11px; color:var(--sub); margin-top:5px;}
+  /* 超出目标：主角数字与单位一起转为告警色，避免「还能吃 -120」这种负号读法 */
+  .intake-ring-card .ring-center .rc-kcal.over{color:#C93E0F;}
+  .intake-ring-card .ring-center .rc-unit.over{color:#C93E0F; font-weight:700;}
   .intake-ring-card .ring-center .rc-hint{font-size:11px; color:var(--brand); margin-top:6px; font-weight:600;}
   .intake-ring-card .ring-macros{display:flex; gap:14px; margin-top:12px; font-size:12px; color:var(--sub);}
   .intake-ring-card .ring-macros b{color:var(--text); font-weight:700;}
@@ -1028,7 +1147,7 @@
     box-shadow:var(--shadow-md); transition:.18s;
     display:flex; flex-direction:column; align-items:center; text-align:center;
   }
-  .home-cta:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(38,33,92,.28);}
+  .home-cta:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(var(--tint),.28);}
   .home-cta .hc-emoji{font-size:32px; line-height:1; margin-bottom:8px;}
   .home-cta .hc-t{font-size:20px; font-weight:800; line-height:1.2;}
   .home-cta .hc-d{font-size:12px; opacity:.9; margin-top:4px;}
@@ -1070,6 +1189,16 @@
     .current-card{padding:16px 18px;}
   }
 </style>
+<script>
+/* 主题在首屏绘制前就要定好，否则会先闪一下默认配色再跳到用户选的那套。
+   这里只处理需要在 :root 默认值之外覆盖的两套（A / C）；B 就是 :root 默认。 */
+(function(){
+  try{
+    var t = localStorage.getItem("lizi_theme");
+    if(t === "A" || t === "C") document.documentElement.setAttribute("data-theme", t);
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div class="page">
@@ -1082,7 +1211,7 @@
         <div class="name">🌰 diet</div>
       </div>
       <button class="me-btn" onclick="showMe()" aria-label="我的">
-        <svg viewBox="0 0 24 24" fill="none">
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="8" r="4" stroke="#26215C" stroke-width="1.8"/>
           <path d="M4 20c0-3.3 3.6-5 8-5s8 1.7 8 5" stroke="#26215C" stroke-width="1.8" stroke-linecap="round"/>
         </svg>
@@ -1130,7 +1259,7 @@
   <div class="screen" id="screen-list">
     <header class="list-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">选择饮食方案</div>
     </header>
@@ -1147,7 +1276,7 @@
   <div class="screen" id="screen-compare">
     <header class="compare-head">
       <button class="back-btn" onclick="go('list')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">方案对比</div>
     </header>
@@ -1159,7 +1288,7 @@
   <div class="screen" id="screen-detail">
     <header class="detail-head">
       <button class="back-btn" onclick="goBackFromDetail()" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">方案详情</div>
       <span class="detail-chosen-badge" id="detailChosenBadge" style="display:none;">✓ 已选择</span>
@@ -1175,7 +1304,7 @@
   <div class="screen" id="screen-calc">
     <header class="calc-head">
       <button class="back-btn" onclick="go('detail')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">按方案计算</div>
     </header>
@@ -1186,7 +1315,7 @@
   <div class="screen" id="screen-quiz">
     <header class="quiz-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">帮我推荐方案</div>
     </header>
@@ -1197,7 +1326,7 @@
   <div class="screen" id="screen-me">
     <header class="me-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">我的</div>
     </header>
@@ -1208,7 +1337,7 @@
   <div class="screen" id="screen-recipe">
     <header class="list-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">今日推荐食谱</div>
       <button class="switch-plan-btn" onclick="openPlanSheet('recipe')">切换方案</button>
@@ -1220,7 +1349,7 @@
   <div class="screen" id="screen-food">
     <header class="list-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">食物热量计算</div>
     </header>
@@ -1231,7 +1360,7 @@
   <div class="screen" id="screen-intake">
     <header class="list-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">今日摄入</div>
     </header>
@@ -1242,7 +1371,7 @@
   <div class="screen" id="screen-bodylog">
     <header class="list-head">
       <button class="back-btn" onclick="go('home')" aria-label="返回">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">身体数据记录</div>
     </header>
@@ -1695,6 +1824,9 @@ function renderIntakeRing(){
   const kcal = Math.round(intake.kcal);
   const tKcal = Math.round(target.kcal) || 0;
   const pct = tKcal > 0 ? Math.min(100, Math.round(kcal / tKcal * 100)) : 0;
+  // 剩余额度口径：进度环的主角数字是「还能吃」而不是「已吃」——
+  // 用户真正关心的是「我还能吃多少」，已吃是过程量
+  const r = remainingOf(tKcal, kcal);
 
   const R = 52;
   const C = 2 * Math.PI * R;
@@ -1732,14 +1864,20 @@ function renderIntakeRing(){
       }).join("")}
     </div>` : "";
 
+  // 进度环渐变要跟随主题：SVG 的 stop-color 是呈现属性，吃不到 CSS 变量，
+  // 只能在渲染时把当前主题变量读出来塞进去（否则换主题后环还是紫的）
+  const cssVar = n => (getComputedStyle(document.documentElement).getPropertyValue(n) || "").trim();
+  const gradFrom = cssVar("--brand")   || "#26215C";
+  const gradTo   = cssVar("--brand-2") || "#4A3FA8";
+
   box.innerHTML = `
     <div class="ring-title">今日摄入</div>
     <div class="ring-wrap" onclick="openIntake()">
       <svg viewBox="0 0 120 120">
         <defs>
           <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#26215C"/>
-            <stop offset="100%" stop-color="#4A3FA8"/>
+            <stop offset="0%" stop-color="${gradFrom}"/>
+            <stop offset="100%" stop-color="${gradTo}"/>
           </linearGradient>
         </defs>
         <circle class="ring-track" cx="60" cy="60" r="${R}"/>
@@ -1747,16 +1885,16 @@ function renderIntakeRing(){
           stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"/>
       </svg>
       <div class="ring-center">
-        <div class="rc-kcal">${kcal}</div>
-        <div class="rc-unit">/ ${tKcal} kcal</div>
-        <div class="rc-hint">点我看明细 ›</div>
+        <div class="rc-kcal ${r.over?"over":""}">${r.abs}</div>
+        <div class="rc-unit ${r.over?"over":""}">${r.over?"已超 kcal":"还能吃 kcal"}</div>
+        <div class="rc-hint">已吃 ${kcal} / ${tKcal} ›</div>
       </div>
     </div>
     <div class="ring-macros">
       <span>碳 <b>${Math.round(intake.carb)}</b>g</span>
       <span>蛋 <b>${Math.round(intake.protein)}</b>g</span>
       <span>脂 <b>${Math.round(intake.fat)}</b>g</span>
-      <span><b>${pct}</b>%</span>
+      <span>已吃 <b>${pct}</b>%</span>
     </div>
     <div class="ring-toggle" onclick="toggleHomeIntake()">
       今日已吃 <b>${items.length}</b> 项
@@ -1872,11 +2010,17 @@ function renderIntakeDetail(){
       <div class="is-item is-kcal"><div class="n">${Math.round(kcal)}</div><div class="u">总热量 kcal</div></div>
     </div>`;
 
+  // 剩余额度语言：默认说「还能吃」，超出时才说「已超」——
+  // 「已摄入 1033 kcal（56%）」只描述过程，用户要的是「我还能吃多少」
+  const rem = target ? remainingOf(target.kcal, kcal) : null;
   const targetBar = target ? `
     <div class="intake-target">
       <span>今日目标 <b>${Math.round(target.kcal)} kcal</b></span>
-      <span>已摄入 <b>${Math.round(kcal)} kcal</b>（${target.kcal>0?Math.round(kcal/target.kcal*100):0}%）</span>
-    </div>` : "";
+      ${rem.over
+        ? `<span class="it-over">已超 <b>${rem.abs} kcal</b></span>`
+        : `<span class="it-remain">还能吃 <b>${rem.abs} kcal</b></span>`}
+    </div>
+    <div class="intake-progress"><i class="${rem.over?"over":""}" style="width:${target.kcal>0?Math.min(100, Math.round(kcal/target.kcal*100)):0}%;"></i></div>` : "";
 
   box.innerHTML = `
     ${targetBar}
@@ -3197,17 +3341,51 @@ function showMe(){
 
 /* 面板行图标（Lucide 官方线性图标） */
 const ICONS = {
-  gender: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-  age: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>',
-  height: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>',
-  weight: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/></svg>',
-  activity: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg>',
-  export: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
-  import: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
+  gender: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  age: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>',
+  height: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>',
+  weight: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.48 8Z"/></svg>',
+  activity: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4"/><path d="M4 13h4"/></svg>',
+  export: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>',
+  import: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
-  logo: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4V2"/><path d="M5 10v4a7.004 7.004 0 0 0 5.277 6.787c.412.104.802.292 1.102.592L12 22l.621-.621c.3-.3.69-.488 1.102-.592A7.003 7.003 0 0 0 19 14v-4"/><path d="M12 4C8 4 4.5 6 4 8c-.243.97-.919 1.952-2 3 1.31-.082 1.972-.29 3-1 .54.92.982 1.356 2 2 1.452-.647 1.954-1.098 2.5-2 .595.995 1.151 1.427 2.5 2 1.31-.621 1.862-1.058 2.5-2 .629.977 1.162 1.423 2.5 2 1.209-.548 1.68-.967 2-2 1.032.916 1.683 1.157 3 1-1.297-1.036-1.758-2.03-2-3-.5-2-4-4-8-4Z"/></svg>',
-  book: '<svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>'
+  logo: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4V2"/><path d="M5 10v4a7.004 7.004 0 0 0 5.277 6.787c.412.104.802.292 1.102.592L12 22l.621-.621c.3-.3.69-.488 1.102-.592A7.003 7.003 0 0 0 19 14v-4"/><path d="M12 4C8 4 4.5 6 4 8c-.243.97-.919 1.952-2 3 1.31-.082 1.972-.29 3-1 .54.92.982 1.356 2 2 1.452-.647 1.954-1.098 2.5-2 .595.995 1.151 1.427 2.5 2 1.31-.621 1.862-1.058 2.5-2 .629.977 1.162 1.423 2.5 2 1.209-.548 1.68-.967 2-2 1.032.916 1.683 1.157 3 1-1.297-1.036-1.758-2.03-2-3-.5-2-4-4-8-4Z"/></svg>',
+  book: '<svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></svg>'
 };
+
+/* ===== 配色主题 =====
+   三套都做过对比度校验：正文/次要文字在各自 bg/card 上 ≥ 4.5:1，
+   白色文字在 brand→brand-2 渐变上 ≥ 4.5:1。
+   默认 B（暖橙食欲）——设计评审的推荐，也是「吃」这件事最顺的色温。 */
+const THEME_KEY = "lizi_theme";
+const DEFAULT_THEME = "B";
+const THEMES = [
+  { id:"A", name:"深紫精炼", note:"冷静克制，偏工具感", sw:["#26215C","#4A3FA8"] },
+  { id:"B", name:"暖橙食欲", note:"暖色，最贴「吃」", sw:["#9A3412","#C2410C"] },
+  { id:"C", name:"健康绿",   note:"清爽，偏轻食",     sw:["#14532D","#15803D"] },
+];
+function getTheme(){
+  try{
+    const t = localStorage.getItem(THEME_KEY);
+    return THEMES.some(x=>x.id===t) ? t : DEFAULT_THEME;
+  }catch(e){ return DEFAULT_THEME; }
+}
+function themeName(id){ const t = THEMES.find(x=>x.id===id); return t ? t.name : id; }
+function applyTheme(id){
+  // B 是 :root 默认值，移除属性即可；A/C 靠属性覆盖
+  if(id === DEFAULT_THEME) document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", id);
+}
+function setTheme(id){
+  if(!THEMES.some(x=>x.id===id)) return;
+  try{ localStorage.setItem(THEME_KEY, id); }catch(e){}
+  applyTheme(id);
+  renderMe();
+  // 主题色被写进了 JS 生成的 SVG 属性（进度环渐变），必须重渲染才跟着变
+  renderIntakeRing();
+  if(recipeMeals) buildRecipe();
+  showToast("已切换配色：" + themeName(id));
+}
 
 function renderMe(){
   const p = loadProfile();
@@ -3234,6 +3412,28 @@ function renderMe(){
           <div class="me-row"><span class="lbl">尚未填写个人信息</span><span class="act" onclick="editMeProfile()">去填写</span></div>
         `}
       </div>
+    </div>
+
+    <div class="me-section">
+      <div class="st">外观</div>
+      <div class="me-card">
+        <div class="theme-opt ${getTheme()==="A"?"on":""}" onclick="setTheme('A')">
+          <span class="theme-swatch" style="background:linear-gradient(135deg,#26215C,#4A3FA8);"></span>
+          <span class="theme-txt"><b>深紫精炼</b><i>冷静克制，偏工具感</i></span>
+          <span class="theme-check">${getTheme()==="A"?"✓":""}</span>
+        </div>
+        <div class="theme-opt ${getTheme()==="B"?"on":""}" onclick="setTheme('B')">
+          <span class="theme-swatch" style="background:linear-gradient(135deg,#9A3412,#C2410C);"></span>
+          <span class="theme-txt"><b>暖橙食欲</b><i>暖色，最贴「吃」这件事</i></span>
+          <span class="theme-check">${getTheme()==="B"?"✓":""}</span>
+        </div>
+        <div class="theme-opt ${getTheme()==="C"?"on":""}" onclick="setTheme('C')">
+          <span class="theme-swatch" style="background:linear-gradient(135deg,#14532D,#15803D);"></span>
+          <span class="theme-txt"><b>健康绿</b><i>清爽，偏轻食 / 健康</i></span>
+          <span class="theme-check">${getTheme()==="C"?"✓":""}</span>
+        </div>
+      </div>
+      <div class="me-tip">三套配色都做过对比度校验（正文 ≥ 4.5:1）。当前主题：${themeName(getTheme())}。</div>
     </div>
 
     <div class="me-section">
@@ -3350,6 +3550,7 @@ function confirmClear(){
     localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
     localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
     localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
+    localStorage.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
     // 重置会话内状态
     compareSel = [];
     compareMode = false;
@@ -3612,6 +3813,68 @@ function recipeTarget(){
   return applyDayType(applyCustomKcal(base, recipePref.customKcal), recipePref.dayType);
 }
 
+/* ── 今日执行状态（生成→执行闭环）────────────────────────────────
+   与「今日摄入」是两件事，不要混：
+     · 今日摄入 = 真实吃掉的克数（dailyIntakeSummary，用户逐项记）
+     · 今日执行 = 这份推荐计划执行到哪一餐了（按餐打勾）
+   按日期存储，跨天自动视为全新，不需要任何清理逻辑。 */
+const RECIPE_DONE_KEY = "lizi_recipe_done";
+function loadRecipeDone(){
+  const fresh = { date: todayStr(), meals:{} };
+  try{
+    const raw = localStorage.getItem(RECIPE_DONE_KEY);
+    if(!raw) return fresh;
+    const d = JSON.parse(raw);
+    // 日期不符（昨天的勾）或结构损坏 → 一律当全新的一天
+    if(!d || d.date !== fresh.date || !d.meals || typeof d.meals !== "object") return fresh;
+    return { date: d.date, meals: d.meals };
+  }catch(e){ return fresh; }
+}
+function saveRecipeDone(d){
+  try{ localStorage.setItem(RECIPE_DONE_KEY, JSON.stringify(d)); }catch(e){}
+}
+function isMealDone(meal){ return !!loadRecipeDone().meals[meal]; }
+function markMealDone(meal, on){
+  const d = loadRecipeDone();
+  if(on) d.meals[meal] = true; else delete d.meals[meal];
+  saveRecipeDone(d);
+}
+function toggleMealDone(meal){
+  markMealDone(meal, !isMealDone(meal));
+  renderRecipeMeals();   // 局部重绘，顺带刷新执行条；不整页重建，避免滚动跳回顶部
+}
+
+/* 剩余额度：全 App 统一口径，避免各处自己算正负号（「还能吃 800」/「已超 120」） */
+function remainingOf(targetKcal, eatenKcal){
+  const remain = Math.round(targetKcal) - Math.round(eatenKcal);
+  return { remain, over: remain < 0, abs: Math.abs(remain) };
+}
+
+/* 「今日执行」进度条：计划执行到几餐 + 今天还能吃多少
+   这是「生成」与「执行」的接合点 —— 计划不再是看完就丢的一页纸 */
+function renderExecBar(){
+  const box = document.getElementById("execBar");
+  if(!box || !recipeMeals || !recipeMeals.meals) return;
+  // 只把「有食物」的餐次算进分母：加餐默认为空，
+  // 若算进 1/4，用户没加加餐时进度就永远到不了 100%
+  const planned = MEAL_ORDER.filter(m => (recipeMeals.meals[m] || []).length > 0);
+  const doneMap = loadRecipeDone().meals;
+  const doneCount = planned.filter(m => doneMap[m]).length;
+  const target = recipeTarget();
+  const eaten = dailyIntakeSummary().kcal;
+  const r = remainingOf(target.kcal, eaten);
+  const pct = target.kcal > 0 ? Math.min(100, Math.round(eaten / target.kcal * 100)) : 0;
+  const chips = planned.map(m =>
+    `<span class="exec-chip ${doneMap[m]?"on":""}">${m}${doneMap[m]?" ✓":""}</span>`).join("");
+  box.innerHTML = `
+    <div class="exec-top">
+      <span class="exec-title">今天执行 <b>${doneCount}/${planned.length}</b> 餐${doneCount>=planned.length && planned.length ? " 🎉" : ""}</span>
+      <span class="exec-remain ${r.over?"over":""}">${r.over?"已超":"还能吃"} <b>${r.abs}</b> kcal</span>
+    </div>
+    <div class="exec-track"><i class="${r.over?"over":""}" style="width:${pct}%;"></i></div>
+    <div class="exec-chips">${chips}</div>`;
+}
+
 function planGoal(planId){
   const p = PLANS.find(x=>x.id===planId);
   return p ? p.goal : "减脂";
@@ -3673,9 +3936,14 @@ function buildRecipe(){
   if(!recipeMeals || !recipeMeals.meals){
     recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target);
   }
+  // generateMeals 只产出 MEAL_STRUCT 里的三餐，「加餐」不在其中 —— 补上空数组，
+  // 否则加餐 tab 与「每餐汇总」都会读到 undefined
+  MEAL_ORDER.forEach(m=>{ if(!Array.isArray(recipeMeals.meals[m])) recipeMeals.meals[m] = []; });
 
   const plan = PLANS.find(x=>x.id===recipePlanId);
-  const totals = ["早餐","午餐","晚餐"].reduce((acc,m)=>{
+  // 全天合计按 MEAL_ORDER 累加，必须把加餐算进去 —— 否则用户加了加餐，
+  // 目标卡/汇总仍按三餐口径算，「计划合计 vs 目标」就对不上了
+  const totals = MEAL_ORDER.reduce((acc,m)=>{
     const t = mealTotal(recipeMeals.meals[m]);
     acc.kcal+=t.kcal; acc.protein+=t.protein; acc.carb+=t.carb; acc.fat+=t.fat;
     return acc;
@@ -3689,7 +3957,7 @@ function buildRecipe(){
   const chip = (label, val, cur, kind)=>`<span class="pref-chip ${cur===val?"on":""}" onclick="setPref('${kind}','${val}')">${label}</span>`;
   const avoidChip = k=>`<span class="pref-chip ${(recipePref.avoid||[]).includes(k)?"on":""}" onclick="toggleAvoid('${k}')">${k}</span>`;
   const dayChip = t=>`<span class="pref-chip ${recipePref.dayType===t?"on":""}" onclick="setDayType('${t}')">${t}</span>`;
-  const mealsOrder = ["早餐","午餐","晚餐"];
+  const mealsOrder = MEAL_ORDER;   // 含「加餐」第 4 餐
   const tab = (m)=>`<div class="meal-tab ${recipeMealTab===m?"on":""}" onclick="switchMealTab('${m}')">${m}</div>`;
 
   document.getElementById("recipeBody").innerHTML = `
@@ -3703,6 +3971,8 @@ function buildRecipe(){
         <div class="m">全天热量<b>${Math.round(target.kcal)}kcal</b></div>
       </div>
     </div>
+
+    <div id="execBar"></div>
 
     <div class="meal-tabs">${mealsOrder.map(tab).join("")}</div>
 
@@ -3843,7 +4113,7 @@ function regenRecipe(){
 
   // 连抽 3 个候选，用 mealsNutrition() 选出「当前这一餐」最贴近该餐目标热量的一版。
   // 让「换一换」不只是换个花样，而是换到更接近目标的一餐（此前 mealsNutrition 从未被调用）
-  const wantKcal = target.kcal * (MEAL_SPLIT[recipeMealTab] || 1/3);
+  const wantKcal = target.kcal * mealSplitOf(recipeMealTab);
   let best = null, bestDiff = Infinity;
   for(let k = 1; k <= 3; k++){
     const cand = generateMeals(goal, profile.weight, recipePref, recipeSeed + k, target);
@@ -3882,7 +4152,13 @@ function addRecipeMealToIntake(){
     const fd = findFood(it.n);
     return s + (fd ? foodKcal(fd, isServingFood(fd)?1:it.g).kcal : 0);
   }, 0));
-  showToast(`已将${recipeMealTab} ${added} 种食物加入今日摄入（约 ${totalKcal} kcal）`);
+  // 闭环：把这一餐记进今日摄入 = 这一餐已经吃了 → 自动打上「已完成」，
+  // 用户不必再去餐次标题行手动点一次（手动的那个按钮留给「吃了但没记」的情况）
+  markMealDone(recipeMealTab, true);
+  // ⚠ 必须走 renderRecipeMeals()（它内部会调 renderExecBar），不能只调 renderExecBar()：
+  // 否则执行条的 chip 变了、餐次标题行的「未完成/已完成」还是旧的，同一屏出现两种说法
+  renderRecipeMeals();
+  showToast(`已将${recipeMealTab} ${added} 种食物加入今日摄入（约 ${totalKcal} kcal），并标记为已完成`);
 }
 
 function switchRecipeTpl(i){
@@ -3916,7 +4192,18 @@ function filterByPref(cat, tag){
   return hit.length ? hit : null;
 }
 /* 分餐热量比例：必须与 renderRecipeSum() 的展示口径一致（早 25% / 午 37.5% / 晚 37.5%） */
-const MEAL_SPLIT = { "早餐":0.25, "午餐":0.375, "晚餐":0.375 };
+const MEAL_SPLIT = { "早餐":0.25, "午餐":0.375, "晚餐":0.375, "加餐":0 };
+/* 餐次展示顺序。加餐不参与生成（FOOD_POOLS.MEAL_STRUCT 里没有它），
+   由用户按需自己添加 —— 硬塞进去会打乱三餐的 macro 分配。 */
+const MEAL_ORDER = ["早餐", "午餐", "晚餐", "加餐"];
+
+/* 取某餐的分餐比例。
+   ⚠ 必须用显式类型判断，不能写 `MEAL_SPLIT[m] || 1/3` —— 加餐的比例是 0，
+   0 是 falsy，会被 `||` 静默兜底成 1/3，于是「加餐」凭空拿到全天 1/3 的目标额度。 */
+function mealSplitOf(meal){
+  const v = MEAL_SPLIT[meal];
+  return (typeof v === "number") ? v : 1/3;
+}
 
 // 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}）
 // 传入 target（computeTarget() 的结果）时，克数按个人 macro 目标反解，全天热量瞄准 target.kcal；
@@ -4055,7 +4342,7 @@ function generateMeals(goal, weight, pref, seed, target){
     const pPool = isBreakfast ? breakfastProteinPool : proteinPool;
     const sPool = isBreakfast ? bStaple : staplePool;
     // 本餐承担的 macro 目标（按分餐比例拆分全天目标）
-    const split = MEAL_SPLIT[meal] || 1/3;
+    const split = mealSplitOf(meal);
     const tP = target ? target.protein * split : null;
     const tC = target ? target.carb    * split : null;
     const tF = target ? target.fat     * split : null;
@@ -4114,7 +4401,7 @@ function generateMeals(goal, weight, pref, seed, target){
     const resid = target.kcal - totalKcal;
     if(Math.abs(resid) > target.kcal * 0.03){
       stapleRefs.forEach(ref=>{
-        const sp = MEAL_SPLIT[ref.meal] || 1/3;
+        const sp = mealSplitOf(ref.meal);
         const perG = per100(ref.fd).kcal / 100;
         if(perG <= 0) return;
         const it = out.meals[ref.meal][ref.idx];
@@ -4137,17 +4424,25 @@ function mealsNutrition(meals){
 
 function renderRecipeMeals(){
   const box = document.getElementById("recipeMeals");
-  const mealColors = {"早餐":"#F59E0B","午餐":"#4A3FA8","晚餐":"#0F6E56"};
+  // 加餐用洋红：#C2410C 会和「暖橙食欲」主题的品牌色撞色
+  const mealColors = {"早餐":"#F59E0B","午餐":"#4A3FA8","晚餐":"#0F6E56","加餐":"#DB2777"};
   const m = recipeMealTab;  // 只渲染当前选中的这一餐
   const items = recipeMeals.meals[m] || [];
+  const done = isMealDone(m);
+  // 加餐不在 FOOD_POOLS.MEAL_STRUCT 里，生成器抽不出内容 → 不给「换一换」，只让用户自己加
+  const canRegen = m !== "加餐";
+  const t = mealTotal(items);
   box.innerHTML = `
     <div class="meal-block">
       <div class="meal-title">
         <span class="mt-dot" style="background:${mealColors[m]||"#4A3FA8"};"></span>${m}
+        <button class="meal-done ${done?"on":""}" onclick="toggleMealDone('${m}')"
+          title="${done?"点击撤销完成标记":"点击标记这一餐已吃"}">${done?"✓ 已完成":"未完成"}</button>
+        ${canRegen ? `
         <button class="regen-inline" onclick="regenRecipe()" title="换一换这顿饭">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
           换一换
-        </button>
+        </button>` : ""}
       </div>
       ${items.map(it=>{
         const fd = findFood(it.n);
@@ -4164,22 +4459,45 @@ function renderRecipeMeals(){
           </div>
         </div>`;
       }).join("")}
+      ${items.length ? `
+      <div class="meal-sum">
+        <span><b>${Math.round(t.kcal)}</b>kcal</span>
+        <span class="ms-macros">碳水 ${Math.round(t.carb)}g · 蛋白 ${Math.round(t.protein)}g · 脂肪 ${Math.round(t.fat)}g</span>
+      </div>` : (canRegen ? "" : `
+      <div class="meal-empty-hint">加餐不占三餐的热量分配 —— 加多少，全天就多多少，所以「还能吃」会同步变小。</div>`)}
       <div class="food-row" style="border-style:dashed;justify-content:center;color:var(--brand);cursor:pointer;" onclick="addMealItem('${m}')">
         <span style="font-size:13px;font-weight:600;">＋ 添加食物到${m}</span>
       </div>
     </div>`;
   renderRecipeSum();
+  renderExecBar();
 }
 
 function renderRecipeSum(){
-  const target = computeTarget(recipePlanId, loadProfile());
+  // ⚠ 必须用 recipeTarget()（含自定义热量 / 训练日），不能用 computeTarget() 原值 ——
+  // 否则用户设了「训练日 +8%」或自定义 1800 后，这里显示的参考目标仍是方案原值，两者对不上
+  const target = recipeTarget();
   const m = recipeMealTab;  // 只统计当前餐
   const t = mealTotal(recipeMeals.meals[m] || []);
-  // 按餐次给出目标参考：早餐约 25%、午/晚餐各约 35-38%
-  const ratio = MEAL_SPLIT[m] || 1/3;   // 与 generateMeals() 共用同一分餐口径
-  const tK = target.kcal*ratio, tC = target.carb*ratio, tP = target.protein*ratio, tF = target.fat*ratio;
+  // 按餐次给出目标参考：早餐约 25%、午/晚餐各约 37.5%
+  const ratio = mealSplitOf(m);   // 与 generateMeals() 共用同一分餐口径
   const pct = v=>Math.min(100, Math.round(v*100));
-  document.getElementById("recipeSum").innerHTML = `
+  const box = document.getElementById("recipeSum");
+  // 加餐不占全天分配（ratio 为 0）→ 不能拿 0 当分母算进度条（会得 Infinity%），只报实际值
+  if(!(ratio > 0)){
+    // 空加餐不显示一排 0（上面已经有空态说明了，重复）
+    if(!t.kcal){ box.innerHTML = ""; return; }
+    box.innerHTML = `
+      <div class="rs-hint">本餐实际摄入（不占全天分配）</div>
+      <div class="rs-item"><div class="n">${Math.round(t.kcal)}</div><div class="u">热量 kcal</div></div>
+      <div class="rs-item"><div class="n">${Math.round(t.carb)}</div><div class="u">碳水 g</div></div>
+      <div class="rs-item"><div class="n">${Math.round(t.protein)}</div><div class="u">蛋白 g</div></div>
+      <div class="rs-item"><div class="n">${Math.round(t.fat)}</div><div class="u">脂肪 g</div></div>
+    `;
+    return;
+  }
+  const tK = target.kcal*ratio, tC = target.carb*ratio, tP = target.protein*ratio, tF = target.fat*ratio;
+  box.innerHTML = `
     <div class="rs-hint">本餐营养参考（按全天目标 ${Math.round(ratio*100)}% 分配）</div>
     <div class="rs-item"><div class="n">${Math.round(t.kcal)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(t.kcal/tK)}%;"></i></div></div>
     <div class="rs-item"><div class="n">${Math.round(t.carb)}/${Math.round(tC)}</div><div class="u">碳水 g</div><div class="bar"><i style="width:${pct(t.carb/tC)}%;"></i></div></div>
@@ -4520,7 +4838,7 @@ function renderFoodCalc(){
     </div>
     <div id="foodPickerBox"></div>
     <button class="food-photo-btn" onclick="document.getElementById('photoInput').click()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+      <svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
       拍照 / 上传食物图片（存档，暂不自动识别）
     </button>
     <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addFoodPhotos(this)" />
