@@ -3710,7 +3710,9 @@ function buildRecipe(){
       <div class="rcb-head">
         <span class="rcb-title">${recipeMealTab}想吃点什么？</span>
         <span class="rcb-more" onclick="togglePrefMore()" title="忌口 / 训练日 / 自定义热量">
-          <span id="prefMoreCount">${prefSummaryText()}</span>
+          <!-- 未设置任何项时摘要为空 → 必须兜底显示「更多设置」，
+               否则入口只剩一个孤零零的 ▾，用户根本不知道忌口/训练日藏在里面 -->
+          <span id="prefMoreCount">${prefSummaryText() || "更多设置"}</span>
           <b id="prefMoreArrow">${prefMoreOpen?"▴":"▾"}</b>
         </span>
       </div>
