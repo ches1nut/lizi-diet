@@ -622,6 +622,24 @@
     border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
   }
   .pref-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+
+  /* ── 偏好卡「更多设置」（忌口 / 训练日 / 自定义热量）默认收起，避免页面一开始就繁杂 ── */
+  .rcb-more{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600;
+    color:var(--brand); cursor:pointer; flex-shrink:0; user-select:none;}
+  .rcb-more #prefMoreCount:not(:empty){background:var(--brand-soft); padding:2px 8px; border-radius:20px;}
+  .rcb-more b{font-size:11px; color:var(--sub); font-weight:600;}
+  .pref-more{display:none; margin-top:10px; padding-top:12px; border-top:0.5px solid var(--border);}
+  .pref-more.open{display:block;}
+  .pref-more .rcb-row{margin-bottom:10px;}
+  .pref-more .rcb-row:last-of-type{margin-bottom:0;}
+  .rcb-kcal-row{align-items:center;}
+  .pref-kcal{width:130px; padding:6px 10px; border-radius:11px; border:1px solid var(--border);
+    background:var(--bg); color:var(--text); font-size:12.5px; font-family:inherit;}
+  .pref-kcal:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft);}
+  .pref-more-note{font-size:11px; color:var(--sub); line-height:1.6; margin:10px 0 0; padding-left:62px;}
+  /* 忌口项过多导致候选池被剔空、忌口被自动放宽时的告警（不能静默失效） */
+  .pref-relax-warn{margin:8px 0 0; padding:8px 10px; border-radius:10px; font-size:11.5px; line-height:1.6;
+    background:#FFF4E5; color:#8A4B00; border:0.5px solid #F0C48A;}
   /* 餐次标题行内的「换一换」紧凑按钮（与「早餐」同一行，右对齐） */
   .regen-inline{
     margin-left:auto; flex-shrink:0;
@@ -3458,9 +3476,141 @@ function computeTarget(planId, profile){
 let recipeTplIdx = 0;
 let recipePlanId = "";
 let recipeMeals = null;   // 当前的一日三餐（持久状态，切换餐次只改展示、不重生成）
-let recipePref = { protein:"", staple:"" };  // 自由组合偏好：想吃的主食/蛋白
 let recipeSeed = 0;       // 组合随机种子（每次「换一个」+1，保证每次生成不同）
 let recipeMealTab = "早餐";  // 当前选中的餐次（早餐/午餐/晚餐），用户每顿单独看
+let prefMoreOpen = false;    // 「更多设置」是否展开（默认收起，避免页面一开始就繁杂）
+
+/* ── 生成输入（recipePref）────────────────────────────────
+   荤素偏好 protein/staple · 忌口 avoid · 训练日 dayType · 自定义热量 customKcal
+   忌口与训练日持久化到 localStorage —— 过敏/忌口不该每次进页面重填 */
+const RECIPE_PREF_KEY = "lizi_recipe_pref";
+const DEFAULT_RECIPE_PREF = { protein:"", staple:"", avoid:[], dayType:"日常", customKcal:null };
+let recipePref = Object.assign({}, DEFAULT_RECIPE_PREF);
+
+function loadRecipePref(){
+  try{
+    const raw = localStorage.getItem(RECIPE_PREF_KEY);
+    if(!raw) return Object.assign({}, DEFAULT_RECIPE_PREF);
+    const p = Object.assign({}, DEFAULT_RECIPE_PREF, JSON.parse(raw) || {});
+    if(!Array.isArray(p.avoid)) p.avoid = [];
+    return p;
+  }catch(e){ return Object.assign({}, DEFAULT_RECIPE_PREF); }
+}
+function saveRecipePref(){
+  try{ localStorage.setItem(RECIPE_PREF_KEY, JSON.stringify(recipePref)); }catch(e){}
+}
+
+/* 忌口选项：关键词命中食物名即排除。
+   数据驱动 —— 不维护「完整食物名单」，新增食物自动生效，避免名单与食物库漂移。
+   （此前 HIGH_FAT_PROTEIN 写「五花肉（熟）」而库里叫「猪五花肉（生）」，就是这么失效的）
+
+   关键词经过「全池枚举审计」（430 项池内食物）逐条校准：
+   - 广度过窄 → 食物漏网（勾了忌口仍被推荐）
+   - 广度过宽 → 误伤无关食物（漏掉本该能吃的东西）
+   两类错误都踩过坑，所以每条都附了依据。改关键词前请先跑一次全池审计。 */
+const AVOID_OPTIONS = {
+  // 「血」会误伤「血糯米」，「心」会误伤卷心菜/空心菜/菜心 → 见 AVOID_EXCLUDE
+  "内脏":    ["肝","肚","肠","胗","腰","腰花","心","肺","肾","舌","百叶","毛肚","黄喉","血","脑","头肉"],
+  // 肉类一律用精确词，不用单字：单字「牛」会误伤牛奶/牛油果，单字「羊」会误伤羊奶
+  "羊肉":    ["羊肉","羊排","羊腿","羊蝎子","羊肩","羊腩","羊杂","羊血","羊心","羊肝"],
+  "牛肉":    ["牛肉","牛腩","肥牛","牛排","牛肋","牛腱","牛筋","牛舌","牛百叶","牛肚","牛心","牛肝","牛尾","牛骨"],
+  "猪肉":    ["猪","五花","排骨","里脊","腊肉","火腿","午餐肉","培根","猪蹄","肉松"],
+  // 【新增】禽类：审计发现 20 项禽肉（鸡胸肉/即食鸡胸肉/鸡腿肉…）在 12 类里一个都选不了，
+  // 而鸡胸肉是餐单第一主力蛋白 —— 用户不吃鸡/对鸡肉过敏时完全没有出口。
+  // 「素鸡」不是禽肉、「鸡蛋/鸭蛋/鹌鹑蛋」归「蛋」类 → 见 AVOID_EXCLUDE
+  "禽类":    ["鸡","鸭","鹅","火鸡","乌鸡","鸽","鹌鹑","雉"],
+  // 补漏：花甲/海螺/田螺/淡菜/青口/海蜇（旧表只有 虾蟹贝+鲍参鱿蚝）。单字「螺」会误伤「螺丝椒」
+  "海鲜":    ["虾","蟹","贝","扇贝","蛤蜊","蛏","鲍","海参","鱿鱼","章鱼","墨鱼","生蚝","牡蛎","蚝","螺","花甲","淡菜","青口","贻贝","海蜇","蚬","蚌","蛎"],
+  // 补漏：黄鳝/泥鳅这类名字里不带「鱼」的鱼
+  "鱼":      ["鱼","鳝","鳅","鲳","鲶","鳟","鲟","鳗","鲈","鲷","鳕","鲅","鳜","鳎"],
+  "香菜":    ["香菜","芫荽"],
+  // 补漏：全脂奶粉/脱脂奶粉/羊奶/舒化奶/黄油（旧表只列了 牛奶/酸奶/奶油/奶酪）
+  // 用「奶」而非逐个列举，新增奶制品自动覆盖；池内无「椰奶/豆奶」等会被误伤的项
+  "乳制品":  ["奶","酪","芝士","乳清","炼乳","黄油","乳酪"],
+  "蛋":      ["蛋"],   // 「乳清蛋白粉」不含蛋但含「蛋」字 → 见 AVOID_EXCLUDE
+  // 不用单字「豆」：土豆/豌豆/豆角/绿豆并非大豆制品，误伤代价大。
+  // 补漏：素鸡/豆豉/纳豆/千张/腐乳（旧表 9 词只盖住豆腐家族）
+  "大豆制品":["豆腐","豆干","腐竹","豆皮","豆浆","黄豆","大豆","黑豆","毛豆","豆筋","素鸡","豆豉","纳豆","千张","腐乳","豆泡","油豆腐","冻豆腐","豆乳"],
+  // 补漏：竹荪/松茸（「菌」字盖不住「荪」「茸」）
+  "菌菇":    ["蘑","菇","木耳","银耳","菌","荪","茸","鸡枞","虫草","灵芝","茯苓"],
+  // 「芝麻」按常见致敏口径并入本类（花生本身也不是坚果，本类实为「常见油料/坚果致敏原」）
+  "花生坚果":["花生","核桃","杏仁","腰果","榛子","开心果","巴旦木","坚果","芝麻","瓜子","松子","碧根果","夏威夷果"],
+};
+
+/* 关键词的「误伤」排除表：食物名命中了关键词，但语义上不属于该类忌口。
+   枚举全池后抓到的真实误伤（每条都有实例，不是假想）：
+     - 卷心菜/空心菜/菜心 含「心」、血糯米 含「血」、豆腐脑 含「脑」、火腿肠 含「肠」→ 都不是内脏
+     - 牛肝菌/羊肚菌 含「牛」「肝」「肚」→ 是菌菇不是牛杂/内脏
+     - 鸡腿菇 含「鸡」→ 是菌菇不是禽肉
+     - 杏鲍菇 含「鲍」→ 是菌菇不是海鲜
+     - 螺丝椒 含「螺」→ 是辣椒不是海螺
+     - 鸡蛋/鸭蛋/鹌鹑蛋/素鸡 含「鸡」「鸭」→ 分别归「蛋」类和豆制品
+     - 乳清蛋白粉 含「蛋」→ 是乳制品，完全不含蛋成分 */
+const AVOID_EXCLUDE = {
+  "内脏":  ["卷心菜","空心菜","菜心","血糯米","豆腐脑","火腿肠","牛肝菌","羊肚菌"],
+  "牛肉":  ["牛肝菌"],
+  "禽类":  ["鸡蛋","鸭蛋","鹌鹑蛋","素鸡","鸡腿菇"],
+  "海鲜":  ["螺丝椒","杏鲍菇"],
+  "蛋":    ["乳清蛋白粉","蛋白粉"],
+};
+
+/* 该食物是否命中任一忌口项 */
+function isAvoided(food, avoidList){
+  if(!avoidList || !avoidList.length || !food) return false;
+  const name = food.name || "";
+  return avoidList.some(k => {
+    const kws = AVOID_OPTIONS[k] || [];
+    if(!kws.some(kw => name.includes(kw))) return false;   // 没命中关键词 → 不属于该类
+    const ex = AVOID_EXCLUDE[k] || [];
+    return !ex.some(e => name.includes(e));               // 命中误伤排除词 → 也不算
+  });
+}
+
+/* 目标归一化：computeTarget 出来的是浮点（carb 218.4 / fat 54.6），
+   直接拿去生成会出现「日常"是小数、训练日是整数」的口径不一致。
+   统一取整；碳水由残差反解配平（而非直接四舍五入），
+   这样既能保住供能比——蛋白/脂肪取整后碳水只差 1g 左右——又能让
+   protein×4 + carb×4 + fat×9 ≈ kcal 自洽（漂移 ≤2 kcal）。
+   注意：入参的 carb 会被忽略，它只是中间的配平项。 */
+function normalizeTarget(t){
+  const kcal = Math.round(t.kcal);
+  const protein = Math.round(t.protein);
+  const fat = Math.round(t.fat);
+  const carb = Math.round((kcal - protein * 4 - fat * 9) / 4);
+  return { kcal, protein, carb, fat };
+}
+
+/* 训练日/休息日：按倍数调整全天热量，差额全部由碳水承担，
+   保证 protein×4 + carb×4 + fat×9 === kcal 自洽（否则目标本身就自相矛盾） */
+const DAY_TYPE_FACTOR = { "日常":1.0, "训练日":1.08, "休息日":0.95 };
+function applyDayType(target, dayType){
+  const k = DAY_TYPE_FACTOR[dayType];
+  // 倍数 1（日常）/ 非法值：不调整热量，但仍要走归一化，保证与训练日同一口径
+  if(!k || k === 1) return normalizeTarget(target);
+  const kcal = target.kcal * k;
+  const carb = (kcal - target.protein * 4 - target.fat * 9) / 4;
+  if(!(carb > 0)) return normalizeTarget(target); // 兜底：调整后碳水为负说明该目标不适合再调
+  return normalizeTarget({ kcal, protein: target.protein, carb, fat: target.fat });
+}
+
+/* 自定义全天热量：按比例等比缩放三大营养素，保持原有供能比 */
+function applyCustomKcal(target, customKcal){
+  const v = Number(customKcal);
+  if(!v || !(v > 0)) return target;
+  const k = v / target.kcal;
+  return normalizeTarget({
+    kcal: v,
+    protein: target.protein * k,
+    carb: target.carb * k,
+    fat: target.fat * k
+  });
+}
+
+/* 生成用的最终目标：方案目标 → 自定义热量覆盖 → 训练日/休息日调整 */
+function recipeTarget(){
+  const base = computeTarget(recipePlanId, loadProfile());
+  return applyDayType(applyCustomKcal(base, recipePref.customKcal), recipePref.dayType);
+}
 
 function planGoal(planId){
   const p = PLANS.find(x=>x.id===planId);
@@ -3505,7 +3655,7 @@ function openRecipe(){
   }
   recipePlanId = id;
   recipeTplIdx = 0;
-  recipePref = { protein:"", staple:"" };
+  recipePref = loadRecipePref();   // 忌口/训练日等输入持久化，进来不用重填
   recipeSeed = 0;
   recipeMealTab = "早餐";
   recipeMeals = null;  // 进入时清空，buildRecipe 会重新生成一整天
@@ -3515,7 +3665,7 @@ function openRecipe(){
 
 function buildRecipe(){
   const profile = loadProfile();
-  const target = computeTarget(recipePlanId, profile);
+  const target = recipeTarget();   // 方案目标 → 自定义热量 → 训练日/休息日，已合并
   const goal = planGoal(recipePlanId);
 
   // 只在「没有三餐」或「需要重生成」时才生成；正常渲染直接用已保存的三餐
@@ -3537,6 +3687,8 @@ function buildRecipe(){
   const proteinOpts = Object.keys(FOOD_POOLS.PROTEIN_KEYS);
   const stapleOpts = Object.keys(FOOD_POOLS.STAPLE_KEYS);
   const chip = (label, val, cur, kind)=>`<span class="pref-chip ${cur===val?"on":""}" onclick="setPref('${kind}','${val}')">${label}</span>`;
+  const avoidChip = k=>`<span class="pref-chip ${(recipePref.avoid||[]).includes(k)?"on":""}" onclick="toggleAvoid('${k}')">${k}</span>`;
+  const dayChip = t=>`<span class="pref-chip ${recipePref.dayType===t?"on":""}" onclick="setDayType('${t}')">${t}</span>`;
   const mealsOrder = ["早餐","午餐","晚餐"];
   const tab = (m)=>`<div class="meal-tab ${recipeMealTab===m?"on":""}" onclick="switchMealTab('${m}')">${m}</div>`;
 
@@ -3557,6 +3709,10 @@ function buildRecipe(){
     <div class="recipe-combo-box">
       <div class="rcb-head">
         <span class="rcb-title">${recipeMealTab}想吃点什么？</span>
+        <span class="rcb-more" onclick="togglePrefMore()" title="忌口 / 训练日 / 自定义热量">
+          <span id="prefMoreCount">${prefSummaryText()}</span>
+          <b id="prefMoreArrow">${prefMoreOpen?"▴":"▾"}</b>
+        </span>
       </div>
       <div class="rcb-row">
         <span class="rcb-label">肉/蛋白</span>
@@ -3572,6 +3728,28 @@ function buildRecipe(){
           ${stapleOpts.map(o=>chip(o, o, recipePref.staple, "staple")).join("")}
         </div>
       </div>
+
+      <div class="pref-more ${prefMoreOpen?"open":""}">
+        <div class="rcb-row">
+          <span class="rcb-label">忌口</span>
+          <div class="rcb-chips">${Object.keys(AVOID_OPTIONS).map(avoidChip).join("")}</div>
+        </div>
+        <div class="rcb-row">
+          <span class="rcb-label">今天</span>
+          <div class="rcb-chips">${["日常","训练日","休息日"].map(dayChip).join("")}</div>
+        </div>
+        <div class="rcb-row">
+          <span class="rcb-label">热量目标</span>
+          <div class="rcb-chips rcb-kcal-row">
+            <span class="pref-chip ${!recipePref.customKcal?"on":""}" onclick="setCustomKcal('')">按方案</span>
+            <input class="pref-kcal" type="number" inputmode="numeric" min="800" max="5000" step="10"
+              placeholder="自定义 kcal" value="${recipePref.customKcal||""}" onchange="setCustomKcal(this.value)" aria-label="自定义全天热量目标">
+          </div>
+        </div>
+        <p class="pref-more-note">忌口与训练日会被记住。「训练日」全天热量 +8%（加在碳水），「休息日」 −5%。</p>
+      </div>
+      <!-- 告警放在 .pref-more 之外：忌口被放宽时「更多设置」多半是收起的，放里面等于没说 -->
+      ${recipeMeals && recipeMeals.avoidRelaxed ? `<p class="pref-relax-warn">⚠️ 忌口勾选过多，有餐次的候选食材被全部排除，已自动放宽以免出现空餐 —— 建议少勾几项。</p>` : ""}
     </div>
 
     <div id="recipeMeals"></div>
@@ -3591,11 +3769,62 @@ function buildRecipe(){
 
 function setPref(kind, val){
   recipePref[kind] = val;
+  saveRecipePref();
   // 改偏好 → 重新生成一整天三餐（偏好影响所有餐的抽选）
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  const target = computeTarget(recipePlanId, profile);
-  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target);
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget());
+  buildRecipe();
+}
+
+/* 切换某一项忌口（多选） */
+function toggleAvoid(k){
+  const cur = recipePref.avoid || [];
+  recipePref.avoid = cur.includes(k) ? cur.filter(x=>x!==k) : cur.concat(k);
+  saveRecipePref();
+  regenerateAll();
+}
+
+/* 训练日 / 休息日 / 日常 */
+function setDayType(t){
+  recipePref.dayType = t;
+  saveRecipePref();
+  regenerateAll();
+}
+
+/* 自定义全天热量；传空字符串表示恢复「按方案」 */
+function setCustomKcal(v){
+  const n = Number(v);
+  recipePref.customKcal = (v === "" || v === null || !(n > 0)) ? null : Math.round(n);
+  saveRecipePref();
+  regenerateAll();
+}
+
+/* 展开/收起「更多设置」—— 只切显隐，不重新生成 */
+function togglePrefMore(){
+  prefMoreOpen = !prefMoreOpen;
+  const box = document.querySelector(".pref-more");
+  const arrow = document.getElementById("prefMoreArrow");
+  const head = document.getElementById("prefMoreCount");
+  if(box) box.classList.toggle("open", prefMoreOpen);
+  if(arrow) arrow.textContent = prefMoreOpen ? "▴" : "▾";
+  if(head) head.textContent = prefSummaryText();
+}
+
+/* 收起状态下也要让用户知道「有设置生效」 */
+function prefSummaryText(){
+  const bits = [];
+  if((recipePref.avoid||[]).length) bits.push("忌口 " + recipePref.avoid.length + " 项");
+  if(recipePref.dayType && recipePref.dayType !== "日常") bits.push(recipePref.dayType);
+  if(recipePref.customKcal) bits.push(recipePref.customKcal + " kcal");
+  return bits.length ? bits.join(" · ") : "";
+}
+
+/* 任一生成输入变化后重算整天餐单（自定义热量/训练日会改变目标，必须重算 target） */
+function regenerateAll(){
+  const profile = loadProfile();
+  const goal = planGoal(recipePlanId);
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget());
   buildRecipe();
 }
 
@@ -3608,7 +3837,7 @@ function regenRecipe(){
   // 只重抽当前这一餐，其余餐保持不动（用户每顿单独看，不该顺手换掉其他餐）
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  const target = computeTarget(recipePlanId, profile);
+  const target = recipeTarget();
 
   // 连抽 3 个候选，用 mealsNutrition() 选出「当前这一餐」最贴近该餐目标热量的一版。
   // 让「换一换」不只是换个花样，而是换到更接近目标的一餐（此前 mealsNutrition 从未被调用）
@@ -3623,6 +3852,8 @@ function regenRecipe(){
   recipeSeed += 3;   // 种子前移，保证下次「换一换」拿到的是全新组合
 
   recipeMeals.meals[recipeMealTab] = best.meals[recipeMealTab];
+  // 单餐重抽也可能撞上「池被剔空」，把放宽标记并进来，避免告警漏报
+  recipeMeals.avoidRelaxed = !!recipeMeals.avoidRelaxed || !!best.avoidRelaxed;
   // 只重绘当前餐 + 本餐营养小结（renderRecipeMeals 内部会调 renderRecipeSum），
   // 不走 buildRecipe() 整页重渲染，避免按钮被点掉后页面滚回顶部
   renderRecipeMeals();
@@ -3790,9 +4021,23 @@ function generateMeals(goal, weight, pref, seed, target){
   const usedProtein = new Set();
   const usedStaple = new Set();
 
+  // 忌口关键词（生成输入扩展）。统一在 pick() 内部过滤，一处覆盖全部池，
+  // 包括最容易遗漏的三个早餐专属池（breakfastProteinPool / breakfastVeg / bStaple）
+  const avoidList = (pref && pref.avoid) || [];
+  // 是否因为某个池被忌口剔空而不得不放宽忌口（如勾选 13 类全选时早餐蛋白池 11 项全灭）。
+  // 放宽是必要的（宁可放宽也不能让某餐没菜），但必须让用户看见，不能静默失效。
+  let avoidRelaxed = false;
+
   function pick(pool, used){
-    const avail = pool.filter(f=>!used.has(f.name));
-    const src = avail.length ? avail : pool;  // 若都抽过了则允许重复
+    // 先剔除忌口项；剔完为空则退回原池 —— 宁可忽略某条忌口，也不能让某一餐没菜
+    let base = pool;
+    if(avoidList.length){
+      const allowed = pool.filter(f=>!isAvoided(f, avoidList));
+      if(allowed.length) base = allowed;
+      else avoidRelaxed = true;   // 池被剔空 → 只能放宽
+    }
+    const avail = base.filter(f=>!used.has(f.name));
+    const src = avail.length ? avail : base;  // 若都抽过了则允许重复
     const f = src[Math.floor(rand() * src.length)];
     if(!f) return null;
     used.add(f.name);
@@ -3875,6 +4120,7 @@ function generateMeals(goal, weight, pref, seed, target){
       });
     }
   }
+  out.avoidRelaxed = avoidRelaxed;   // 供 UI 提示「忌口项过多，部分餐次无法满足」
   return out;
 }
 // 计算一餐/一天的营养是否贴近目标（用于「换一个」时优先选更贴近的组合）
