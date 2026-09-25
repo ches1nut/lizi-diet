@@ -622,14 +622,18 @@
     border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
   }
   .pref-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
-  .regen-meal-btn{
-    width:100%; display:flex; align-items:center; justify-content:center; gap:7px;
-    margin:2px 0 18px; padding:12px; border-radius:13px; cursor:pointer;
-    border:1px dashed var(--brand-mid); background:var(--brand-soft);
-    font-size:14px; font-weight:700; color:var(--brand); transition:.15s;
+  /* 餐次标题行内的「换一换」紧凑按钮（与「早餐」同一行，右对齐） */
+  .regen-inline{
+    margin-left:auto; flex-shrink:0;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:5px 11px; border-radius:999px; cursor:pointer; line-height:1;
+    border:1px solid var(--brand-mid); background:var(--brand-soft);
+    font-size:12px; font-weight:600; color:var(--brand); transition:.15s;
+    -webkit-tap-highlight-color:transparent;
   }
-  .regen-meal-btn:hover{border-color:var(--brand);}
-  .regen-meal-btn svg{width:15px; height:15px;}
+  .regen-inline:hover{border-color:var(--brand);}
+  .regen-inline:active{transform:scale(.95);}
+  .regen-inline svg{width:13px; height:13px;}
   .meal-tabs{display:flex; gap:8px; margin-bottom:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:5px; box-shadow:var(--shadow-sm);}
   .meal-tab{flex:1; text-align:center; padding:9px 0; border-radius:10px; font-size:14px; font-weight:600; color:var(--sub); cursor:pointer; user-select:none; transition:.15s;}
   .meal-tab.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; font-weight:700; box-shadow:var(--shadow-sm);}
@@ -3515,8 +3519,9 @@ function buildRecipe(){
   const goal = planGoal(recipePlanId);
 
   // 只在「没有三餐」或「需要重生成」时才生成；正常渲染直接用已保存的三餐
+  // 传入 target：让生成的克数瞄准这个人这个方案的目标热量与 macro
   if(!recipeMeals || !recipeMeals.meals){
-    recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
+    recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target);
   }
 
   const plan = PLANS.find(x=>x.id===recipePlanId);
@@ -3571,11 +3576,6 @@ function buildRecipe(){
 
     <div id="recipeMeals"></div>
 
-    <button class="regen-meal-btn" onclick="regenRecipe()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
-      换一换这顿饭
-    </button>
-
     <div class="recipe-sum" id="recipeSum"></div>
 
     <div class="recipe-actions">
@@ -3594,7 +3594,8 @@ function setPref(kind, val){
   // 改偏好 → 重新生成一整天三餐（偏好影响所有餐的抽选）
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed);
+  const target = computeTarget(recipePlanId, profile);
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target);
   buildRecipe();
 }
 
@@ -3604,13 +3605,27 @@ function switchMealTab(meal){
 }
 
 function regenRecipe(){
-  recipeSeed++;         // 换种子
   // 只重抽当前这一餐，其余餐保持不动（用户每顿单独看，不该顺手换掉其他餐）
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  const fresh = generateMeals(goal, profile.weight, recipePref, recipeSeed);
-  recipeMeals.meals[recipeMealTab] = fresh.meals[recipeMealTab];
-  buildRecipe();
+  const target = computeTarget(recipePlanId, profile);
+
+  // 连抽 3 个候选，用 mealsNutrition() 选出「当前这一餐」最贴近该餐目标热量的一版。
+  // 让「换一换」不只是换个花样，而是换到更接近目标的一餐（此前 mealsNutrition 从未被调用）
+  const wantKcal = target.kcal * (MEAL_SPLIT[recipeMealTab] || 1/3);
+  let best = null, bestDiff = Infinity;
+  for(let k = 1; k <= 3; k++){
+    const cand = generateMeals(goal, profile.weight, recipePref, recipeSeed + k, target);
+    const n = mealsNutrition({ [recipeMealTab]: cand.meals[recipeMealTab] });
+    const diff = Math.abs(n.kcal - wantKcal);
+    if(diff < bestDiff){ bestDiff = diff; best = cand; }
+  }
+  recipeSeed += 3;   // 种子前移，保证下次「换一换」拿到的是全新组合
+
+  recipeMeals.meals[recipeMealTab] = best.meals[recipeMealTab];
+  // 只重绘当前餐 + 本餐营养小结（renderRecipeMeals 内部会调 renderRecipeSum），
+  // 不走 buildRecipe() 整页重渲染，避免按钮被点掉后页面滚回顶部
+  renderRecipeMeals();
 }
 
 // 把「当前餐」的所有食物一键加入今日摄入清单
@@ -3667,12 +3682,43 @@ function filterByPref(cat, tag){
   });
   return hit.length ? hit : null;
 }
-// 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}，克数已按体重缩放）
-function generateMeals(goal, weight, pref, seed){
+/* 分餐热量比例：必须与 renderRecipeSum() 的展示口径一致（早 25% / 午 37.5% / 晚 37.5%） */
+const MEAL_SPLIT = { "早餐":0.25, "午餐":0.375, "晚餐":0.375 };
+
+// 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}）
+// 传入 target（computeTarget() 的结果）时，克数按个人 macro 目标反解，全天热量瞄准 target.kcal；
+// 不传 target 时退回旧的「结构克数 × 体重比例」行为。
+function generateMeals(goal, weight, pref, seed, target){
   const struct = FOOD_POOLS.MEAL_STRUCT[goal] || FOOD_POOLS.MEAL_STRUCT["减脂"];
   const rand = seededRand(seed * 7919 + 13);
   const ratio = (weight || 70) / 70;
   const out = { meals:{} };
+
+  const clamp = (v, lo, hi)=> Math.max(lo, Math.min(hi, v));
+  // 克数上下限随体重等比缩放，防止反解出「米饭 900g」这类荒谬值
+  const LIM = {
+    staple:  [Math.round(30 * ratio), Math.round(350 * ratio)],
+    protein: [Math.round(50 * ratio), Math.round(300 * ratio)],
+    veg:     [Math.round(80 * ratio), Math.round(300 * ratio)],
+    fat:     [Math.round(3  * ratio), Math.round(20  * ratio)],
+  };
+  // 每 100g 营养密度（foodKcal 已兼容「区间数组」与「按份产品」两种数据形态）
+  const per100 = fd => foodKcal(fd, 100);
+  // 按某营养素目标反解克数；按份产品/密度为 0 时返回 null，由调用方回退结构克数
+  const solveBy = (fd, key, gTarget)=>{
+    if(!fd || gTarget == null || isServingFood(fd)) return null;
+    const d = per100(fd)[key];
+    if(!d || d <= 0) return null;
+    return gTarget / d * 100;
+  };
+  // 蛋白源质量：每 100 kcal 能提供多少克蛋白。用数据属性判定，取代会与食物库漂移的手写名单。
+  // 参考值：鸡胸≈19、豆腐皮≈11、鸡蛋≈9；猪五花肉仅 1.4、腊肉 3.6、猪颈肉 3.5。
+  // 这类低质量蛋白源要凑够蛋白就得吃掉几百克，实测曾抽出 334g 猪五花肉（1897 kcal）。
+  // 注意：不能用「脂肪密度」单指标筛 —— 豆腐皮/腐竹脂肪虽高但蛋白密度更高，是优质植物蛋白。
+  const proteinQuality = fd =>{
+    const v = per100(fd);
+    return v.kcal > 0 ? (v.protein || 0) / v.kcal * 100 : 0;
+  };
 
   // 减脂期：排除高脂蛋白 / 高糖高脂水果 / 精制主食；增肌期：排除高脂肥肉但仍保留一定脂肪来源
   const isCut = goal === "减脂";
@@ -3697,6 +3743,21 @@ function generateMeals(goal, weight, pref, seed){
   if(isCut){
     staplePool = staplePool.filter(f=>!REFINED_STAPLE.includes(f.name));
   }
+
+  // 蛋白源质量筛选（数据驱动，取代上面那份会与食物库漂移的硬编码名单）：
+  // 所有 goal 都剔除「凑够蛋白就会把热量撑爆」的低质量蛋白源。
+  // 上面那份 HIGH_FAT_PROTEIN 名单写的是「五花肉（熟）」，而库里实际叫「猪五花肉（生）」，
+  // 名称漂移导致过滤失效 —— 这正是减脂餐曾抽出五花肉的根因。
+  const MIN_PROTEIN_QUALITY = isCut ? 6.5 : (goal === "日常健康" ? 5.5 : 5);
+  const qualityPool = proteinPool.filter(f => proteinQuality(f) >= MIN_PROTEIN_QUALITY);
+  if(qualityPool.length) proteinPool = qualityPool;   // 兜底：绝不让池子被筛空
+
+  // 主食碳水密度下限：粥/南瓜这类每 100g 碳水不足 10g 的食材当唯一主食时，
+  // 要凑够碳水得吃 600g 以上，克数会被夹紧导致全天热量不达标。
+  // 这里只约束「生成器自动抽选」，用户仍可手动添加粥类。
+  const denseStaple = s => (per100(s).carb || 0) >= 10;
+  const densePool = staplePool.filter(denseStaple);
+  if(densePool.length) staplePool = densePool;
 
   // 正餐蛋白池排除「乳制品」（牛奶、酸奶、奶酪、乳清蛋白、豆浆属早餐/加餐），
   // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除
@@ -3738,6 +3799,7 @@ function generateMeals(goal, weight, pref, seed){
     return f;
   }
 
+  const stapleRefs = [];   // 记录主食项，供收尾 kcal 校准使用
   Object.keys(struct).forEach(meal=>{
     const roles = struct[meal];
     const items = [];
@@ -3745,14 +3807,74 @@ function generateMeals(goal, weight, pref, seed){
     // 早餐用早餐专属池，正餐用全量池
     const pPool = isBreakfast ? breakfastProteinPool : proteinPool;
     const sPool = isBreakfast ? bStaple : staplePool;
-    if(roles["主食"]){ const f = pick(sPool, usedStaple); if(f) items.push({n:f.name, g:Math.max(30, Math.round(roles["主食"]*ratio))}); }
-    if(roles["蛋白"]){ const f = pick(pPool, usedProtein); if(f) items.push({n:f.name, g:Math.max(50, Math.round(roles["蛋白"]*ratio))}); }
-    if(roles["蔬菜"]){ const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set()); if(f) items.push({n:f.name, g:Math.round(roles["蔬菜"]*ratio)}); }
-    if(roles["脂肪"]){ const f = pick(fatPool, new Set()); if(f) items.push({n:f.name, g:Math.round(roles["脂肪"]*ratio)}); }
+    // 本餐承担的 macro 目标（按分餐比例拆分全天目标）
+    const split = MEAL_SPLIT[meal] || 1/3;
+    const tP = target ? target.protein * split : null;
+    const tC = target ? target.carb    * split : null;
+    const tF = target ? target.fat     * split : null;
+
+    // 单项克数安全网：单品最多承担本餐热量预算的 share 比例。
+    // 防止低密度/高热量食材反解出荒谬克数（570g 五花肉、900g 米饭这类）。
+    const mealKcal = target ? target.kcal * split : null;
+    const capByShare = (g, fd, share)=>{
+      if(!mealKcal) return g;
+      const kpg = per100(fd).kcal / 100;
+      if(kpg <= 0) return g;
+      return Math.min(g, (mealKcal * share) / kpg);
+    };
+
+    if(roles["主食"]){
+      const f = pick(sPool, usedStaple);
+      if(f){
+        let g = solveBy(f, "carb", tC);
+        if(g == null) g = roles["主食"] * ratio;
+        g = capByShare(g, f, 0.65);
+        items.push({n:f.name, g:Math.round(clamp(g, LIM.staple[0], LIM.staple[1]))});
+        stapleRefs.push({meal, idx:items.length-1, fd:f});
+      }
+    }
+    if(roles["蛋白"]){
+      const f = pick(pPool, usedProtein);
+      if(f){
+        let g = solveBy(f, "protein", tP);
+        if(g == null) g = roles["蛋白"] * ratio;
+        g = capByShare(g, f, 0.55);
+        items.push({n:f.name, g:Math.round(clamp(g, LIM.protein[0], LIM.protein[1]))});
+      }
+    }
+    if(roles["蔬菜"]){
+      const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set());
+      if(f) items.push({n:f.name, g:Math.round(clamp(roles["蔬菜"] * ratio, LIM.veg[0], LIM.veg[1]))});
+    }
+    if(roles["脂肪"]){
+      const f = pick(fatPool, new Set());
+      if(f){
+        // 只让烹调用油承担约一半脂肪目标，另一半来自食材本身
+        let g = solveBy(f, "fat", tF == null ? null : tF * 0.5);
+        if(g == null) g = roles["脂肪"] * ratio;
+        items.push({n:f.name, g:Math.round(clamp(g, LIM.fat[0], LIM.fat[1]))});
+      }
+    }
     // 水果不再作为固定角色塞进某顿饭（早餐吃苹果、午晚餐配香蕉都不是人人喜欢），
     // 改为可选加餐：用户想加时点「＋添加食物」自行加入
     out.meals[meal] = items;
   });
+
+  // 收尾校准：反解出的 macro 克数仍会被「食材自身热量密度 ≠ 纯 macro 折算」以及蔬菜热量带偏，
+  // 这里按全天 kcal 残差补偿到主食克数上（主食是热量调节的最佳杠杆，不该让蛋白/蔬菜为凑热量而失真）
+  if(target && target.kcal > 0 && stapleRefs.length){
+    const totalKcal = mealsNutrition(out.meals).kcal;
+    const resid = target.kcal - totalKcal;
+    if(Math.abs(resid) > target.kcal * 0.03){
+      stapleRefs.forEach(ref=>{
+        const sp = MEAL_SPLIT[ref.meal] || 1/3;
+        const perG = per100(ref.fd).kcal / 100;
+        if(perG <= 0) return;
+        const it = out.meals[ref.meal][ref.idx];
+        it.g = Math.round(clamp(it.g + (resid * sp) / perG, LIM.staple[0], LIM.staple[1]));
+      });
+    }
+  }
   return out;
 }
 // 计算一餐/一天的营养是否贴近目标（用于「换一个」时优先选更贴近的组合）
@@ -3772,7 +3894,13 @@ function renderRecipeMeals(){
   const items = recipeMeals.meals[m] || [];
   box.innerHTML = `
     <div class="meal-block">
-      <div class="meal-title"><span class="mt-dot" style="background:${mealColors[m]||"#4A3FA8"};"></span>${m}</div>
+      <div class="meal-title">
+        <span class="mt-dot" style="background:${mealColors[m]||"#4A3FA8"};"></span>${m}
+        <button class="regen-inline" onclick="regenRecipe()" title="换一换这顿饭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+          换一换
+        </button>
+      </div>
       ${items.map(it=>{
         const fd = findFood(it.n);
         const v = fd ? foodKcal(fd, it.g) : {kcal:0,protein:0,carb:0,fat:0};
@@ -3800,7 +3928,7 @@ function renderRecipeSum(){
   const m = recipeMealTab;  // 只统计当前餐
   const t = mealTotal(recipeMeals.meals[m] || []);
   // 按餐次给出目标参考：早餐约 25%、午/晚餐各约 35-38%
-  const ratio = m==="早餐" ? 0.25 : (m==="午餐" ? 0.375 : 0.375);
+  const ratio = MEAL_SPLIT[m] || 1/3;   // 与 generateMeals() 共用同一分餐口径
   const tK = target.kcal*ratio, tC = target.carb*ratio, tP = target.protein*ratio, tF = target.fat*ratio;
   const pct = v=>Math.min(100, Math.round(v*100));
   document.getElementById("recipeSum").innerHTML = `
