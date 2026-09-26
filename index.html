@@ -774,12 +774,15 @@
   .food-row .fr-del:hover{color:#DC2626; background:#FEE2E2;}
   .food-row .fr-del svg{width:16px; height:16px;}
   .recipe-sum{
-    display:flex; flex-wrap:wrap; gap:10px; padding:14px 16px; margin-top:16px;
+    display:flex; flex-wrap:wrap; gap:10px; padding:14px 16px; margin-bottom:14px;
     border-radius:14px; background:var(--brand-soft); text-align:center;
   }
   /* .rs-hint 是标题行，必须独占一行 —— 容器是 flex，不加 flex-basis 会被当成
      第 5 个格子挤在左侧窄列里（整句话竖着断行），四项数据也被压到右边 */
   .recipe-sum .rs-hint{flex:0 0 100%; text-align:left;}
+  /* 加餐为空时 renderRecipeSum() 会把内容清空；容器是带底色和内边距的 flex 盒，
+     不清掉就会在页面最上方留一条空底色横条 */
+  .recipe-sum:empty{display:none;}
   .recipe-sum .rs-item{flex:1;}
   .recipe-sum .rs-item .n{font-size:17px; font-weight:800; color:var(--brand-deep);}
   .recipe-sum .rs-item .u{font-size:11px; color:var(--sub); margin-top:2px;}
@@ -3961,6 +3964,9 @@ function buildRecipe(){
   const tab = (m)=>`<div class="meal-tab ${recipeMealTab===m?"on":""}" onclick="switchMealTab('${m}')">${m}</div>`;
 
   document.getElementById("recipeBody").innerHTML = `
+    <!-- 本餐营养参考放在最上方：它是看这一餐时的主读数，放底部要滚到底才看得到 -->
+    <div class="recipe-sum" id="recipeSum"></div>
+
     <div class="recipe-target-card">
       <div class="rt-label">${plan.name} · ${goal==="增肌"?"增肌期":"减脂期"}</div>
       <div class="rt-name">这顿吃什么？</div>
@@ -4025,8 +4031,6 @@ function buildRecipe(){
     </div>
 
     <div id="recipeMeals"></div>
-
-    <div class="recipe-sum" id="recipeSum"></div>
 
     <div class="recipe-actions">
       <button class="btn-primary" onclick="addMealItem(recipeMealTab)">＋ 添加食物到${recipeMealTab}</button>
@@ -4203,6 +4207,14 @@ const MEAL_ORDER = ["早餐", "午餐", "晚餐", "加餐"];
 function mealSplitOf(meal){
   const v = MEAL_SPLIT[meal];
   return (typeof v === "number") ? v : 1/3;
+}
+
+/* 分餐比例转文案：能整除就不带小数（25 → "25"），否则保留一位（37.5 → "37.5"）。
+   ⚠ 不能直接 Math.round(ratio*100)：37.5 会被显示成 38%，用户把三餐相加
+   25 + 38 + 38 = 101%，一眼就看出对不上。比例是用来核算的，必须精确。 */
+function splitLabel(ratio){
+  const n = Math.round(ratio * 1000) / 10;   // 保留一位小数
+  return String(n).replace(/\.0$/, "");
 }
 
 // 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}）
@@ -4488,7 +4500,7 @@ function renderRecipeSum(){
     // 空加餐不显示一排 0（上面已经有空态说明了，重复）
     if(!t.kcal){ box.innerHTML = ""; return; }
     box.innerHTML = `
-      <div class="rs-hint">本餐实际摄入（不占全天分配）</div>
+      <div class="rs-hint">${m}实际摄入 · 不占全天分配</div>
       <div class="rs-item"><div class="n">${Math.round(t.kcal)}</div><div class="u">热量 kcal</div></div>
       <div class="rs-item"><div class="n">${Math.round(t.carb)}</div><div class="u">碳水 g</div></div>
       <div class="rs-item"><div class="n">${Math.round(t.protein)}</div><div class="u">蛋白 g</div></div>
@@ -4498,8 +4510,8 @@ function renderRecipeSum(){
   }
   const tK = target.kcal*ratio, tC = target.carb*ratio, tP = target.protein*ratio, tF = target.fat*ratio;
   box.innerHTML = `
-    <div class="rs-hint">本餐营养参考（按全天目标 ${Math.round(ratio*100)}% 分配）</div>
-    <div class="rs-item"><div class="n">${Math.round(t.kcal)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(t.kcal/tK)}%;"></i></div></div>
+    <div class="rs-hint">${m}营养参考 · 按全天目标 ${splitLabel(ratio)}% 分配</div>
+    <div class="rs-item"><div class="n">${Math.round(t.kcal)}/${Math.round(tK)}</div><div class="u">热量 kcal</div><div class="bar"><i style="width:${pct(t.kcal/tK)}%;"></i></div></div>
     <div class="rs-item"><div class="n">${Math.round(t.carb)}/${Math.round(tC)}</div><div class="u">碳水 g</div><div class="bar"><i style="width:${pct(t.carb/tC)}%;"></i></div></div>
     <div class="rs-item"><div class="n">${Math.round(t.protein)}/${Math.round(tP)}</div><div class="u">蛋白 g</div><div class="bar"><i style="width:${pct(t.protein/tP)}%;"></i></div></div>
     <div class="rs-item"><div class="n">${Math.round(t.fat)}/${Math.round(tF)}</div><div class="u">脂肪 g</div><div class="bar"><i style="width:${pct(t.fat/tF)}%;"></i></div></div>
