@@ -2432,7 +2432,12 @@ function validateWeightLoss(curWeight, targetWeight, weeks){
 
 // 活动水平 → 各方案碳水系数映射（三个月/碳水渐降/三倍碳水）
 const ACT_CARB = {
-  "month3":       { sed:2.2, light:2.5, mod:2.8, high:3.0 },
+  // 按方案自述「碳水 2.5–3.5 g/kg（训练量大取高值，训练量小取低值）」铺满整个区间。
+  // ⚠ 原值是 2.2/2.5/2.8/3.0 —— 下端 2.2 低于自述下限 2.5、上端 3.0 低于自述上限 3.5，
+  // 且与「碳水渐降法」在中度(2.8)/高强度(3.0) 完全重合，用户换方案会看到一模一样的数字。
+  // 修正后两个方案只在「久坐」重合（两份方案文档都把 2.5 g/kg 写为各自的起步/下限）。
+  "month3":       { sed:2.5, light:2.8, mod:3.1, high:3.5 },
+  // 「碳水渐降法」自述「2.5–3 g/kg 起步，逐步降低」→ 起步区间就是 2.5–3.0，维持原值
   "carb-descend": { sed:2.5, light:2.6, mod:2.8, high:3.0 },
   "triple-carb":  { sed:2.5, light:2.7, mod:2.8, high:3.0 },  // 三倍碳水：新手2.5→练高3.0
   "zengji-yingyu": { sed:4.0, light:4.5, mod:5.0, high:6.0 }  // 增肌盈余：碳水 4–6g/kg，供能比 60–65%
@@ -4252,15 +4257,16 @@ function generateMeals(goal, weight, pref, seed, target){
     return v.kcal > 0 ? (v.protein || 0) / v.kcal * 100 : 0;
   };
 
-  // 减脂期：排除高脂蛋白 / 高糖高脂水果 / 精制主食；增肌期：排除高脂肥肉但仍保留一定脂肪来源
+  // 减脂期：排除高脂蛋白 / 精制主食；增肌期：排除高脂肥肉但仍保留一定脂肪来源
   const isCut = goal === "减脂";
   const FAT_PROTEIN = ["牛腩（熟）","肥牛卷（熟）","五花肉（熟）","腊肉","午餐肉","火腿肠","鹅肉（熟）","鸭肉（去皮熟）"];
   const HIGH_FAT_PROTEIN = FAT_PROTEIN;  // 减脂/日常都尽量避开
-  const HIGH_SUGAR_FRUIT = ["榴莲","椰子肉","荔枝","龙眼","柿子","芒果","葡萄","西瓜","香蕉"];
   const REFINED_STAPLE = ["油条","烧饼","年糕","糯米（熟）","白面包","凉皮"];
 
+  // 水果不参与生成：曾经的 fruitPool（+ 配套高糖水果黑名单 HIGH_SUGAR_FRUIT）
+  // 已随「水果不再作为固定角色塞进某顿饭」一起删除 —— 见下面生成循环里的说明。
+  // 用户想加水果时走「＋ 添加食物」或「加餐」自行添加。
   const vegPool = poolByCategory("蔬菜");
-  const fruitPool = poolByCategory("水果").filter(f=> isCut ? !HIGH_SUGAR_FRUIT.includes(f.name) : true);
   const fatPool = (isCut ? ["橄榄油","菜籽油","牛油果","核桃","杏仁"] : ["橄榄油","花生油","芝麻油","牛油果","核桃","杏仁","黄油","猪油"])
     .map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
   const breakfastVeg = FOOD_POOLS.BREAKFAST_VEG.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
