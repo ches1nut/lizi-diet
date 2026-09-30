@@ -789,6 +789,55 @@
   .recipe-sum .rs-item .bar{height:5px; border-radius:3px; background:var(--brand-mid); margin-top:8px; overflow:hidden;}
   .recipe-sum .rs-item .bar i{display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--brand),var(--brand-2));}
 
+  /* ===== 数据来源徽章 =====
+     品牌色随主题变，但「这条数据有多可信」是语义信息，语义色必须跨主题恒定
+     —— 与已有的 --color-background-success 同一原则，所以只在 :root 定义一次。
+     三组都过 WCAG AA：正文级 11px 文字对比度 5.4–6.4 : 1。 */
+  :root{
+    --origin-brand-bg:#E6F1FB;  --origin-brand-fg:#185FA5;  --origin-brand-bd:#B5D4F4;
+    --origin-est-bg:#FAEEDA;    --origin-est-fg:#854F0B;    --origin-est-bd:#FAC775;
+    --origin-custom-bg:#E1F5EE; --origin-custom-fg:#0F6E56; --origin-custom-bd:#9FE1CB;
+  }
+  .origin-tag{
+    display:inline-block; margin-left:6px; padding:0 5px; border-radius:5px;
+    font-size:11px; font-weight:500; line-height:16px; vertical-align:1px;
+    border:0.5px solid transparent; white-space:nowrap;
+  }
+  .origin-tag.og-brand{ background:var(--origin-brand-bg); color:var(--origin-brand-fg); border-color:var(--origin-brand-bd); }
+  .origin-tag.og-est{ background:var(--origin-est-bg); color:var(--origin-est-fg); border-color:var(--origin-est-bd); }
+  .origin-tag.og-custom{ background:var(--origin-custom-bg); color:var(--origin-custom-fg); border-color:var(--origin-custom-bd); }
+  .origin-note{ font-size:12px; color:var(--sub); line-height:1.75; margin-top:6px; }
+  .origin-note b{ color:var(--text); font-weight:600; }
+
+  /* ===== 「还能吃 · 建议」：把剩余额度翻译成具体食物 ===== */
+  .fill-suggest{
+    margin-bottom:14px; padding:14px 16px; border-radius:14px;
+    background:var(--card); border:0.5px solid var(--border);
+  }
+  .fill-suggest .fs-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .fill-suggest .fs-title{ font-size:13px; font-weight:700; color:var(--text); }
+  .fill-suggest .fs-gap{ font-size:12px; color:var(--sub); white-space:nowrap; }
+  .fill-suggest .fs-gap b{ color:var(--brand-deep); font-weight:800; }
+  .fill-suggest .fs-hint{ font-size:12px; color:var(--sub); line-height:1.7; margin-top:8px; }
+  .fill-suggest .fs-hint.lead{ margin-top:6px; }
+  .fill-suggest .fs-hint b{ color:var(--brand-deep); font-weight:700; }
+  .fill-suggest .fs-list{ display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .fill-suggest .fs-item{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 11px; border-radius:10px; background:var(--brand-soft);
+  }
+  .fill-suggest .fsi-main{ flex:1; min-width:0; }
+  .fill-suggest .fsi-name{ font-size:13px; font-weight:600; color:var(--text); }
+  .fill-suggest .fsi-name .origin-tag{ font-weight:500; }
+  .fill-suggest .fsi-meta{ font-size:11px; color:var(--sub); margin-top:3px; }
+  .fill-suggest .fsi-add{
+    flex-shrink:0; font-size:12px; font-weight:600; color:var(--brand);
+    padding:5px 10px; border-radius:8px; cursor:pointer;
+    border:0.5px solid var(--brand-mid); background:var(--card);
+    transition:.15s;
+  }
+  .fill-suggest .fsi-add:active{ background:var(--brand-soft); }
+
   /* ===== 食物计算器页 ===== */
   .food-body{padding:16px 28px 40px;}
   /* 今日摄入详情页 */
@@ -1996,7 +2045,7 @@ function renderIntakeDetail(){
     return `
       <div class="intake-row">
         <div class="ir-info">
-          <div class="ir-name">${it.name}</div>
+          <div class="ir-name">${showName(fd)}${originBadge(fd)}</div>
           <div class="ir-meta">${meta}</div>
           <div class="ir-edit">${qtyInput}</div>
         </div>
@@ -3587,7 +3636,10 @@ function loadCustomFoods(){
   try{ return JSON.parse(localStorage.getItem(CUSTOM_FOOD_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveCustomFoods(list){ localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }
+function saveCustomFoods(list){
+  localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list));
+  _customNames = null;   // 自定义食物变了，「自定义」徽章的判定缓存必须失效
+}
 function allFoods(){
   return FOODS.concat(BRAND_FOODS).concat(loadCustomFoods());
 }
@@ -3612,6 +3664,78 @@ function fmtRange(v){
     return `${lo}~${hi}`;
   }
   return String(v);
+}
+
+/* ===== 数据来源分级：让用户知道这个数字有多可信 =====
+   1112 种食物的可信度并不一样，但此前 UI 上完全没区分 ——
+   用户看到「187 kcal」会当成实测值，这是虚假的确定感。
+   不新增任何数据字段，全部从现有结构推导：
+     custom    用户自己录的（可能重名覆盖内置，必须最先判）
+     brand     有 brand 字段 = 品牌官方公布（BRAND_FOODS，202 条全有）
+     estimated 外食/复合菜（类目见 OUT_EAT_CATS）或名字带「（估）」
+               —— 同一道宫保鸡丁，各家油盐糖能差一倍，这里的数只能当参考
+     basic     基础食材（鸡蛋/鸡胸/米饭…），数据稳定，不挂标记
+   ⚠ 全部推导、不写死食物名单 —— 硬编码食物名单会与食物库漂移
+   （此前 HIGH_FAT_PROTEIN 写「五花肉（熟）」而库里叫「猪五花肉（生）」就是这么失效的） */
+let _customNames = null;
+function customNameSet(){
+  if(!_customNames) _customNames = new Set(loadCustomFoods().map(f=>f && f.name));
+  return _customNames;
+}
+/* 外食/复合菜类目：库里按「一道菜 / 一家店」组织的类目。
+   ⚠ 这里出现类目枚举，和上面「不写死名单」并不矛盾 —— 两回事：
+     会漂移的是**食物条目名单**（库里随时增删、改名，写死必然失效）；
+     **类目名**是食物库的组织层，全部 18 个、稳定可枚举。
+   配套防漂移：测试里存了一份「基础食材类目」快照，两组并集必须等于 FOODS 的全部类目。
+   以后食物库新增类目，测试会失败，逼作者决定它归哪一组 —— 而不是静默落进 basic。 */
+const OUT_EAT_CATS = [
+  "家常菜", "卤味", "沙县小吃", "黄焖鸡米饭", "麻辣烫",
+  "米饭套餐", "兰州拉面", "炸鸡/小食", "煎饼/饼类",
+];
+function foodOrigin(f){
+  if(!f || !f.name) return "basic";
+  if(customNameSet().has(f.name)) return "custom";
+  if(f.brand) return "brand";
+  if(OUT_EAT_CATS.indexOf(f.category) >= 0 || /（估）/.test(f.name)) return "estimated";
+  return "basic";
+}
+const ORIGIN_META = {
+  brand:     { cls:"og-brand",  label:"官方",   tip:"品牌官方公布的数据" },
+  estimated: { cls:"og-est",    label:"估算",   tip:"家常菜各家油盐差别很大，数值按常见做法估算" },
+  custom:    { cls:"og-custom", label:"自定义", tip:"你自己录入的食物" },
+};
+/* 基础食材不挂徽章（鸡蛋/米饭这类数据稳定，人人都挂标签反而成了噪音） */
+function originBadge(f){
+  const o = foodOrigin(f);
+  const m = ORIGIN_META[o];
+  if(!m) return "";
+  // 品牌食物在 tooltip 里带上具体品牌：光写「官方」用户不知道是哪家的官方
+  const tip = (o === "brand" && f && f.brand) ? `${m.tip}（${f.brand}）` : m.tip;
+  return `<span class="origin-tag ${m.cls}" title="${tip}">${m.label}</span>`;
+}
+/* 详情里的来源说明：徽章只有两个字，用户看不出「估算」到底意味着多少不确定性，
+   所以选中某个食物、要拿它的数字做决定时，必须把口径讲清楚 */
+const ORIGIN_NOTE = {
+  brand:     `<b>官方数据</b>：品牌公布的营养信息，按「份」计算 —— 规格不同（去糖、加酱）会有出入，可用下面的热量微调修正。`,
+  estimated: `<b>估算值</b>：家常菜/餐厅菜的油盐用量各家差别很大，这里按常见做法估。实际可能比这个高不少，心里留点余量。`,
+  custom:    `<b>你自己录入的</b>：数值以你填写的为准。`,
+  basic:     `<b>基础食材</b>：参考《中国食物成分表》等公开数据的常见范围，按每 100g 可食部计。同一食材会因品种、生熟、烹饪方式浮动，所以内置数据用区间而非单点值。`,
+};
+function originNote(f){
+  const t = ORIGIN_NOTE[foodOrigin(f)];
+  return t ? `<div class="origin-note">${t}</div>` : "";
+}
+/* 展示名：去掉名字尾巴上的「（估）」—— 那是数据层标记，在 UI 里由「估算」徽章承担，
+   名字里再挂一遍等于同一件事说两遍。
+   ⚠ 只用于显示！findFood / PORTIONS / localStorage 里用的都是原名，绝不能拿它去查 */
+function showName(f){
+  if(!f) return "";
+  return String(f.name || "").replace(/（估）$/, "");
+}
+/* 按名字安全取展示名：食物被删/找不到时退回原名，不能显示空白 */
+function showNameOf(name){
+  const fd = findFood(name);
+  return fd ? showName(fd) : String(name || "");
 }
 function foodKcal(f, grams){
   // 按份产品（店面品牌）：grams 参数传的是「份数」，直接乘单份营养值
@@ -3881,6 +4005,250 @@ function renderExecBar(){
     </div>
     <div class="exec-track"><i class="${r.over?"over":""}" style="width:${pct}%;"></i></div>
     <div class="exec-chips">${chips}</div>`;
+  // 「还能吃」与「补点什么」必须同屏同口径，所以在这里一起刷新 ——
+  // 分开两处调用迟早会漏掉一处，出现「执行条说还剩 400，建议块按 800 给量」
+  renderFillSuggest();
+}
+
+/* ===== 「接下来补点什么」：把剩余额度翻译成具体食物 =====
+   为什么是「一次加菜/加餐的量」而不是「按缺口反算」：
+     用户今天什么都没记时，缺口 = 全天目标（1900 kcal），按缺口反算会得出
+     「吃 500g 鸡胸」这种荒谬建议。所以缺口只用来决定取份量区间的上界还是下界，
+     克数恒定夹在 [半份, 1.5 份]（份量参照 PORTIONS），保证永远是「能立刻执行的一口」。
+   为什么啥都没记时不给建议：
+     没有任何输入时「该补什么」只能把计划复述一遍，等于废话。改为引导去记录。
+   为什么池子按类目划分、不写食物名单：
+     名单会随食物库漂移 —— HIGH_FAT_PROTEIN 写「五花肉（熟）」而库里叫「猪五花肉（生）」，
+     于是减脂餐曾抽出五花肉。这里只用 schema 的 category + 营养密度做判据。
+   为什么复用 FOOD_POOLS 的关键词表：
+     「建议里能出现的类别」与「食谱里能选的肉/蛋白偏好」必须永远同一套，
+     否则会出现「食谱里选了『虾蟹贝』，建议却给牛肉」。 */
+
+let fillSuggestItems = [];   // 当前展示的 3 条建议（点「＋加入」时按下标取）
+
+/* 每 100g 的营养（区间取中值；按份产品不参与建议，见 suggestPools） */
+function nutri100(f){
+  return { kcal: mid(f.kcal), protein: mid(f.protein), carb: mid(f.carb), fat: mid(f.fat) };
+}
+/* 蛋白密度：每 100 kcal 能提供多少克蛋白。与 generateMeals 里的同名判据同源 */
+function proteinDensity(f){
+  const v = nutri100(f);
+  return v.kcal > 0 ? v.protein / v.kcal * 100 : 0;
+}
+/* 去掉括号后的「主词」：虾（熟）/ 龙虾（熟）→ 虾 / 龙虾，用于互含去重 */
+function coreName(f){
+  return String((f && f.name) || "").replace(/[（(][^）)]*[）)]/g, "").trim();
+}
+/* 所属大类：直接复用偏好关键词表的匹配规则（先排排除词，再按包含词命中） */
+function classOf(f, keyMap, keys){
+  const name = (f && f.name) || "";
+  for(const k of keys){
+    const rule = keyMap[k];
+    if(!rule) continue;
+    if((rule.exclude || []).some(e => name.includes(e))) continue;
+    if((rule.kw || []).some(kw => name.includes(kw))) return k;
+  }
+  return "";
+}
+/* 同类只留一条代表（类内取分值最高的），再按分值排序取前 n 条，
+   最后按「主词互含」去重 —— 虾（熟）/ 龙虾（熟）/ 皮皮虾（熟）是同一家人的不同写法，
+   同时出现三条等于刷屏；而鳕鱼 vs 龙利鱼这种互不包含的会各自保留。 */
+function pickRepresentatives(pool, classFn, scoreFn, n){
+  const bestOf = new Map();
+  pool.forEach(f=>{
+    const c = classFn(f) || ("\u0000" + f.name);   // 无类目的各自成类，交给互含去重兜底
+    const cur = bestOf.get(c);
+    if(!cur || scoreFn(f) > scoreFn(cur)) bestOf.set(c, f);
+  });
+  const reps = Array.from(bestOf.values()).sort((a, b)=>{
+    // 有明确大类的优先 —— 它们正是食谱页「肉/蛋白」「主食」偏好里能选到的主力食材；
+    // 长尾（兔肉/鹿肉/鹌鹑肉这类没有任何偏好类能覆盖的）排后面，
+    // 否则「补蛋白」会一本正经地建议吃兔肉。
+    const ca = classFn(a) ? 1 : 0, cb = classFn(b) ? 1 : 0;
+    return (cb - ca) || (scoreFn(b) - scoreFn(a));
+  });
+  const out = [];
+  for(const f of reps){
+    if(out.length >= n) break;
+    const c = coreName(f);
+    if(out.some(o=>{ const oc = coreName(o); return oc.includes(c) || c.includes(oc); })) continue;
+    out.push(f);
+  }
+  return out;
+}
+/* 一次建议的克数：缺口只决定取区间上界还是下界，不直接反算（见上方说明）。
+   区间：[半份, 1.5 份]；没有份量参照的用 [50g, 150g]。
+   400 kcal 是单次建议的热量天花板 —— 再多就不叫「补一口」，叫「加一顿饭」。
+   算法：先瞄准缺口的一半并封顶 400，再夹进区间。 */
+const SUGGEST_MAX_KCAL = 400;
+function suggestGrams(f, gapKcal){
+  const v = nutri100(f);
+  if(!(v.kcal > 0)) return 0;
+  const p = (typeof PORTIONS !== "undefined") ? PORTIONS[f.name] : null;
+  const lo = p ? p.g * 0.5 : 50;
+  const hi = p ? p.g * 1.5 : 150;
+  let g = Math.min(Math.max(gapKcal, 0) * 0.5, SUGGEST_MAX_KCAL) / (v.kcal / 100);
+  g = (g >= 50) ? Math.round(g / 10) * 10 : Math.round(g / 5) * 5;
+  return Math.round(Math.max(lo, Math.min(hi, g)));
+}
+/* 两个候选池，全部按 schema 类目 + 营养密度划，不写食物名单。
+   protein：每 100g 热量 ≤220（排除肥肉/油脂/坚果）、每 100g 蛋白 ≥15（排除血制品、
+            鸡蛋清这类「密度高但一份蛋白量太少」的）、且每 100 kcal ≥10g 蛋白。
+   carb   ：每 100g 热量 ≤200、每 100g 碳水落在 15~26g。
+            这个区间就是「熟制主食」的位置：米饭 25.5、意大利面 25、玉米 23、红薯 21。
+            超过 26g 的必然是糯米/脱水/压缩制品 —— 糯米（熟）27、年糕 33、干百合 38、
+            糯米饭 40、干燕麦 61 —— 它们碳水密度看着最高，但一碗就接近 400 kcal，
+            升糖也快，不适合当「补一口」的建议。
+            （代价：馒头/面包这类 100g 就有 40g+ 碳水的主食被挡在外面。可接受 ——
+             「补主食」用碗/份给量时，米饭面条比馒头更能算准。）
+   两个池都额外要求「一份 ≥30g」：馄饨/饺子这种 20g 一件的，按「份」给量会算成
+   「加 1 个半馄饨 · 58 kcal」，不成句子。没有份量参照的按 30–150g 给量，不受此限。
+   两个池都先过忌口（含用户自建食物，因为走的是 allFoods()）。
+   ⚠ carb 池带兜底：万一以后食物库调整导致收紧后的池为空，退回放宽版而不是整块消失。 */
+function suggestPools(){
+  const avoid = (recipePref && recipePref.avoid) || [];
+  const portionOk = f => {
+    if(typeof PORTIONS === "undefined") return true;
+    const p = PORTIONS[f.name];
+    return !p || p.g >= 30;
+  };
+  const base = allFoods().filter(f=>
+    f && f.name && !isServingFood(f) && nutri100(f).kcal > 0 &&
+    portionOk(f) && !isAvoided(f, avoid));
+  const carbBase = f => {
+    const v = nutri100(f);
+    return f.category === "主食" && v.kcal <= 200 && v.carb >= 15 && proteinDensity(f) < 10;
+  };
+  const carbTight = base.filter(f=> carbBase(f) && nutri100(f).carb < 26);
+  return {
+    protein: base.filter(f=>{
+      const v = nutri100(f);
+      return f.category === "蛋白质" && v.kcal <= 220 && v.protein >= 15 && proteinDensity(f) >= 10;
+    }),
+    carb: carbTight.length ? carbTight : base.filter(carbBase),
+  };
+}
+
+function renderFillSuggest(){
+  const box = document.getElementById("fillSuggest");
+  if(!box || !recipeMeals || !recipeMeals.meals) return;
+  const target = recipeTarget();
+  const eaten = dailyIntakeSummary();
+  const r = remainingOf(target.kcal, eaten.kcal);
+
+  // ① 今天没有任何记录 → 不猜建议，改为引导记录（这也顺手补上了首屏的空状态）
+  if(eaten.count === 0){
+    box.innerHTML = `
+      <div class="fill-suggest">
+        <div class="fs-head"><span class="fs-title">接下来补点什么</span></div>
+        <div class="fs-hint lead">今天还没记录任何食物。吃完在「🍽 记食物」里点一下，这里就会告诉你还差什么、下一口该补什么。</div>
+      </div>`;
+    return;
+  }
+  // ② 额度用完或已超 → 明确说「不用补」，而不是硬凑一条
+  if(r.over || r.remain < 80){
+    // 剩余恰好为 0 时不能显示「还差 0 kcal」（读起来像没算完），单独给一句
+    const gap = r.over ? `已超 <b>${r.abs}</b> kcal`
+              : (r.remain > 0 ? `还差 <b>${r.remain}</b> kcal` : "刚好达标");
+    const msg = r.over
+      ? "今天的热量已经超了。先不加餐 —— 剩下的交给明天，不用今天补回来。"
+      : (r.remain > 0 ? "今天的额度基本用完了，再补一口就超。不补完全可以。"
+                      : "今天的额度刚好用完，不用再补了。");
+    box.innerHTML = `
+      <div class="fill-suggest">
+        <div class="fs-head">
+          <span class="fs-title">接下来补点什么</span>
+          <span class="fs-gap">${gap}</span>
+        </div>
+        <div class="fs-hint lead">${msg}</div>
+      </div>`;
+    return;
+  }
+
+  // ③ 缺口超过一顿正餐的量 → 用户是「还没吃够」，不是「要补一口」。
+  //    此时给「加 1 碗米饭」是把一天的量摊到一口上，属于假装有用。
+  //    阈值用分餐比例算（37.5% × 全天目标），不用写死 700 这种魔法数字。
+  const oneMealK = Math.round(target.kcal * mealSplitOf("午餐"));
+  if(r.remain > oneMealK){
+    box.innerHTML = `
+      <div class="fill-suggest">
+        <div class="fs-head">
+          <span class="fs-title">接下来补点什么</span>
+          <span class="fs-gap">还差 <b>${r.remain}</b> kcal</span>
+        </div>
+        <div class="fs-hint lead">今天还剩 <b>${r.remain}</b> kcal —— 这已经超过一顿正餐的量了。先照计划把剩下的吃完，再回来看这里：它会告诉你最后一两口该补什么。</div>
+      </div>`;
+    return;
+  }
+
+  // ④ 哪项营养落后就补哪项：蛋白完成度明显落后于热量完成度 → 补蛋白；否则补主食
+  const kcalPct = target.kcal > 0 ? eaten.kcal / target.kcal : 0;
+  const protPct = target.protein > 0 ? eaten.protein / target.protein : 1;
+  const wantProtein = protPct < kcalPct - 0.05;
+
+  const pools = suggestPools();
+  const keyMap = wantProtein ? FOOD_POOLS.PROTEIN_KEYS : FOOD_POOLS.STAPLE_KEYS;
+  const keys = Object.keys(keyMap);
+  const scoreFn = wantProtein ? proteinDensity : (f=> nutri100(f).carb);
+  const classFn = f => classOf(f, keyMap, keys);
+  const pool = wantProtein ? pools.protein : pools.carb;
+
+  let items = pickRepresentatives(pool, classFn, scoreFn, 3);
+  // 用户在食谱里选过「肉/蛋白」偏好 → 优先出那一类（选了鸡，补蛋白当然先给鸡）
+  const prefKey = wantProtein && recipePref ? recipePref.protein : "";
+  if(prefKey && keys.includes(prefKey)){
+    const all = pickRepresentatives(pool, classFn, scoreFn, 99);
+    const hit = all.filter(f=> classFn(f) === prefKey);
+    if(hit.length) items = hit.concat(all.filter(f=> classFn(f) !== prefKey)).slice(0, 3);
+  }
+
+  // 换算克数，并丢掉「吃不满一口」的（<50 kcal 不值得单独列一行）
+  fillSuggestItems = items.map(f=>{
+    const g = suggestGrams(f, r.remain);
+    const v = foodKcal(f, g);
+    return { name:f.name, g, kcal:Math.round(v.kcal), protein:Math.round(v.protein), origin:f };
+  }).filter(it=> it.g > 0 && it.kcal >= 50);
+
+  if(!fillSuggestItems.length){ box.innerHTML = ""; return; }
+
+  const gapP = Math.max(0, Math.round(target.protein - eaten.protein));
+  // 剩余热量已经在右上角 fs-gap 里写了，正文不再重复一遍 —— 同一屏说两遍同一个数字是噪音
+  const hint = wantProtein
+    ? `蛋白还差 <b>${gapP}g</b> —— 比热量落后得多，先补蛋白：`
+    : `蛋白已经够了 —— 补点主食最直接：`;
+
+  box.innerHTML = `
+    <div class="fill-suggest">
+      <div class="fs-head">
+        <span class="fs-title">接下来补点什么</span>
+        <span class="fs-gap">还差 <b>${r.remain}</b> kcal</span>
+      </div>
+      <div class="fs-hint lead">${hint}</div>
+      <div class="fs-list">
+        ${fillSuggestItems.map((it, i)=>`
+          <div class="fs-item">
+            <div class="fsi-main">
+              <div class="fsi-name">${showNameOf(it.name)}${originBadge(it.origin)}</div>
+              <div class="fsi-meta">${humanizeGrams(it.name, it.g)} · ${it.kcal} kcal · 蛋白 ${it.protein}g</div>
+            </div>
+            <div class="fsi-add" onclick="addSuggestToIntake(${i})">加入</div>
+          </div>`).join("")}
+      </div>
+      <div class="fs-hint">下面写的是一次加菜/加餐的量 —— 不够可以再点几次。加入后会记进今日摄入，「还能吃」同步变小。</div>
+    </div>`;
+}
+
+/* 把一条建议加入今日摄入（等同在「🍽 记食物」里手动加一份） */
+function addSuggestToIntake(i){
+  const s = fillSuggestItems[i];
+  if(!s) return;
+  foodList = loadTodayItems();   // 先载入今天已记录，避免覆盖
+  foodList.push({ name:s.name, grams:s.g });
+  saveTodayItems();
+  showToast(`已加入 ${showNameOf(s.name)} ${s.g}g（约 ${s.kcal} kcal）`);
+  // 走 renderExecBar()：「还能吃」重算 + 建议块跟着重算（其末尾会调 renderFillSuggest），
+  // 两处口径绑在一起，不会出现一边变了另一边没变
+  renderExecBar();
 }
 
 function planGoal(planId){
@@ -3983,7 +4351,14 @@ function buildRecipe(){
       </div>
     </div>
 
-    <div id="execBar"></div>
+    <!-- ⚠ class="exec-bar" 不能省：卡片底色/内边距/圆角/与下块的 14px 间距全挂在 .exec-bar 上，
+         而 renderExecBar() 只往里面塞 .exec-top/.exec-track/.exec-chips，自己不带这个类。
+         少写一次，执行条就变成一条没有卡片、紧贴下方建议块的裸文字（曾真实发生）。 -->
+    <div id="execBar" class="exec-bar"></div>
+
+    <!-- 「接下来补点什么」紧贴执行条：「还能吃 420 kcal」的下一句必然是「那吃什么」，
+         两句分开写会各算各的口径（曾经的教训：展示口径 ≠ 计算口径） -->
+    <div id="fillSuggest"></div>
 
     <div class="meal-tabs">${mealsOrder.map(tab).join("")}</div>
 
@@ -4468,7 +4843,7 @@ function renderRecipeMeals(){
         return `
         <div class="food-row">
           <div style="flex:1;">
-            <div class="fr-name">${it.n}</div>
+            <div class="fr-name">${showNameOf(it.n)}${originBadge(fd)}</div>
             <div class="fr-meta">${fd ? humanizeGrams(it.n, it.g) : ("约 "+roundish(it.g)+"g")} · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
           </div>
           <div class="fr-kcal">${Math.round(v.kcal)} kcal</div>
@@ -4549,7 +4924,7 @@ function renderFoodPicker(meal){
       <div id="mealFoodOptions" style="max-height:200px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         ${foods.slice(0,40).map(f=>`
           <div class="food-item" onclick="pickMealFood('${meal}','${f.name}')">
-            <div class="fi-name">${f.name}</div>
+            <div class="fi-name">${showName(f)}${originBadge(f)}</div>
             <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
           </div>`).join("")}
       </div>
@@ -4581,7 +4956,7 @@ function renderMealFoodOptions(meal){
   const foods = allFoods().filter(f=>foodMatchKw(f, kw));
   document.getElementById("mealFoodOptions").innerHTML = foods.slice(0,40).map(f=>`
     <div class="food-item ${pickedMealFood===f.name?"sel":""}" onclick="pickMealFood('${meal}','${f.name}')">
-      <div class="fi-name">${f.name}</div>
+      <div class="fi-name">${showName(f)}${originBadge(f)}</div>
       <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
     </div>`).join("");
 }
@@ -4847,8 +5222,8 @@ function renderFoodCalc(){
           ? (f.protein!=null ? `蛋白${f.protein}g · 碳水${f.carb}g · 脂肪${f.fat}g` : `热量 ${f.kcal} kcal/${unitShow}`)
           : `蛋白${fmtRange(f.protein)} · 碳水${fmtRange(f.carb)} · 脂肪${fmtRange(f.fat)}`;
         return `
-        <div class="food-item ${pickedFood===f.name?"sel":""}" onclick="pickFoodItem('${f.name}')">
-          <div class="fi-name">${f.name}${isSrv?`<span style="font-size:10px;color:var(--sub);font-weight:400;">·${f.brand}</span>`:""}</div>
+        <div class="food-item ${pickedFood===f.name?"sel":""}" data-food="${f.name}" onclick="pickFoodItem('${f.name}')">
+          <div class="fi-name">${showName(f)}${originBadge(f)}</div>
           <div class="fi-kcal"><b>${kcalShow}</b> kcal/${unitShow}</div>
           <div class="fi-kcal" style="font-size:11px;">${macroShow}</div>
         </div>`;
@@ -4939,10 +5314,12 @@ function addCombo(idx){
 function pickFoodItem(name){
   pickedFood = name;
   renderFoodPickerBox();
-  // 更新高亮
-  document.querySelectorAll("#foodGrid .food-item").forEach(el=>el.classList.remove("sel"));
-  const items = document.querySelectorAll("#foodGrid .food-item");
-  items.forEach(el=>{ if(el.querySelector(".fi-name") && el.querySelector(".fi-name").textContent===name) el.classList.add("sel"); });
+  // 更新高亮：按 data-food 比对，不能用 .fi-name 的 textContent ——
+  // 名字后面还挂着「官方/估算/自定义」徽章，textContent 永远不等于纯名字，
+  // 用 textContent 比对会导致选中态静默失效
+  document.querySelectorAll("#foodGrid .food-item").forEach(el=>{
+    el.classList.toggle("sel", el.getAttribute("data-food") === name);
+  });
 }
 
 function renderFoodPickerBox(){
@@ -4994,7 +5371,8 @@ function renderFoodPickerBox(){
     <div class="fp-mask" onclick="closeFoodPicker()"></div>
     <div class="fp-sheet">
       <div class="sheet-grab"></div>
-      <div class="fp-name">${fd.name} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
+      <div class="fp-name">${showName(fd)}${originBadge(fd)} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
+      ${originNote(fd)}
       ${portionBox}
       ${gramsRow}
       ${adjBox}
@@ -5142,7 +5520,7 @@ function renderFoodListSummary(){
       return `
       <div class="food-row" style="padding:10px 14px;">
         <div style="flex:1;">
-          <div class="fr-name" style="font-size:13px;">${it.name}</div>
+          <div class="fr-name" style="font-size:13px;">${showNameOf(it.name)}${originBadge(fd)}</div>
           <div class="fr-meta">${metaShow}</div>
           <div class="fls-qty-row">${qtyInput}</div>
         </div>
