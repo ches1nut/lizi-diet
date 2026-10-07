@@ -4636,7 +4636,6 @@ function generateMeals(goal, weight, pref, seed, target){
   const isCut = goal === "减脂";
   const FAT_PROTEIN = ["牛腩（熟）","肥牛卷（熟）","五花肉（熟）","腊肉","午餐肉","火腿肠","鹅肉（熟）","鸭肉（去皮熟）"];
   const HIGH_FAT_PROTEIN = FAT_PROTEIN;  // 减脂/日常都尽量避开
-  const REFINED_STAPLE = ["油条","烧饼","年糕","糯米（熟）","白面包","凉皮"];
 
   // 水果不参与生成：曾经的 fruitPool（+ 配套高糖水果黑名单 HIGH_SUGAR_FRUIT）
   // 已随「水果不再作为固定角色塞进某顿饭」一起删除 —— 见下面生成循环里的说明。
@@ -4649,13 +4648,34 @@ function generateMeals(goal, weight, pref, seed, target){
   let proteinPool = pref.protein ? (filterByPref("蛋白质", pref.protein) || poolByCategory("蛋白质")) : poolByCategory("蛋白质");
   let staplePool  = pref.staple  ? (filterByPref("主食", pref.staple)   || poolByCategory("主食"))   : poolByCategory("主食");
 
-  // 减脂/日常：过滤掉高脂蛋白；精制主食在减脂期排除
+  // 减脂/日常：过滤掉高脂蛋白
   if(isCut || goal === "日常健康"){
     proteinPool = proteinPool.filter(f=>!HIGH_FAT_PROTEIN.includes(f.name));
   }
-  if(isCut){
-    staplePool = staplePool.filter(f=>!REFINED_STAPLE.includes(f.name));
-  }
+
+  /* 正餐主食的「能不能直接吃」过滤（所有方案都适用，不只减脂）。
+     取证：减脂方案下 400 次生成、午晚餐主食 800 次抽选中，
+     27.5% 抽到的是「薏米（生）81g」「挂面（干）86g」「红米（生）94g」——
+     用户拿到的是生米干面，还得自己泡/煮、再换算成熟重，这条建议没法直接执行。
+     两条判据都从现有数据推，不维护食物名单：
+
+     ① 原料形态：库里用名字后缀标了加工状态 ——（熟）＝已熟制，盛一碗就能吃；
+        （生）/（干）＝原料。排除 23/89 个主食。
+        ⚠ 只作用于**正餐**池：早餐主食走的是 BREAKFAST_STAPLE 白名单，
+        里面的「燕麦片（干）」泡牛奶吃是正常吃法，不能一起排掉。
+     ② 高油高糖点心：每 100g 热量 ≥280 且脂肪 ≥5 的「主食」基本是糕点
+        —— 油条 383/17、枣糕 320/9、八宝饭 300/7、烧饼 300/9。减脂期尤其不该推。
+        反例守卫：馒头 223/1.1、米饭 116/0.3、全麦面包 246/3 都不受影响。
+        ⚠ 这取代了原来手写的 REFINED_STAPLE（6 个名字）—— 那份名单既覆盖不全
+        （枣糕/八宝饭/元宵/糍粑 全漏），也必随食物库漂移，和 HIGH_FAT_PROTEIN 同一种病。 */
+  const RAW_FORM_STAPLE = /（生）$|（干）$/;
+  const isReadyStaple = f => {
+    if(RAW_FORM_STAPLE.test(f.name)) return false;
+    const v = per100(f);
+    return !(v.kcal >= 280 && v.fat >= 5);
+  };
+  const readyPool = staplePool.filter(isReadyStaple);
+  if(readyPool.length) staplePool = readyPool;   // 兜底：绝不让池子被筛空
 
   // 蛋白源质量筛选（数据驱动，取代上面那份会与食物库漂移的硬编码名单）：
   // 所有 goal 都剔除「凑够蛋白就会把热量撑爆」的低质量蛋白源。
@@ -4665,12 +4685,45 @@ function generateMeals(goal, weight, pref, seed, target){
   const qualityPool = proteinPool.filter(f => proteinQuality(f) >= MIN_PROTEIN_QUALITY);
   if(qualityPool.length) proteinPool = qualityPool;   // 兜底：绝不让池子被筛空
 
-  // 主食碳水密度下限：粥/南瓜这类每 100g 碳水不足 10g 的食材当唯一主食时，
-  // 要凑够碳水得吃 600g 以上，克数会被夹紧导致全天热量不达标。
-  // 这里只约束「生成器自动抽选」，用户仍可手动添加粥类。
-  const denseStaple = s => (per100(s).carb || 0) >= 10;
-  const densePool = staplePool.filter(denseStaple);
-  if(densePool.length) staplePool = densePool;
+  /* ── 主食克数上限：为什么不能写死 350g/70kg ──
+     主食是这份餐单里唯一的碳水来源，克数由本餐碳水目标反解（solveBy(f,"carb",tC)）。
+     所以「主食能吃多少克」本质上取决于「这个食材的碳水密度」：
+       干米干面（薏米（生）碳水 75g/100g）→ 390g 就能交 292g 碳水
+       熟米饭（碳水 26g/100g）           → 同样 292g 碳水要 1123g
+     旧的写死上限是照着**干料**标定的，而现实里人吃的是熟食。一旦把「（生）/（干）」
+     原料排掉（见上面的 isReadyStaple），主食池整体从 50–100g 碳水档掉到 20–30g 档，
+     同一个 390g 上限能交付的碳水就只剩三分之一，全天碳水与热量都缺一大块补不回来。
+     取证：把碳水目标从 390g 提到 498g，生成热量只从 2747 涨到 2752 —— 杠杆 100% 饱和。
+
+     改为按碳水密度推导：交够本餐碳水目标所需克数（留 15% 余量给「食材热量密度 ≠ 纯宏量折算」），
+     与体重口径取较大者，再用 STAPLE_CEIL_G 收口。 */
+  // 一顿主食的绝对顶（≈4 碗米饭）。连最稠的熟主食也够用：米饭（熟）交 166g 碳水只要 638g。
+  // 它同时用在两处：池子筛选（扛不起就换人）+ 克数夹断（扛得起也最多这么多）。
+  const STAPLE_CEIL_G = 800;
+  // 交够 tC 克碳水所需的食材克数；密度为 0（按份产品/数据缺失）时返回 Infinity → 交由调用方兜底
+  const gramsForCarb = (fd, tC)=>{
+    const cpg = per100(fd).carb / 100;
+    return (tC > 0 && cpg > 0) ? tC / cpg : Infinity;
+  };
+  // 本餐主食克数上限。⚠ tC 为空（旧回退路径：不传 target）时沿用体重口径 LIM.staple[1]，
+  // 不能因为 gramsForCarb 返回 Infinity 而把上限放大到 800 —— 那条路径没有热量目标可瞄准，
+  // 放大上限只会让份量无理由地变大。
+  const stapleHi = (fd, tC)=> (tC > 0)
+    ? Math.min(STAPLE_CEIL_G, Math.max(LIM.staple[1], Math.ceil(gramsForCarb(fd, tC) * 1.15)))
+    : LIM.staple[1];
+
+  /* ── 「这个食材配不配当主食」：判据是**扛不扛得起本餐碳水**，不是「含不含碳水」 ──
+     旧的写法是一条静态密度门槛（碳水 ≥12g/100g），粒度和目标脱钩：它放过了土豆（17），
+     实测仍会抽出「土豆（熟）390g 顶格」，占着主食位只交 66g 碳水；
+     对增肌餐（午餐碳水目标 166g）土豆要 976g 才够，同样拦不住。
+     新判据随目标自动松紧：需要的克数超过 STAPLE_CEIL_G 就算扛不起 →
+       减脂餐碳水目标小，土豆/紫薯照样当主食；
+       增肌餐目标大，自动收窄到米饭/面条一类谷物。
+     ⚠ 只约束「生成器自动抽选」，用户仍可手动添加粥类/淀粉蔬菜。 */
+  const carrierPool = (pool, tC)=>{
+    const ok = pool.filter(f=> gramsForCarb(f, tC) <= STAPLE_CEIL_G);
+    return ok.length ? ok : pool;   // 兜底：全被筛掉就退回原池，绝不让某餐没主食
+  };
 
   // 正餐蛋白池排除「乳制品」（牛奶、酸奶、奶酪、乳清蛋白、豆浆属早餐/加餐），
   // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除
@@ -4733,12 +4786,15 @@ function generateMeals(goal, weight, pref, seed, target){
     const isBreakfast = meal === "早餐";
     // 早餐用早餐专属池，正餐用全量池
     const pPool = isBreakfast ? breakfastProteinPool : proteinPool;
-    const sPool = isBreakfast ? bStaple : staplePool;
     // 本餐承担的 macro 目标（按分餐比例拆分全天目标）
     const split = mealSplitOf(meal);
     const tP = target ? target.protein * split : null;
     const tC = target ? target.carb    * split : null;
     const tF = target ? target.fat     * split : null;
+    // 主食池按「扛不扛得起本餐碳水」收窄。⚠ 必须在 tC 之后才定：判据本身以碳水目标为输入。
+    // 早餐同样适用 —— BREAKFAST_STAPLE 白名单里有南瓜（熟）/小米粥/白粥，它们的碳水密度
+    // 只够当配菜，占着早餐主食位时实测只交 101 kcal（南瓜 390g 顶格）。
+    const sPool = carrierPool(isBreakfast ? bStaple : staplePool, tC);
 
     // 单项克数安全网：单品最多承担本餐热量预算的 share 比例。
     // 防止低密度/高热量食材反解出荒谬克数（570g 五花肉、900g 米饭这类）。
@@ -4753,11 +4809,12 @@ function generateMeals(goal, weight, pref, seed, target){
     if(roles["主食"]){
       const f = pick(sPool, usedStaple);
       if(f){
+        const hi = stapleHi(f, tC);   // 上限随碳水密度推导，不再写死 LIM.staple[1]
         let g = solveBy(f, "carb", tC);
         if(g == null) g = roles["主食"] * ratio;
         g = capByShare(g, f, 0.65);
-        items.push({n:f.name, g:Math.round(clamp(g, LIM.staple[0], LIM.staple[1]))});
-        stapleRefs.push({meal, idx:items.length-1, fd:f});
+        items.push({n:f.name, g:Math.round(clamp(g, LIM.staple[0], hi))});
+        stapleRefs.push({meal, idx:items.length-1, fd:f, hi});
       }
     }
     if(roles["蛋白"]){
@@ -4798,7 +4855,9 @@ function generateMeals(goal, weight, pref, seed, target){
         const perG = per100(ref.fd).kcal / 100;
         if(perG <= 0) return;
         const it = out.meals[ref.meal][ref.idx];
-        it.g = Math.round(clamp(it.g + (resid * sp) / perG, LIM.staple[0], LIM.staple[1]));
+        // ⚠ 上限必须用 ref.hi（本餐按碳水密度推导的），不能再用写死的 LIM.staple[1] ——
+        // 那是照干米干面标定的，会把熟主食二次掐死，等于把上面刚做对的推导又抹掉
+        it.g = Math.round(clamp(it.g + (resid * sp) / perG, LIM.staple[0], ref.hi));
       });
     }
   }
