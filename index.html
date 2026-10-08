@@ -4614,6 +4614,14 @@ function generateMeals(goal, weight, pref, seed, target){
     veg:     [Math.round(80 * ratio), Math.round(300 * ratio)],
     fat:     [Math.round(3  * ratio), Math.round(20  * ratio)],
   };
+  /* ── 蛋白位「一盘菜的起码份量」：低于这个克数就不算一道菜（一小撮而已），
+        与 LIM.protein[0]（静态下限 50g/70kg）是两个不同的问题，别混：
+          LIM.protein[0] 是**盘子里的份量下限**，但它本身就在供能，硬套会顶爆整餐；
+          PROTEIN_MIN_DISH_G 是**值不值得单列**的门槛，只在选人阶段用（见 proteinCarrier）。
+        取值 = 旧跳过判据里那个 0.5 系数（50g×0.5 = 25g/70kg，78kg → 28g）——
+        数值沿用，但作用点从「选完之后决定跳不跳」挪到了「选之前先把食材筛掉」，
+        这一步挪动正是本次修复的实质（见 proteinCarrier 上方说明）。 */
+  const PROTEIN_MIN_DISH_G = Math.round(25 * ratio);
   // 每 100g 营养密度（foodKcal 已兼容「区间数组」与「按份产品」两种数据形态）
   const per100 = fd => foodKcal(fd, 100);
   // 按某营养素目标反解克数；按份产品/密度为 0 时返回 null，由调用方回退结构克数
@@ -4640,10 +4648,34 @@ function generateMeals(goal, weight, pref, seed, target){
   // 水果不参与生成：曾经的 fruitPool（+ 配套高糖水果黑名单 HIGH_SUGAR_FRUIT）
   // 已随「水果不再作为固定角色塞进某顿饭」一起删除 —— 见下面生成循环里的说明。
   // 用户想加水果时走「＋ 添加食物」或「加餐」自行添加。
-  const vegPool = poolByCategory("蔬菜");
+  /* ── 蔬菜池：先剔掉「结构克数放不下」的浓缩形态 ──
+     蔬菜的克数是结构给定的（结构克数 × 体重比例 ≈ 200–280g），是全餐里**唯一不由目标反解**的一项。
+     所以只要食材本身是「浓缩/干制」形态，这个固定克数就会把它放大 20 倍：
+       紫菜（干）蛋白 29g/100g、碳水 25g/100g、230 kcal/100g
+         → 223g 就是 **65g 蛋白 + 56g 碳水**，既是宏量炸弹，也是荒谬份量（干紫菜一次只用 5–10g）
+       羊肚菌（干）290 / 发菜（干）250 / 竹荪（干）245 kcal/100g 同理
+       大蒜 140 kcal、碳水 29g/100g → 223g 交出 65g 碳水；它是调味品，不是一道 200g 的菜
+     实测取证（膳食指南，蛋白目标 66g/天）：
+       晚餐「白面包 170g | 紫菜（干）223g | 黄油 16g」  → P 80/25 = **324%**
+       午餐「紫薯 515g   | 竹荪（干）223g | 杏仁 22g」   → P 53/25 = 214%、碳水 165%
+
+     判据用**能量密度**，不用名字名单 —— 名单必随食物库漂移（HIGH_FAT_PROTEIN 写「五花肉（熟）」
+     而库里叫「猪五花肉（生）」就是这么失效的）。数据本身给了一条硬空档：
+       本库蔬菜 101 项里，97 项鲜菜全部 ≤ 55 kcal/100g（最高是凉薯 55）；
+       60–120 kcal/100g **一项都没有**（完全空白）；
+       再往上恰好就是上面那 5 项浓缩形态。
+     所以门槛取 120 kcal/100g：中间隔着 65 kcal 的空档，零误伤。
+     ⚠ 这不是「调参」，是把「蔬菜」的判据写清楚：一盘 200g+，能量密度必须低。
+     ⚠ 主食池的 isReadyStaple 是同一种病（那边排「（生）/（干）」原料形态 + 高油高糖点心）。 */
+  const VEG_CEIL_KCAL = 120;
+  const serveAsVeg = f => per100(f).kcal <= VEG_CEIL_KCAL;
+  const rawVegPool = poolByCategory("蔬菜");
+  const vegPool = (()=>{ const ok = rawVegPool.filter(serveAsVeg); return ok.length ? ok : rawVegPool; })();
   const fatPool = (isCut ? ["橄榄油","菜籽油","牛油果","核桃","杏仁"] : ["橄榄油","花生油","芝麻油","牛油果","核桃","杏仁","黄油","猪油"])
     .map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
-  const breakfastVeg = FOOD_POOLS.BREAKFAST_VEG.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+  const rawBreakfastVeg = FOOD_POOLS.BREAKFAST_VEG.map(n=>FOODS.find(f=>f.name===n)).filter(Boolean);
+  // 早餐蔬菜是白名单，理论上已人工筛过，但仍走同一判据 —— 白名单也会随食物库扩充而失守
+  const breakfastVeg = (()=>{ const ok = rawBreakfastVeg.filter(serveAsVeg); return ok.length ? ok : rawBreakfastVeg; })();
 
   let proteinPool = pref.protein ? (filterByPref("蛋白质", pref.protein) || poolByCategory("蛋白质")) : poolByCategory("蛋白质");
   let staplePool  = pref.staple  ? (filterByPref("主食", pref.staple)   || poolByCategory("主食"))   : poolByCategory("主食");
@@ -4745,6 +4777,59 @@ function generateMeals(goal, weight, pref, seed, target){
     return ok.length ? ok : pool;   // 兜底：全被筛掉就退回原池，绝不让某餐没主食
   };
 
+  /* ── 「这个食材配不配当本餐的蛋白来源」：判据是**密度匹不匹配本餐蛋白缺口** ──
+     与上面主食池的 carrierPool 同构（那边判碳水，这边判蛋白），所以同样随目标自动松紧。
+     注意它是**双向**的 —— 两头都不配：
+       缺口大 → 密度太低的扛不起（牛奶 3.3g/100g 要 758g 才够 25g 蛋白）
+       缺口小 → 密度太高的也不配（一小撮就凑够了，「豆筋 4g」不成其为一道菜）
+     为什么必须**换人**而不是把上限调高：低密度蛋白源在**热量上**也扛不起，两个上限一个都不松。
+     算术验证（532 碳水渐降法，午餐蛋白目标 45g、本餐热量预算 599 kcal）：
+       北豆腐蛋白 8.1g/100g → 交 45g 要 556g = 545 kcal，占本餐热量预算的 91%
+       而 capByShare(g,f,0.55) 只许这一项吃 599×0.55 = 329 kcal → 折合上限 336g
+       两个上限（LIM.protein[1]=334g 与 capByShare）在这个方案上几乎重合 ——
+       所以「把 334g 调高」根本解决不了，它本来就被热量预算卡死。
+       实测后果：午餐蛋白 35/45 = 78%，且 334g 北豆腐顺带带入 18g 脂肪 → 这餐脂肪 181%。
+       换人之后：素鸡(18.0g/100g)只需 250g、豆干(16.0)281g，蛋白交得够，脂肪也不再被动带进来。
+
+     ⚠⚠ 下界那条（判断 g < PROTEIN_MIN_DISH_G）是**本次修复的实质**，别当成可有可无的调参 ——
+       旧代码把「份量太小 → 本餐不单列蛋白菜」这个决定放在**选完人之后**（见下面蛋白分支里
+       `if(g < LIM.protein[0] * 0.5)`）。而 g = 缺口 ÷ 密度，是**密度盲**的：
+         缺口 8.9g + 豆筋(40g/100g) → g = 22.3g → 判成「缺口很小」→ 跳过 → 那餐蛋白只有 69%
+       大缺口被高密度食材换算成了小克数，于是被误判为「缺口可忽略」。反过来 缺口 8.9g +
+       北豆腐(8.1) → g = 110g → 照常上菜。同一个缺口，两种结果 —— 判据落在了错误的量纲上。
+       修法：把这条下界挪到**选人之前**当筛选条件，池子里就只剩「份量落在合理区间」的食材：
+         缺口小 → 自动落到低密度源（豆腐/牛奶/酸奶），份量自然落在 27–55g，不需要跳过
+         缺口大 → 落在高密度源，份量落在 30–250g
+       这样「池子里的菜一定不会被跳过」成了不变式，跳过只在**兜底路径**（池被筛空）才可能发生。
+       取证（7 方案 × 20 种子 = 420 餐次，`qa-skip-probe.cjs`）：
+         修前 15 次跳过里 5 次是误跳（跳过之后该餐蛋白 69–90%），5 次的 g 分别是
+         22.3 / 23.2 / 20.5 / 11.1 / 25.3，全部 < 28 阈值，但真实缺口是 8.9 / 10.4 / 3.7 / 2.2 / 6.1g。
+
+     三条判据与主食池一一对应（①②正是 capByShare 夹断的两条边，③是补上的下界）：
+       ① 克数 → 交够缺口所需克数 ≤ LIM.protein[1]（单项绝对顶）
+       ② 热量 → 这份克数的热量 ≤ 本餐热量预算 × 0.55（与 capByShare 同一个系数）
+       ③ 份量 → 交够缺口所需克数 ≥ PROTEIN_MIN_DISH_G（够得着一道菜的起码份量）
+     取证（7 方案 × 20 种子，共 420 个餐次，`dbg-protein-ceil.cjs`）：
+       改造前 69/420 餐次（16.4%）蛋白未达 90%，中位 78%、最差 51%；
+       其中**早餐 50 次**（占 72%）、午餐 15、晚餐 4；
+       根因 72% 涉及 334g 上限、17% 是热量预算 —— 元凶正是早餐蛋白池的牛奶/豆浆/酸奶：
+         减脂早餐蛋白缺口 25g，低脂牛奶要 758g 才交得够，334g 上限只能交 11g → 整餐 59%。
+     ⚠ 只约束「生成器自动抽选」，用户仍可手动添加牛奶/豆浆/豆腐。
+     ⚠ 池子全被筛掉时退回原池，绝不让某餐没蛋白。 */
+  const proteinCarrier = (pool, gap, mealKcal)=>{
+    if(gap == null) return pool;            // 旧回退路径（不传 target）不筛，行为与改动前一致
+    const ok = pool.filter(f=>{
+      const v = per100(f);
+      if(!(v.protein > 0)) return true;     // 密度缺失（按份产品）→ 交由调用方兜底
+      const g = gap / (v.protein / 100);    // 交够缺口所需克数
+      if(g > LIM.protein[1]) return false;                                   // ① 单项克数上限扛不起
+      if(mealKcal && v.kcal > 0 && g * v.kcal / 100 > mealKcal * 0.55) return false;   // ② 吃光本餐热量预算
+      if(g < PROTEIN_MIN_DISH_G) return false;                               // ③ 太浓：一小撮就够，不成一道菜
+      return true;
+    });
+    return ok.length ? ok : pool;
+  };
+
   // 正餐蛋白池排除「乳制品 + 豆浆」（牛奶、酸奶、奶酪、乳清蛋白粉、豆浆属早餐/加餐），
   // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除。
   //
@@ -4792,14 +4877,24 @@ function generateMeals(goal, weight, pref, seed, target){
   // 放宽是必要的（宁可放宽也不能让某餐没菜），但必须让用户看见，不能静默失效。
   let avoidRelaxed = false;
 
+  /* ── 忌口过滤（pick 的第一步，抽出来复用） ──
+     ⚠ 这一步必须能**独立先做**，因为蛋白池收窄（proteinCarrier）要排在它之后。
+       否则两者会打架：收窄判据只看营养密度、不看忌口，可能把池子收成清一色忌口项 ——
+       于是 pick 的忌口过滤发现「剔完为空」，就按设计放宽忌口，把忌口项端上桌。
+       实测（忌口=乳制品+蛋，减脂早餐，`dbg-avoid-egg.cjs`）：25 次生成里 2 次端出
+       「鸡蛋清」「鸡蛋（全蛋）」，且这 2 次 avoidRelaxed 都为 true —— 忌口被静默绕过。
+       根因不是放宽逻辑（它本身是对的），而是**顺序**：收窄必须建立在「已尊重忌口」的池子上。
+       剔完为空则退回原池 —— 宁可忽略某条忌口，也不能让某一餐没菜（既有行为，保留）。 */
+  const avoidBase = (pool)=>{
+    if(!avoidList.length) return pool;
+    const allowed = pool.filter(f=>!isAvoided(f, avoidList));
+    if(allowed.length) return allowed;
+    avoidRelaxed = true;   // 池被剔空 → 只能放宽
+    return pool;
+  };
+
   function pick(pool, used){
-    // 先剔除忌口项；剔完为空则退回原池 —— 宁可忽略某条忌口，也不能让某一餐没菜
-    let base = pool;
-    if(avoidList.length){
-      const allowed = pool.filter(f=>!isAvoided(f, avoidList));
-      if(allowed.length) base = allowed;
-      else avoidRelaxed = true;   // 池被剔空 → 只能放宽
-    }
+    const base = avoidBase(pool);
     const avail = base.filter(f=>!used.has(f.name));
     const src = avail.length ? avail : base;  // 若都抽过了则允许重复
     const f = src[Math.floor(rand() * src.length)];
@@ -4813,8 +4908,6 @@ function generateMeals(goal, weight, pref, seed, target){
     const roles = struct[meal];
     const items = [];
     const isBreakfast = meal === "早餐";
-    // 早餐用早餐专属池，正餐用全量池
-    const pPool = isBreakfast ? breakfastProteinPool : proteinPool;
     // 本餐承担的 macro 目标（按分餐比例拆分全天目标）
     const split = mealSplitOf(meal);
     const tP = target ? target.protein * split : null;
@@ -4870,7 +4963,35 @@ function generateMeals(goal, weight, pref, seed, target){
         stapleRefs.push({meal, idx:items.length-1, fd:f, hi});
       }
     }
+    /* ── 蔬菜：**先入账、后入列** ──
+       蔬菜的克数是结构给定的（结构克数 × 体重比例），不受任何 macro 目标驱动，
+       所以它是这份餐单里**唯一确定**的一项 —— 正确的顺序是先把它记进本餐账本，
+       再让蛋白位去补剩下的缺口（主食在前，因为它自己带进来的蛋白也会被蛋白位扣掉）。
+       ⚠ 旧顺序（主食 → 蛋白 → 蔬菜）会把蔬菜带进来的蛋白变成**纯超出**，
+         而蛋白位已经解完了，没有任何角色能让出这部分：
+           午餐「糙米 309g(8g) | 龙利鱼 203g(37.6g) | 海茸 223g(2g)」→ P 46/44 = 106%
+           早餐「红薯 257g(4g) | 鸡蛋清 230g(25g)   | 菠菜 111g(3.2g)」→ P 32/29 = 109%
+         每餐 2–3g、全天约 6g，相当于蛋白目标的 5%（减脂 117g 时）。
+       ⚠ 但**展示顺序必须仍是「主食 / 蛋白 / 蔬菜 / 脂肪」**（用户已习惯、测试也按此断言），
+         所以这里只算克数与入账，push 推迟到蛋白分支之后。 */
+    let vegItem = null;
+    if(roles["蔬菜"]){
+      const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set());
+      if(f){
+        const grams = Math.round(clamp(roles["蔬菜"] * ratio, LIM.veg[0], LIM.veg[1]));
+        vegItem = {n:f.name, g:grams};
+        track(f, grams);
+      }
+    }
     if(roles["蛋白"]){
+      /* 蛋白池按「密度匹不匹配本餐蛋白缺口」收窄（早餐用早餐专属池，正餐用全量池）。
+         ⚠ 必须先过忌口（avoidBase），再上载体判据 —— 顺序反了会让收窄后的池子清一色是忌口项，
+           从而触发 pick 的放宽路径、把忌口项端上桌（见 avoidBase 上方说明）。
+         ⚠ 必须在主食分支**之后**才定：缺口 = 本餐蛋白目标 − 主食已带入的蛋白（contrib.protein），
+           而 contrib 要到主食分支跑完才有值。所以这里不能再像以前那样在循环开头取池。
+         ⚠ 蔬菜也已入账（见上方「先入账、后入列」），所以这里的缺口是**真的**缺口。 */
+      const pBase = avoidBase(isBreakfast ? breakfastProteinPool : proteinPool);
+      const pPool = proteinCarrier(pBase, need(tP, contrib.protein), mealKcal);
       const f = pick(pPool, usedProtein);
       if(f){
         /* ⚠ 关键修复：扣掉主食（可能还有更早入账的项）已带的蛋白再反解。
@@ -4881,7 +5002,7 @@ function generateMeals(goal, weight, pref, seed, target){
         if(g == null) g = roles["蛋白"] * ratio;
         g = capByShare(g, f, 0.55);
 
-        /* ── 蛋白位最小份量也必须随目标自适应（与 stapleHi 的「取大」正好对称：这里取小） ──
+        /* ── 蛋白位最小份量：静态下限 LIM.protein[0] 也在供能，必须随目标自适应 ──
            静态下限 LIM.protein[0]（=50g/70kg，78kg → 56g）的存在意义是「盘子里看得见一道菜」。
            但它**本身就在供能**：56g 鸡胸/即食鸡胸肉 ≈ 17g 蛋白。于是当本餐蛋白目标只有 17–25g 时
            （日常健康方案蛋白仅占供能 12.5%，全天 66g），光靠下限就把整餐蛋白顶到 134–180%。
@@ -4889,17 +5010,21 @@ function generateMeals(goal, weight, pref, seed, target){
              晚餐「全麦面包 230g | 即食鸡胸肉 56g | 丝瓜 223g」→ P 37/25 = 150%
              早餐「馄饨（鲜肉）194g | 茅屋奶酪 56g   | 芹菜 89g」 → P 22/17 = 135%
            两处的 56g 都正好等于下限 —— 下限在供能，而不是「最小份量」。
-           这与上面主食上限是同一类病：**静态阈值不随目标缩放**。所以改法也对应：
-             ① 缺口所需克数连最小份量的一半都不到 → 这一份不构成一道菜，本餐不设蛋白位，
-                由主食/蔬菜承担（比硬塞一份 15g 的鸡蛋合理）；
-             ② 否则下限取「静态下限」与「缺口所需克数」的较小者 —— 菜还在，
-                但不为了凑满下限而超标。
+           这与上面主食上限是同一类病：**静态阈值不随目标缩放**。所以下限取
+           「静态下限」与「缺口所需克数」的较小者 —— 菜还在，但不为了凑满下限而超标。
+
+           ⚠ 至于「缺口小到不值得单列一道菜」这个决定，**已经上移到 proteinCarrier 里**当筛选条件
+             （见那里的判据③与 PROTEIN_MIN_DISH_G 上方说明）。留在这里的 `g <` 只是**兜底守卫**：
+             proteinCarrier 筛空时会退回原池，那时抽到的食材可能还是「太浓」的，
+             此时才靠这一句拦下，避免出现「豆筋 4g」这种不成立的份量。
+             换句话说：正常路径下这句永不触发（池里的菜都被③保证了份量 ≥ PROTEIN_MIN_DISH_G），
+             能走到这里说明池子被筛空过（极小的缺口 + 全池都偏浓）。
            ⚠ 热量的自洽性不受影响：主食/蔬菜带的蛋白本来就该由蛋白位让出来，
              让出来的克数会由收尾 kcal 校准补回主食（主食是热量杠杆）。
            ⚠ 已知小副作用：跳过时 pick() 已把该食材加进 usedProtein，当天其余餐次不会再抽到它。
              影响仅为「当天可选食材少一项」，不影响任何营养口径，故不做回滚（回滚要改 pick 的契约）。 */
-        if(g < LIM.protein[0] * 0.5){
-          // 本餐蛋白已基本达标，不单列蛋白菜
+        if(g < PROTEIN_MIN_DISH_G){
+          // 兜底守卫：连一道菜的起码份量都不到，本餐不单列蛋白菜（正常路径见 proteinCarrier 判据③）
         } else {
           const lo = Math.min(LIM.protein[0], Math.ceil(g));
           const grams = Math.round(clamp(g, lo, LIM.protein[1]));
@@ -4908,14 +5033,8 @@ function generateMeals(goal, weight, pref, seed, target){
         }
       }
     }
-    if(roles["蔬菜"]){
-      const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set());
-      if(f){
-        const grams = Math.round(clamp(roles["蔬菜"] * ratio, LIM.veg[0], LIM.veg[1]));
-        items.push({n:f.name, g:grams});
-        track(f, grams);   // 蔬菜也带碳水/蛋白（绿叶菜、菌菇），必须计入
-      }
-    }
+    // 蔬菜已在上方入账（见「先入账、后入列」），这里按展示顺序补进列表
+    if(vegItem) items.push(vegItem);
     if(roles["脂肪"]){
       const f = pick(fatPool, new Set());
       if(f){
