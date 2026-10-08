@@ -4725,15 +4725,24 @@ function generateMeals(goal, weight, pref, seed, target){
     return ok.length ? ok : pool;   // 兜底：全被筛掉就退回原池，绝不让某餐没主食
   };
 
-  // 正餐蛋白池排除「乳制品」（牛奶、酸奶、奶酪、乳清蛋白、豆浆属早餐/加餐），
-  // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除
-  const DAIRY_ONLY = ["低脂牛奶","全脂牛奶","希腊酸奶（无糖）","低脂酸奶","茅屋奶酪","乳清蛋白粉","豆浆（无糖）"];
-  proteinPool = proteinPool.filter(f=>!DAIRY_ONLY.includes(f.name));
+  // 正餐蛋白池排除「乳制品 + 豆浆」（牛奶、酸奶、奶酪、乳清蛋白粉、豆浆属早餐/加餐），
+  // 正餐保留肉/鱼/虾/蛋/豆制品。蛋类（鸡蛋/卤蛋/鸭蛋）作为正餐配菜常见，故不排除。
+  //
+  // ⚠ 用关键字而不是名单 —— 旧写法是一份 7 个名字的硬编码名单，而蛋白质池里实际有
+  //   17 项乳制品 + 2 项豆浆，漏网 10 项：无糖酸奶 / 脱脂牛奶 / 奶酪（切达）/
+  //   乳清蛋白粉（1勺约30g）/ 全脂奶粉 / 脱脂奶粉 / 奶油奶酪 / 酸奶油 / 黄油牛奶 / 羊奶 / 舒化奶。
+  //   后果实测（增肌盈余法晚餐）：蛋白位抽出「无糖酸奶 334g」，只交 12g 蛋白（目标 53g），
+  //   而 334g 已是 LIM.protein 上限 —— 反解不上去也补不回来。
+  //   这与 HIGH_FAT_PROTEIN 写「五花肉（熟）」而库里叫「猪五花肉（生）」是同一种病：
+  //   手写名单必随食物库漂移。改关键字后，新增任何乳制品自动生效。
+  //   已核验：池内 19 项命中（17 乳制品 + 2 豆浆），零误伤。
+  const isDairyOrSoy = f => /奶|酪|乳清|豆浆/.test(f.name);
+  proteinPool = proteinPool.filter(f=>!isDairyOrSoy(f));
 
   // 「蛋」是早餐倾向偏好：正餐不能拿鸡蛋/鸭蛋当主蛋白（量太少），
   // 此时正餐蛋白回退到全量瘦肉/鱼/虾池，早餐才用蛋
   if(pref.protein === "蛋"){
-    proteinPool = poolByCategory("蛋白质").filter(f=>!DAIRY_ONLY.includes(f.name));
+    proteinPool = poolByCategory("蛋白质").filter(f=>!isDairyOrSoy(f));
     if(isCut || goal === "日常健康") proteinPool = proteinPool.filter(f=>!HIGH_FAT_PROTEIN.includes(f.name));
   }
 
