@@ -4712,16 +4712,36 @@ function generateMeals(goal, weight, pref, seed, target){
     ? Math.min(STAPLE_CEIL_G, Math.max(LIM.staple[1], Math.ceil(gramsForCarb(fd, tC) * 1.15)))
     : LIM.staple[1];
 
-  /* ── 「这个食材配不配当主食」：判据是**扛不扛得起本餐碳水**，不是「含不含碳水」 ──
-     旧的写法是一条静态密度门槛（碳水 ≥12g/100g），粒度和目标脱钩：它放过了土豆（17），
-     实测仍会抽出「土豆（熟）390g 顶格」，占着主食位只交 66g 碳水；
-     对增肌餐（午餐碳水目标 166g）土豆要 976g 才够，同样拦不住。
-     新判据随目标自动松紧：需要的克数超过 STAPLE_CEIL_G 就算扛不起 →
-       减脂餐碳水目标小，土豆/紫薯照样当主食；
-       增肌餐目标大，自动收窄到米饭/面条一类谷物。
-     ⚠ 只约束「生成器自动抽选」，用户仍可手动添加粥类/淀粉蔬菜。 */
-  const carrierPool = (pool, tC)=>{
-    const ok = pool.filter(f=> gramsForCarb(f, tC) <= STAPLE_CEIL_G);
+  /* ── 「这个食材配不配当主食」：两条判据，都随目标自动松紧 ──
+     ① 扛不扛得起本餐碳水（最初就有的判据）
+        旧的写法是一条静态密度门槛（碳水 ≥12g/100g），粒度和目标脱钩：它放过了土豆（17），
+        实测仍会抽出「土豆（熟）390g 顶格」，占着主食位只交 66g 碳水；
+        对增肌餐（午餐碳水目标 166g）土豆要 976g 才够，同样拦不住。
+        新判据：需要的克数超过 STAPLE_CEIL_G 就算扛不起 →
+          减脂餐碳水目标小，土豆/紫薯照样当主食；
+          增肌餐目标大，自动收窄到米饭/面条一类谷物。
+     ② 会不会把本餐蛋白顶爆（本次新增）
+        主食的职责是交碳水，但很多「主食」同时带不少蛋白：
+          蚕豆（鲜）9g/100g、全麦面包 13g/100g、馄饨（鲜肉）7.8g/100g、鹰嘴豆（熟）7g/100g
+        而主食克数是**由碳水目标反解**出来的，于是这些蛋白是**被动带进来**的 ——
+        蛋白位管不了它（蛋白位的缺口记账只让蛋白位「少解」，不让主食「少带」）。
+        实测取证（日常健康，每餐蛋白目标 25g；此时蛋白位已被「缺口太小不出场」正确跳过）：
+          午餐「蚕豆（鲜）521g | 豆芽 223g | 橄榄油 19g」→ P 51/25 = 207%
+          晚餐「鹰嘴豆（熟）374g | 螺丝椒 223g | 芝麻油 13g」→ P 34/25 = 139%
+        即：本餐蛋白变成由**碳水克数**决定，而不是由蛋白目标决定。所以判据是：
+          按碳水目标反解出的克数，主食自身带进来的蛋白不得超过本餐蛋白目标。
+     两条都过不了的项被剔掉；全被剔光就退回原池，绝不让某餐没主食。
+     ⚠ 只约束「生成器自动抽选」，用户仍可手动添加粥类/淀粉蔬菜/包子馄饨。 */
+  const carrierPool = (pool, tC, tP)=>{
+    // 密度只算一次：池子近百项、每餐都要过一遍，重复调 per100 会明显拖慢生成
+    const ok = pool.filter(f=>{
+      const v = per100(f);
+      const g = (tC > 0 && v.carb > 0) ? tC / (v.carb / 100) : Infinity;
+      if(!isFinite(g)) return true;                  // 密度缺失（按份产品）→ 交由调用方兜底
+      if(g > STAPLE_CEIL_G) return false;            // 扛不起本餐碳水
+      if(tP != null && v.protein > 0 && v.protein * g / 100 > tP) return false;   // 会把蛋白顶爆
+      return true;
+    });
     return ok.length ? ok : pool;   // 兜底：全被筛掉就退回原池，绝不让某餐没主食
   };
 
@@ -4800,10 +4820,11 @@ function generateMeals(goal, weight, pref, seed, target){
     const tP = target ? target.protein * split : null;
     const tC = target ? target.carb    * split : null;
     const tF = target ? target.fat     * split : null;
-    // 主食池按「扛不扛得起本餐碳水」收窄。⚠ 必须在 tC 之后才定：判据本身以碳水目标为输入。
+    // 主食池按「扛不扛得起本餐碳水」+「会不会把本餐蛋白顶爆」双判据收窄。
+    // ⚠ 必须在 tC/tP 之后才定：两条判据本身都以本餐目标为输入。
     // 早餐同样适用 —— BREAKFAST_STAPLE 白名单里有南瓜（熟）/小米粥/白粥，它们的碳水密度
     // 只够当配菜，占着早餐主食位时实测只交 101 kcal（南瓜 390g 顶格）。
-    const sPool = carrierPool(isBreakfast ? bStaple : staplePool, tC);
+    const sPool = carrierPool(isBreakfast ? bStaple : staplePool, tC, tP);
 
     // 单项克数安全网：单品最多承担本餐热量预算的 share 比例。
     // 防止低密度/高热量食材反解出荒谬克数（570g 五花肉、900g 米饭这类）。
@@ -4815,37 +4836,110 @@ function generateMeals(goal, weight, pref, seed, target){
       return Math.min(g, (mealKcal * share) / kpg);
     };
 
+    /* 本餐已选各项**实际**贡献的 P/C/F，以及「还差多少」。
+       ⚠ 旧实现让每个角色各自解到「整餐目标」，等于假装同餐其他项不供能 —— 这不是求解思路问题，
+         而是没兑现上面那句「本餐承担的 macro 目标」。取证（增肌盈余法早餐，目标蛋白 35g）：
+           蛋白位「茅屋奶酪 320g」精准交出 35.0g  ← 单独看完全正确
+           主食位「馄饨（鲜肉）238g」又自带 18.6g ← 从未被计入
+           整餐合计 55g = 157%
+         脂肪同理：旧注释写「只让烹调用油承担约一半脂肪目标，另一半来自食材本身」，
+         但「那一半到底有多少」从未核算 → 肉类自带脂肪超额，实测脂肪 108–167%。
+       所以这里不改架构，只把后续角色的目标扣成「还差多少」，让整餐而不是单项对准目标。
+       ⚠ tP/tF 为空（旧回退路径：不传 target）时 need() 返回 null，行为与改动前一致。 */
+    const contrib = { protein:0, carb:0, fat:0 };
+    const track = (fd, grams)=>{
+      const v = per100(fd);
+      contrib.protein += (v.protein || 0) * grams / 100;
+      contrib.carb    += (v.carb    || 0) * grams / 100;
+      contrib.fat     += (v.fat     || 0) * grams / 100;
+    };
+    // 本餐还差多少（已达标就不再往上加，返回 0 由 LIM 下限兜底最小份量）
+    const need = (mealTarget, got)=> mealTarget == null ? null : Math.max(0, mealTarget - got);
+
     if(roles["主食"]){
       const f = pick(sPool, usedStaple);
       if(f){
         const hi = stapleHi(f, tC);   // 上限随碳水密度推导，不再写死 LIM.staple[1]
-        let g = solveBy(f, "carb", tC);
+        // 此时 contrib 全 0，等价于原来的 solveBy(f,"carb", tC)；写成 need() 是为了四个分支口径一致
+        let g = solveBy(f, "carb", need(tC, contrib.carb));
         if(g == null) g = roles["主食"] * ratio;
         g = capByShare(g, f, 0.65);
-        items.push({n:f.name, g:Math.round(clamp(g, LIM.staple[0], hi))});
+        const grams = Math.round(clamp(g, LIM.staple[0], hi));
+        items.push({n:f.name, g:grams});
+        track(f, grams);   // 记账必须在 push 之后用**最终克数**（含 clamp），否则后续角色扣不准
         stapleRefs.push({meal, idx:items.length-1, fd:f, hi});
       }
     }
     if(roles["蛋白"]){
       const f = pick(pPool, usedProtein);
       if(f){
-        let g = solveBy(f, "protein", tP);
+        /* ⚠ 关键修复：扣掉主食（可能还有更早入账的项）已带的蛋白再反解。
+           旧写法 solveBy(f,"protein", tP) 让蛋白位独自扛满整餐蛋白目标，
+           而主食（馄饨/包子/饺子/全麦面包/鹰嘴豆）自带的蛋白从未被计入 → 实测整餐蛋白 103–178%。 */
+        const gap = need(tP, contrib.protein);
+        let g = solveBy(f, "protein", gap);
         if(g == null) g = roles["蛋白"] * ratio;
         g = capByShare(g, f, 0.55);
-        items.push({n:f.name, g:Math.round(clamp(g, LIM.protein[0], LIM.protein[1]))});
+
+        /* ── 蛋白位最小份量也必须随目标自适应（与 stapleHi 的「取大」正好对称：这里取小） ──
+           静态下限 LIM.protein[0]（=50g/70kg，78kg → 56g）的存在意义是「盘子里看得见一道菜」。
+           但它**本身就在供能**：56g 鸡胸/即食鸡胸肉 ≈ 17g 蛋白。于是当本餐蛋白目标只有 17–25g 时
+           （日常健康方案蛋白仅占供能 12.5%，全天 66g），光靠下限就把整餐蛋白顶到 134–180%。
+           实测取证（膳食指南，目标蛋白 66g/天）：
+             晚餐「全麦面包 230g | 即食鸡胸肉 56g | 丝瓜 223g」→ P 37/25 = 150%
+             早餐「馄饨（鲜肉）194g | 茅屋奶酪 56g   | 芹菜 89g」 → P 22/17 = 135%
+           两处的 56g 都正好等于下限 —— 下限在供能，而不是「最小份量」。
+           这与上面主食上限是同一类病：**静态阈值不随目标缩放**。所以改法也对应：
+             ① 缺口所需克数连最小份量的一半都不到 → 这一份不构成一道菜，本餐不设蛋白位，
+                由主食/蔬菜承担（比硬塞一份 15g 的鸡蛋合理）；
+             ② 否则下限取「静态下限」与「缺口所需克数」的较小者 —— 菜还在，
+                但不为了凑满下限而超标。
+           ⚠ 热量的自洽性不受影响：主食/蔬菜带的蛋白本来就该由蛋白位让出来，
+             让出来的克数会由收尾 kcal 校准补回主食（主食是热量杠杆）。
+           ⚠ 已知小副作用：跳过时 pick() 已把该食材加进 usedProtein，当天其余餐次不会再抽到它。
+             影响仅为「当天可选食材少一项」，不影响任何营养口径，故不做回滚（回滚要改 pick 的契约）。 */
+        if(g < LIM.protein[0] * 0.5){
+          // 本餐蛋白已基本达标，不单列蛋白菜
+        } else {
+          const lo = Math.min(LIM.protein[0], Math.ceil(g));
+          const grams = Math.round(clamp(g, lo, LIM.protein[1]));
+          items.push({n:f.name, g:grams});
+          track(f, grams);
+        }
       }
     }
     if(roles["蔬菜"]){
       const f = pick(isBreakfast ? breakfastVeg : vegPool, new Set());
-      if(f) items.push({n:f.name, g:Math.round(clamp(roles["蔬菜"] * ratio, LIM.veg[0], LIM.veg[1]))});
+      if(f){
+        const grams = Math.round(clamp(roles["蔬菜"] * ratio, LIM.veg[0], LIM.veg[1]));
+        items.push({n:f.name, g:grams});
+        track(f, grams);   // 蔬菜也带碳水/蛋白（绿叶菜、菌菇），必须计入
+      }
     }
     if(roles["脂肪"]){
       const f = pick(fatPool, new Set());
       if(f){
-        // 只让烹调用油承担约一半脂肪目标，另一半来自食材本身
-        let g = solveBy(f, "fat", tF == null ? null : tF * 0.5);
+        /* ⚠ 这里从 tF*0.5 改成「缺口全额」，是本次改动里唯一动了系数的地方，说明为什么：
+           旧写法 solveBy(f,"fat", tF*0.5) 的原意是「烹调用油承担约一半脂肪目标，另一半来自食材本身」。
+           但那句「另一半」当时是**空头承诺**——contrib.fat 从未核算过，0.5 只是拍脑袋替它估的数。
+           实测脂肪 108–167%（上海鲜/五花肉这类高脂食材时 211%），说明估值严重偏低。
+
+           现在 contrib.fat 已经把主食/蛋白/蔬菜**实际**带进来的脂肪记清楚了，于是：
+             食材已供 contrib.fat  →  油只需补 tF - contrib.fat  →  整餐恰好落在 tF。
+           如果这里再乘 0.5，整餐脂肪 = (tF + contrib.fat) / 2，恒 < tF —— 等于把「食材自带的那一份」
+           重复扣了两次，实测就是脂肪被从超标推到不足（膳食指南 101%→77%、凯圣王 95%→72%）。
+           所以 0.5 是「记账之前的估值」，记账落地后必须撤掉，否则新旧两套口径打架。
+
+           ⚠ 由此带来的行为变化：肉/蛋自带脂肪越多，油量自动越少；自带脂肪已超 tF 时油降到
+             LIM.fat[0] 最小份量，此时整餐脂肪仍会超标 —— 但那是**食材选择**的问题（高脂肉占位），
+             不是油量的问题，继续压油只会造出「零油烹饪」的假餐单，不再硬凑。
+           ⚠ 脂肪角色必须**最后**计算，否则 contrib.fat 不完整（当前顺序即如此，勿调整）。 */
+        const rest = need(tF, contrib.fat);
+        let g = solveBy(f, "fat", rest);
         if(g == null) g = roles["脂肪"] * ratio;
-        items.push({n:f.name, g:Math.round(clamp(g, LIM.fat[0], LIM.fat[1]))});
+        const grams = Math.round(clamp(g, LIM.fat[0], LIM.fat[1]));
+        items.push({n:f.name, g:grams});
+        track(f, grams);
       }
     }
     // 水果不再作为固定角色塞进某顿饭（早餐吃苹果、午晚餐配香蕉都不是人人喜欢），
