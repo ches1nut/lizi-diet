@@ -4903,7 +4903,28 @@ function generateMeals(goal, weight, pref, seed, target){
       const ok = pool.filter(f=>judge(f, relax));
       if(ok.length) return ok;
     }
-    return pool;   // 连 ① 都放才空（极端情形）→ 交由 pick 与调用方的 g < PROTEIN_MIN_DISH_G 守卫
+    /* ── 最后一档：连 ① 都放才空时，也**别再随机抽** ──
+       走到这里说明没有任何一项能在克数上限内交够缺口（阶梯四级全空）。此时每一项的
+       交付量都被上限截断，交付量 = 截断克数 × 蛋白密度，于是「交付最多」是这一档里
+       唯一还站得住的判据 —— 按它挑，把这一档的损失压到最小。
+       ⚠ 旧写法是 `return pool`（在全池里均匀抽），等于把结果交给运气。实测：
+         增肌盈余法 + 忌口「蛋+乳制品」+ 90–115kg 早餐，池只剩 3 项豆制品、缺口 31–42g
+         而克数上限只 386–493g，三项**全都**交不够 —— 这时
+           抽到「豆浆（无糖）」→ 那餐蛋白 **47–57%**
+           抽到「北豆腐」    → 那餐蛋白 **94–101%**
+         同一批 20 个穷尽餐次，随机版均值 60–76%、最差 **47%**；按交付量挑之后
+         均值 97–100%、最差 **94%**（并全部落在原本就允许的早餐白名单内，不新增食材）。
+       ⚠ 并列最优时一起返回，保留随机性。 */
+    const deliver = f =>{
+      const v = per100(f);
+      if(!(v.protein > 0)) return 0;
+      const g0 = gap / (v.protein / 100);
+      let g = g0;
+      if(mealKcal && v.kcal > 0) g = Math.min(g, (mealKcal * 0.55) / (v.kcal / 100));   // 与 capByShare 同口径
+      return Math.min(g, LIM.protein[1]) * v.protein / 100;
+    };
+    const best = Math.max.apply(null, pool.map(deliver));
+    return pool.filter(f=> deliver(f) >= best);
   };
 
   // 正餐蛋白池排除「乳制品 + 豆浆」（牛奶、酸奶、奶酪、乳清蛋白粉、豆浆属早餐/加餐），
