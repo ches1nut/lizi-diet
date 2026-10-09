@@ -2418,7 +2418,7 @@ function loadProfile(){
   try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; }
   catch(e){ return {}; }
 }
-function saveProfile(p){ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }
+function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
 
 // 基础个人信息字段定义
 const PROFILE_FIELDS = [
@@ -3641,13 +3641,17 @@ function importData(input){
 
 function confirmClear(){
   if(confirm("确定要清空所有本地数据吗？此操作不可恢复。")){
-    localStorage.removeItem(PROFILE_KEY);       // 个人信息
-    localStorage.removeItem(CURRENT_PLAN_KEY);  // 当前方案
-    localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
-    localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
-    localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
-    localStorage.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
-    localStorage.removeItem(SEG_KEY);           // 方案档位/体型选择
+    // ⚠ 存储不可用时（隐私模式 / 沙箱 iframe）不应中断清空流程 —— 本文件
+    // 所有其它存储读写都已有 try/catch，这里是最后遗漏的一组。
+    try{
+      localStorage.removeItem(PROFILE_KEY);       // 个人信息
+      localStorage.removeItem(CURRENT_PLAN_KEY);  // 当前方案
+      localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
+      localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
+      localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
+      localStorage.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
+      localStorage.removeItem(SEG_KEY);           // 方案档位/体型选择
+    }catch(e){}
     // 重置会话内状态
     Object.keys(segState).forEach(k=>delete segState[k]);   // 方案档位选择
     compareSel = [];
@@ -3678,7 +3682,7 @@ function loadCustomFoods(){
   catch(e){ return []; }
 }
 function saveCustomFoods(list){
-  localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list));
+  try{ localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }catch(e){}
   _customNames = null;   // 自定义食物变了，「自定义」徽章的判定缓存必须失效
 }
 function allFoods(){
@@ -5515,7 +5519,7 @@ function loadBodyLog(){
   try{ return JSON.parse(localStorage.getItem(BODY_LOG_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveBodyLog(list){ localStorage.setItem(BODY_LOG_KEY, JSON.stringify(list)); }
+function saveBodyLog(list){ try{ localStorage.setItem(BODY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
 
 function openBodyLog(){
   renderBodyLog();
@@ -5701,7 +5705,7 @@ function loadDailyLog(){
   try{ return JSON.parse(localStorage.getItem(DAILY_LOG_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveDailyLog(list){ localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }
+function saveDailyLog(list){ try{ localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
 // 读取「今天」已记录的食物清单
 function loadTodayItems(){
   const log = loadDailyLog();
