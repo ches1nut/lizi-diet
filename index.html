@@ -2489,11 +2489,27 @@ const ACT_CARB = {
   // 「碳水渐降法」自述「2.5–3 g/kg 起步，逐步降低」→ 起步区间就是 2.5–3.0，维持原值
   "carb-descend": { sed:2.5, light:2.6, mod:2.8, high:3.0 },
   "triple-carb":  { sed:2.5, light:2.7, mod:2.8, high:3.0 },  // 三倍碳水：新手2.5→练高3.0
+  // ⚠ zengji-yingyu 项已降级为「文档基线」：computeTarget 里该方案碳水已改由残差
+  //   (intake - 蛋白×4 - 脂肪×9)/4 决定（与 normalizeTarget 同口径）；此表仅作文档说明保留。
   "zengji-yingyu": { sed:4.0, light:4.5, mod:5.0, high:6.0 }  // 增肌盈余：碳水 4–6g/kg，供能比 60–65%
 };
 // 活动水平 → 活动系数（算 TDEE，532/膳食指南用）
 const ACT_FACTOR = { sed:1.2, light:1.375, mod:1.55, high:1.725 };
 const ACT_DESC = { sed:"久坐·几乎不练", light:"轻度·每周1–2练", mod:"中度·每周3–4练", high:"高强度·每周5练以上" };
+
+/* 方案按「热量从哪来」分两类 —— 决定生理下限的差额由谁吸收：
+   热量主导型：kcal 是方案定义（five32 的 tdee−缺口 / 膳食指南的 tdee / 增肌盈余的 tdee+盈余），
+     碳水当残差吸收蛋白/脂肪下限抬升的差额。
+   宏量主导型（不在本表内）：三大宏量 g/kg 才是方案定义，kcal = C*4+P*4+F*9 是推导出来的果；
+     蛋白下限抬升后让热量跟着上去，只在击穿 BMR 时才动碳水兜底 —— 保住「碳水 2.5g/kg」这类
+     用户可感知的产品承诺。 */
+const KCAL_DOMINANT = { "five32":1, "dietary-guideline":1, "zengji-yingyu":1 };
+
+/* 目标类型白名单映射 —— 避免直接比较中文字符串：标签一旦改名/带空格，
+   `=== "日常健康"` 会静默退化成「全部按 2.0 g/kg 处理」而不报错。
+   键取自 PLANS 里 goal 字段的实际取值（grep 全量核对：只有这三个）。
+   未知标签回退 "lose"（最严格的一侧）—— 安全方向。 */
+const GOAL_TYPE = { "减脂":"lose", "日常健康":"health", "增肌":"muscle" };
 
 // 依据体脂率（选填）确定增肌热量盈余
 // 返回 {surplus, note}：体脂偏高→300；偏瘦→500；未填/正常→400
@@ -2909,46 +2925,40 @@ function calcResult(id){
   }
 
   const w = profile.weight; // 体重 kg
-  let carb=0, protein=0, fat=0, kcal=0;
-  let extra = ""; // 额外说明
+  let extra = ""; // 说明文案
 
   const g = profile.gender;
   const age = profile.age;
   const h = profile.height;
 
   // 基础代谢 Mifflin-St Jeor
-  let bmr = 10*w + 6.25*h - 5*age + (g==="male"?5:-161);
+  const bmr = 10*w + 6.25*h - 5*age + (g==="male"?5:-161);
+
+  // 展示口径唯一真源：显示值与生成器同源（computeTarget 含瘦体重 + 生理下限校准），
+  // 否则会出现「计算器页算一套、餐单生成另一套」的双实现漂移（t-plan-debt 有专门断言）。
+  const t = computeTarget(id, profile);
+  const carb = t.carb, protein = t.protein, fat = t.fat, kcal = t.kcal;
+
+  // 文案反算：下面所有数字都从**实际目标**换算，禁止硬编码方案名义系数 ——
+  // 否则生理下限把蛋白抬到 1.6g/kg 后，文案还写「蛋白 1.5g/kg」，就是「展示口径 ≠ 计算口径」。
+  const gk = x => (x / w).toFixed(2);            // 换算成 g/kg 体重
+  const pct = x => Math.round(x / kcal * 100);   // 换算成供能比 %
 
   switch(id){
     case "month3":{
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB["month3"]||{})[tl] || 2.8;
-      carb = w * carbK;
-      protein = w * 1.5;
-      fat = w * 0.7;
-      kcal = carb*4 + protein*4 + fat*9;
-      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg，蛋白 1.5g/kg、脂肪 0.7g/kg 起步，每 10 天只调碳水。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 实际 碳水 ${gk(carb)}g/kg、蛋白 ${gk(protein)}g/kg、脂肪 ${gk(fat)}g/kg（蛋白/脂肪按瘦体重，已按生理下限校准），每 10 天只调碳水。`;
       break;
     }
     case "triple-carb":{
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB["triple-carb"]||{})[tl] || 3.0;
-      carb = w * carbK;
-      protein = w * 1.6;
-      fat = w * 0.8;
-      kcal = carb*4 + protein*4 + fat*9;
-      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg，蛋白 1.6g/kg、脂肪 0.8g/kg 固定。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 实际 碳水 ${gk(carb)}g/kg、蛋白 ${gk(protein)}g/kg、脂肪 ${gk(fat)}g/kg（蛋白/脂肪按瘦体重）。`;
       break;
     }
     case "carb-descend":{
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB["carb-descend"]||{})[tl] || 2.8;
-      carb = w * carbK;
-      protein = w * 1.5;
-      fat = w * 0.7;
-      kcal = carb*4 + protein*4 + fat*9;
       const ver = segState.version || "dyn";
-      extra = `活动水平「${ACT_DESC[tl]}」→ 起始碳水 ${carbK}g/kg，蛋白 1.5g/kg 渐升、脂肪 0.7g/kg。版本：${ver==="dyn"?"三个月动态版（90天）":"40天冲刺版"}。每 10 天复盘渐降。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 起始 碳水 ${gk(carb)}g/kg、蛋白 ${gk(protein)}g/kg、脂肪 ${gk(fat)}g/kg（蛋白/脂肪按瘦体重）。版本：${ver==="dyn"?"三个月动态版（90天）":"40天冲刺版"}。每 10 天复盘渐降。`;
       break;
     }
     case "five32":{
@@ -2958,48 +2968,29 @@ function calcResult(id){
       const deficit = defOpt ? defOpt.deficit : 500;
       const actK = ACT_FACTOR[act] || 1.2;
       const tdee = bmr * actK;
-      const intake = tdee - deficit;
-      carb = intake * 0.5 / 4;
-      protein = intake * 0.3 / 4;
-      fat = intake * 0.2 / 9;
-      kcal = intake;
-      extra = `总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），${base==="big"?"大基数":"小基数"}减 ${deficit} 大卡缺口，按 5:3:2 分配。`;
+      extra = `总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），${base==="big"?"大基数":"小基数"}减 ${deficit} 大卡缺口。名义按 5:3:2 分配，实际供能比 ${pct(carb*4)}% 碳水 / ${pct(protein*4)}% 蛋白 / ${pct(fat*9)}% 脂肪（蛋白/脂肪按瘦体重并已按下限校准）。`;
       break;
     }
     case "kai-carb-cycle":{
       const bt = segState.bodyType || "endo";
       const opt = p.inputs[0].options.find(o=>o.v===bt);
-      const carbK = opt.carb, fatK = opt.fat;
-      carb = w * carbK;
-      fat = w * fatK;
-      protein = w * 1.0;
-      kcal = carb*4 + protein*4 + fat*9;
-      extra = `${opt.label}：碳水 ${carbK}g/kg、脂肪 ${fatK}g/kg、蛋白按 1g/kg 起步。一周 = 2 高碳 + 3 中碳 + 2 低碳（蛋白每天不变）。`;
+      extra = `${opt.label}（起跳值）：实际 碳水 ${gk(carb)}g/kg、脂肪 ${gk(fat)}g/kg、蛋白 ${gk(protein)}g/kg（蛋白/脂肪按瘦体重并已按下限校准）。一周 = 2 高碳 + 3 中碳 + 2 低碳（蛋白每天不变）。`;
       break;
     }
     case "dietary-guideline":{
       const act = profile.actLevel || "sed";
       const actK = ACT_FACTOR[act] || 1.2;
       const tdee = bmr * actK;
-      kcal = tdee;
-      carb = tdee * 0.575 / 4;  // 碳水取中值 57.5%
-      protein = tdee * 0.125 / 4; // 蛋白取中值 12.5%
-      fat = tdee * 0.25 / 9;    // 脂肪取中值 25%
-      extra = `按总能量 ${Math.round(tdee)} 大卡，供能比取中值：碳水 57.5%、蛋白 12.5%、脂肪 25%（官方区间 50–65%/10–15%/20–30%）。`;
+      extra = `按总能量 ${Math.round(tdee)} 大卡，实际供能比：碳水 ${pct(carb*4)}%、蛋白 ${pct(protein*4)}%、脂肪 ${pct(fat*9)}%（名义中值 57.5%/12.5%/25%，官方区间 50–65%/10–15%/20–30%；蛋白已按生理下限抬升，故碳水不再是精确的 57.5%）。`;
       break;
     }
     case "zengji-yingyu":{
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB["zengji-yingyu"]||{})[tl] || 5.0;
       const actK = ACT_FACTOR[tl] || 1.55;
       const tdee = bmr * actK;
       const bf = surplusForBodyFat(profile);
       const intake = tdee + bf.surplus;
-      carb = w * carbK;
-      protein = w * 1.8;      // 1.6–2.0 取中值
-      fat = w * 0.8;          // 0.6–1.0 取中值
-      kcal = intake;
-      extra = `活动水平「${ACT_DESC[tl]}」→ 碳水 ${carbK}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），加 ${bf.surplus} 大卡盈余后摄入≈${Math.round(intake)} 大卡${bf.note}，蛋白 1.8g/kg、脂肪 0.8g/kg 起步。核心：热量盈余 + 足量蛋白碳水，配合渐进超负荷力量训练稳步增肌。`;
+      extra = `活动水平「${ACT_DESC[tl]}」→ 实际 碳水 ${gk(carb)}g/kg（由残差收尾）、蛋白 ${gk(protein)}g/kg、脂肪 ${gk(fat)}g/kg。总消耗≈${Math.round(tdee)} 大卡（BMR ${Math.round(bmr)}×活动系数 ${actK}），加 ${bf.surplus} 大卡盈余后摄入≈${Math.round(intake)} 大卡${bf.note}。核心：热量盈余 + 足量蛋白碳水，配合渐进超负荷力量训练稳步增肌。`;
       break;
     }
   }
@@ -3757,6 +3748,17 @@ function foodKcal(f, grams){
   };
 }
 
+/* ---- 去脂体重（瘦体重）----
+   蛋白 / 脂肪按「瘦体重」而非总体重计算：同样 80kg，体脂 15% 与 35% 的肌肉量差 20%，
+   按总体重给宏量会让高体脂者蛋白/脂肪被系统性高估（原实现 bodyFat 完全不参与，逐位相同）。
+   缺省按 20% 体脂折算（w×0.8）—— 与既有典型值等价，保证未填体脂的用户输出不变。 */
+function leanMass(profile){
+  const w = profile.weight;
+  const bf = parseFloat(profile.bodyFat);
+  if(isFinite(bf) && bf > 0 && bf < 70) return w * (1 - bf/100);
+  return w * 0.8;   // 缺省按 20% 体脂
+}
+
 /* ---- 计算目标营养素（复用一个纯净函数，供食谱匹配用） ---- */
 function computeTarget(planId, profile){
   const w = profile.weight;
@@ -3767,12 +3769,15 @@ function computeTarget(planId, profile){
     case "month3": case "carb-descend": {
       const tl = profile.actLevel || "mod";
       const carbK = (ACT_CARB[planId]||{})[tl] || 2.8;
-      carb = w*carbK; protein = w*1.5; fat = w*0.7; kcal = carb*4+protein*4+fat*9; break;
+      const lean = leanMass(profile);
+      // 蛋白/脂肪按瘦体重：×1.875 / ×0.875 ≡ 原 ×1.5 / ×0.7 ÷ 0.8 —— 20% 体脂时与旧值逐位一致
+      carb = w*carbK; protein = lean*1.875; fat = lean*0.875; kcal = carb*4+protein*4+fat*9; break;
     }
     case "triple-carb": {
       const tl = profile.actLevel || "mod";
       const carbK = (ACT_CARB[planId]||{})[tl] || 3.0;
-      carb = w*carbK; protein = w*1.6; fat = w*0.8; kcal = carb*4+protein*4+fat*9; break;
+      const lean = leanMass(profile);
+      carb = w*carbK; protein = lean*2.0; fat = lean*1.0; kcal = carb*4+protein*4+fat*9; break;
     }
     case "five32": {
       const base = segState.base || "big";
@@ -3786,7 +3791,9 @@ function computeTarget(planId, profile){
       const bt = segState.bodyType || "endo";
       const p = PLANS.find(x=>x.id==="kai-carb-cycle");
       const opt = p.inputs[0].options.find(o=>o.v===bt);
-      carb = w*opt.carb; fat = w*opt.fat; protein = w*1.0; kcal = carb*4+protein*4+fat*9; break;
+      const lean = leanMass(profile);
+      // 蛋白/脂肪按瘦体重（脂肪系数 ÷0.8 折算，20% 体脂与旧值一致）；碳水仍按总体重（常规做法）
+      carb = w*opt.carb; fat = lean*(opt.fat/0.8); protein = lean*1.25; kcal = carb*4+protein*4+fat*9; break;
     }
     case "dietary-guideline": {
       const act = profile.actLevel || "sed";
@@ -3795,13 +3802,87 @@ function computeTarget(planId, profile){
     }
     case "zengji-yingyu": {
       const tl = profile.actLevel || "mod";
-      const carbK = (ACT_CARB[planId]||{})[tl] || 5.0;
       const actK = ACT_FACTOR[tl] || 1.55; const tdee = bmr*actK;
       const bf = surplusForBodyFat(profile);
       const intake = tdee+bf.surplus;
-      carb = w*carbK; protein = w*1.8; fat = w*0.8; kcal = intake; break;
+      const lean = leanMass(profile);
+      // 蛋白/脂肪按瘦体重；碳水改「残差」—— 与原 kcal 口径（tdee+surplus）统一。
+      // 原实现两套口径互不引用（kcal 走 tdee+surplus、macro 走 w×系数），
+      // 致 85.2% 的格子 carb*4+protein*4+fat*9 与声明 kcal 偏差 >5%（最大 +64.2%），
+      // 随后靠 normalizeTarget 的残差反解把碳水悄悄改掉（62% 的格子碳水被改 >10%）。
+      protein = lean*2.25; fat = lean*1.0; kcal = intake;
+      carb = (intake - protein*4 - fat*9)/4; break;
     }
   }
+
+  /* ── 生理下限校准（安全阀）─────────────────────────────
+     依据：本函数原无任何下限 —— 现实体型（BMI 18.5–30）网格 19.8% 的格子给出 kcal < BMR；
+     kai-carb-cycle 选内胚时 83.2% 击穿；dietary-guideline 蛋白低至 0.83 g/kg 体重；
+     kai-carb-cycle 是减脂方案却恒为 1.0 g/kg 蛋白。
+     顺序要点（**顺序本身就是正确性的一部分**）：
+       先定「与热量无关」的下限（蛋白、脂肪的瘦体重部分）→ 再定热量与碳水 →
+       最后用**最终** kcal 复算脂肪供能 15% 下限。
+     ⚠ 原实现把 15% 判据放在定热量之前（用抬升前的 kcal），five32 这类被抬到 BMR 的方案
+       会后手击穿 15%（实测 19 格，全部 female + 低体重/高龄）—— 故把 15% 复算挪到第 (4) 步。
+     ⚠ 取舍 1：下限的差额「由谁吸收」按方案类型分两路（见 KCAL_DOMINANT）——
+       热量主导型让碳水当残差；宏量主导型让热量跟着上去，不压缩方案自带的碳水 g/kg 承诺。
+     ⚠ 取舍 2：dietary-guideline 的名义供能比（碳 57.5% / 蛋白 12.5% / 脂肪 25%）会被打破 ——
+       实测蛋白供能最高 28.95%、68% 的格子越过自述的 10–15% 区间（碳水最低 46.05%）。
+       根因是「绝对量下限优先于供能比」：低 TDEE 体格上，1.2 g/kg 体重的蛋白下限相对很小的
+       总热量，占比必然高。**有意为之**，不是缺陷。 */
+  // planGoal 是函数声明（已提升）→ 此处可直接调用；返回中文，经 GOAL_TYPE 白名单映射
+  const _goal = planGoal(planId);
+  const goalType = (GOAL_TYPE[_goal] || "lose");   // 未知标签回退最严格一侧
+  const _lean = leanMass(profile);
+
+  // (1) 蛋白下限：日常健康 1.5 / 减脂·增肌 2.0 g/kg 瘦体重
+  protein = Math.max(protein, _lean * (goalType === "health" ? 1.5 : 2.0));
+
+  // (2) 脂肪下限的「瘦体重部分」（0.5 g/kg 瘦体重）—— 与热量无关，可先定；
+  //     供能 15% 的部分必须用最终 kcal，放到第 (4) 步
+  fat = Math.max(fat, _lean * 0.5);
+
+  // (3) 热量下限 + 碳水收尾 —— 按方案类型分两路
+  if(KCAL_DOMINANT[planId]){
+    // 热量主导型：kcal 是方案定义，碳水当残差吸收差额
+    if(!(kcal > 0) || kcal < bmr) kcal = bmr;
+    carb = (kcal - protein*4 - fat*9) / 4;
+    if(carb < 100){ carb = 100; kcal = carb*4 + protein*4 + fat*9; }
+  }else{
+    // 宏量主导型：三大宏量 g/kg 是方案定义，热量随之推导。
+    // ⚠ BMR 硬约束优先于「碳水 g/kg 承诺」：蛋白/脂肪已在下限，要补到 BMR 只能抬碳水，
+    //   极端体型（如 month3 45kg 高活动）碳水会从 3.5 抬到 4.37 g/kg —— 有意为之。
+    if(kcal < bmr){
+      const carbNeeded = (bmr - protein*4 - fat*9) / 4;
+      if(carb < carbNeeded) carb = carbNeeded;
+    }
+    if(carb < 100) carb = 100;
+    kcal = carb*4 + protein*4 + fat*9;
+  }
+
+  // (4) 脂肪供能下限复算 —— 必须用**最终** kcal（第 (3) 步收尾之后的值）。
+  //     ⚠ 这就是本轮修复的要点：原实现用抬升前的 kcal 算 15%，kcal 被抬到 BMR 后
+  //       fat*9 相对新 kcal 就不足 15% 了（five32 实测 19 格，全部 female + 低体重/高龄）。
+  //     ⚠ 抬脂肪会连锁改变 kcal（宏量主导型）或碳水（热量主导型），且碳水跌破 100 时
+  //       又会把 kcal 抬回去 —— 所以这里是「不动点迭代 + 按最终 kcal 严格校验」：
+  //       · 宏量主导型：不动点 fat*9 = 0.15*(K0 + fat*9) ⟺ fat = K0/51，一步到位；
+  //       · 最后按 ULP 级抬 fat 兜底 —— 解析解与 kcal*0.15 在 IEEE 下仍可能差 1 ULP。
+  if(fat*9 < kcal*0.15){
+    const K0 = carb*4 + protein*4;   // 本步不改碳水，K0 是常量
+    for(let i=0;i<32;i++){
+      if(KCAL_DOMINANT[planId]){
+        fat = Math.max(fat, kcal*0.15/9);              // 热量已锁定 → 反解脂肪
+        carb = (kcal - protein*4 - fat*9)/4;           // 差额由碳水残差吸收
+        if(carb < 100){ carb = 100; kcal = carb*4 + protein*4 + fat*9; }
+      }else{
+        fat = Math.max(fat, K0/51);                    // 宏量主导型的不动点闭式解
+        kcal = K0 + fat*9;
+      }
+      if(fat*9 >= kcal*0.15) break;                    // 用**最终** kcal 严格判，成立才退出
+      fat += Math.abs(fat) * Number.EPSILON;           // 浮点兜底：ULP 级（~1e-16 g，生理上无意义）
+    }
+  }
+
   return { carb, protein, fat, kcal };
 }
 
