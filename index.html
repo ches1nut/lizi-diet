@@ -2749,7 +2749,7 @@ function renderCalc(p, toRecipe){
           <div class="form-group">
             <label><b>${inp.label}</b></label>
             <div class="seg">
-              ${inp.options.map((o,i)=>`<div class="seg-item" id="seg_${inp.key}_${o.v}" onclick="pickSeg('${inp.key}','${o.v}')">${o.label}</div>`).join("")}
+              ${inp.options.map((o,i)=>`<div class="seg-item${segState[inp.key]===o.v?" on":""}" id="seg_${inp.key}_${o.v}" onclick="pickSeg('${inp.key}','${o.v}')">${o.label}</div>`).join("")}
             </div>
           </div>`;
       }
@@ -2905,10 +2905,46 @@ function editProfile(){
     <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">保存</button>`;
 }
 
-/* 方案专属 seg 选择状态（本次会话内记忆） */
-const segState = {};
+/* 方案专属 seg 选择状态（持久化 —— 方案档位/体型不该每次进页面重选）
+   key 沿用项目 localStorage 惯例（lizi_*）。写入点只有 pickSeg，
+   故「segState 里有这个键」⇔「用户手动选过」—— (d) 的自动推导据此判断是否让位给用户。 */
+const SEG_KEY = "lizi_seg_state";
+/* 允许的档位取值：直接从 PLANS 的 seg 选项推导（数据驱动，不维护第二份名单）。
+   ⚠ 必须校验：segState 现在来自 localStorage —— 损坏 / 旧版本残留的非法值会造成两种真实故障
+     （均为加持久化之前不可能出现，因为那时只有 pickSeg 写、值必然合法）：
+       · bodyType 非法 → computeTarget 的 kai 分支 `p.inputs[0].options.find(...)` 返回 undefined
+         → `w * opt.carb` 抛 TypeError（整页计算崩掉）；
+       · base 非法 → five32 的档位在「计算」与「文案」之间不一致（计算按 `base==="big"?500:300`
+         得 300，文案按 `defOpt ? defOpt.deficit : 500` 得 500）—— 正是 t-plan-debt 防的双实现漂移。
+   校验不过的键/值一律丢弃（回落默认行为），而不是带着脏值往下走。 */
+const SEG_ALLOWED = (()=>{
+  const m = {};
+  PLANS.forEach(p=>(p.inputs||[]).forEach(inp=>{
+    if(inp && inp.type === "seg" && inp.options){
+      m[inp.key] = m[inp.key] || [];
+      inp.options.forEach(o=>m[inp.key].push(o.v));
+    }
+  }));
+  return m;
+})();
+function loadSegState(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(SEG_KEY));
+    if(!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    Object.keys(raw).forEach(k=>{
+      if(SEG_ALLOWED[k] && SEG_ALLOWED[k].indexOf(raw[k]) >= 0) out[k] = raw[k];
+    });
+    return out;
+  }catch(e){ return {}; }
+}
+const segState = Object.assign({}, loadSegState());
+function saveSegState(){
+  try{ localStorage.setItem(SEG_KEY, JSON.stringify(segState)); }catch(e){}
+}
 function pickSeg(key, v){
   segState[key] = v;
+  saveSegState();
   document.querySelectorAll(`[id^="seg_${key}_"]`).forEach(el=>el.classList.remove("on"));
   document.getElementById(`seg_${key}_${v}`).classList.add("on");
 }
@@ -2962,7 +2998,7 @@ function calcResult(id){
       break;
     }
     case "five32":{
-      const base = segState.base || "big";
+      const base = five32Base(profile);
       const act = profile.actLevel || "sed";
       const defOpt = p.inputs[0].options.find(o=>o.v===base);
       const deficit = defOpt ? defOpt.deficit : 500;
@@ -3321,6 +3357,18 @@ function isBigBase(curW, curH, bf, needLose){
   return false;
 }
 
+// five32 基数档位（big=500 缺口 / small=300 缺口）：
+//   用户**手动选过** → 永远以用户选择为准（segState.base 只可能由 pickSeg 或被持久化的 pickSeg 结果写入）；
+//   从没选过 → 按个人情况自动推导（大基数 → big，否则 small），不再硬编码默认 "big"。
+// ⚠ computeTarget 与 calcResult 的文案**必须**共用本函数，否则会出现
+//   「显示算一个档、生成算另一个档」的双实现漂移（t-plan-debt 有专门断言）。
+function five32Base(profile){
+  if(segState.base) return segState.base;
+  const w = profile.weight;
+  const needLose = Math.max(0, w - (parseFloat(profile.targetWeight) || w));
+  return isBigBase(w, profile.height, parseFloat(profile.bodyFat), needLose) ? "big" : "small";
+}
+
 function recommendPlan(){
   const goal = quizAns["goal"];
 
@@ -3599,7 +3647,9 @@ function confirmClear(){
     localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
     localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
     localStorage.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
+    localStorage.removeItem(SEG_KEY);           // 方案档位/体型选择
     // 重置会话内状态
+    Object.keys(segState).forEach(k=>delete segState[k]);   // 方案档位选择
     compareSel = [];
     compareMode = false;
     curPlanId = null;
@@ -3780,7 +3830,7 @@ function computeTarget(planId, profile){
       carb = w*carbK; protein = lean*2.0; fat = lean*1.0; kcal = carb*4+protein*4+fat*9; break;
     }
     case "five32": {
-      const base = segState.base || "big";
+      const base = five32Base(profile);
       const act = profile.actLevel || "sed";
       const def = base==="big"?500:300;
       const actK = ACT_FACTOR[act] || 1.2;
@@ -3834,6 +3884,27 @@ function computeTarget(planId, profile){
   const _goal = planGoal(planId);
   const goalType = (GOAL_TYPE[_goal] || "lose");   // 未知标签回退最严格一侧
   const _lean = leanMass(profile);
+
+  // 目标驱动缺口（仅减脂方案）：用户填了「目标体重 + 计划周数」时，
+  // 用 (需减 kg × 7700) / (周数 × 7) 反推每日缺口，替代方案自带的隐性缺口。
+  // 未填 / 填得不合理的用户完全不受影响。
+  // ⚠ 只对**热量主导型**减脂方案生效（= five32），不是全部减脂方案 —— 两个硬原因：
+  //   ① 宏量主导型（month3/carb-descend/triple-carb/kai）第 (3) 步会 `kcal = C*4+P*4+F*9`
+  //      覆盖这里的值，写了也白写；
+  //   ② 更糟的是，覆盖前那句 `if(kcal < bmr)` 会**读到被本块抬高/压低的 kcal** 而误判，
+  //      从而抑制掉「抬碳水到 BMR」的兜底 —— 实测有目标时击穿 ① 共 417 格
+  //      （month3 69 / carb-descend 99 / triple-carb 79 / kai 170，例：男 18y/155/45/mod
+  //      目标 37kg/16 周 → kai 给出 1012 kcal 而 BMR = 1333.75）。
+  //   ③ 语义上也应当如此：宏量主导型的「隐性缺口」写在碳水 g/kg 系数里，改它等于改写
+  //      用户可感知的「碳水 2.5g/kg」承诺 —— 与上一轮「保碳水承诺、让热量让步」的取舍冲突。
+  if(goalType === "lose" && KCAL_DOMINANT[planId]){
+    const _tw = parseFloat(profile.targetWeight), _wk = parseFloat(profile.targetWeeks);
+    if(isFinite(_tw) && isFinite(_wk) && _wk > 0 && _tw > 0 && _tw < w){
+      const _deficit = (w - _tw) * 7700 / (_wk * 7);
+      const _tdee = bmr * (ACT_FACTOR[profile.actLevel] || 1.55);
+      kcal = _tdee - _deficit;
+    }
+  }
 
   // (1) 蛋白下限：日常健康 1.5 / 减脂·增肌 2.0 g/kg 瘦体重
   protein = Math.max(protein, _lean * (goalType === "health" ? 1.5 : 2.0));
@@ -4391,7 +4462,7 @@ function buildRecipe(){
   // 只在「没有三餐」或「需要重生成」时才生成；正常渲染直接用已保存的三餐
   // 传入 target：让生成的克数瞄准这个人这个方案的目标热量与 macro
   if(!recipeMeals || !recipeMeals.meals){
-    recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target);
+    recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, target, profile.trainYears);
   }
   // generateMeals 只产出 MEAL_STRUCT 里的三餐，「加餐」不在其中 —— 补上空数组，
   // 否则加餐 tab 与「每餐汇总」都会读到 undefined
@@ -4510,7 +4581,7 @@ function setPref(kind, val){
   // 改偏好 → 重新生成一整天三餐（偏好影响所有餐的抽选）
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget());
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget(), profile.trainYears);
   buildRecipe();
 }
 
@@ -4561,7 +4632,7 @@ function prefSummaryText(){
 function regenerateAll(){
   const profile = loadProfile();
   const goal = planGoal(recipePlanId);
-  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget());
+  recipeMeals = generateMeals(goal, profile.weight, recipePref, recipeSeed, recipeTarget(), profile.trainYears);
   buildRecipe();
 }
 
@@ -4581,7 +4652,7 @@ function regenRecipe(){
   const wantKcal = target.kcal * mealSplitOf(recipeMealTab);
   let best = null, bestDiff = Infinity;
   for(let k = 1; k <= 3; k++){
-    const cand = generateMeals(goal, profile.weight, recipePref, recipeSeed + k, target);
+    const cand = generateMeals(goal, profile.weight, recipePref, recipeSeed + k, target, profile.trainYears);
     const n = mealsNutrition({ [recipeMealTab]: cand.meals[recipeMealTab] });
     const diff = Math.abs(n.kcal - wantKcal);
     if(diff < bestDiff){ bestDiff = diff; best = cand; }
@@ -4681,7 +4752,8 @@ function splitLabel(ratio){
 // 组合引擎核心：根据 goal + 偏好生成一日三餐（返回 {meals:{早餐:[{n,g}],...}}）
 // 传入 target（computeTarget() 的结果）时，克数按个人 macro 目标反解，全天热量瞄准 target.kcal；
 // 不传 target 时退回旧的「结构克数 × 体重比例」行为。
-function generateMeals(goal, weight, pref, seed, target){
+// trainYears：训练年限（年，选填）—— 只用于调蛋白源质量门限，见 MIN_PROTEIN_QUALITY。
+function generateMeals(goal, weight, pref, seed, target, trainYears){
   const struct = FOOD_POOLS.MEAL_STRUCT[goal] || FOOD_POOLS.MEAL_STRUCT["减脂"];
   const rand = seededRand(seed * 7919 + 13);
   const ratio = (weight || 70) / 70;
@@ -4807,7 +4879,15 @@ function generateMeals(goal, weight, pref, seed, target){
   // 所有 goal 都剔除「凑够蛋白就会把热量撑爆」的低质量蛋白源。
   // 上面那份 HIGH_FAT_PROTEIN 名单写的是「五花肉（熟）」，而库里实际叫「猪五花肉（生）」，
   // 名称漂移导致过滤失效 —— 这正是减脂餐曾抽出五花肉的根因。
-  const MIN_PROTEIN_QUALITY = isCut ? 6.5 : (goal === "日常健康" ? 5.5 : 5);
+  //
+  // 训练年限微调门限（本次新增）：练得越久，越该用「蛋白密度高」的来源
+  //   （老手热量预算紧，低密度蛋白一凑够就把热量撑爆）；新手先把量吃够更重要，故放宽。
+  //   · 新手（<1 年）：−0.5   · 中级（1–3 年，含未填）：不变   · 老手（≥3 年）：+0.5
+  //   ⚠ 幅度以「绝不把蛋白池筛空」为前提。已有兜底 `if(qualityPool.length)` 会把空池退回原池，
+  //     但那样等于门限失效 —— 所以幅度必须实测安全（见提交信息里的非空率）。
+  const _ty = parseFloat(trainYears);
+  const _tyShift = (isFinite(_ty) && _ty >= 0) ? (_ty < 1 ? -0.5 : (_ty >= 3 ? 0.5 : 0)) : 0;
+  const MIN_PROTEIN_QUALITY = (isCut ? 6.5 : (goal === "日常健康" ? 5.5 : 5)) + _tyShift;
   const qualityPool = proteinPool.filter(f => proteinQuality(f) >= MIN_PROTEIN_QUALITY);
   if(qualityPool.length) proteinPool = qualityPool;   // 兜底：绝不让池子被筛空
 
