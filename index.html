@@ -1355,7 +1355,7 @@
   <!-- ============ 计算页 ============ -->
   <div class="screen" id="screen-calc">
     <header class="calc-head">
-      <button class="back-btn" onclick="go('detail')" aria-label="返回">
+      <button class="back-btn" onclick="goBackFromCalc()" aria-label="返回">
         <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="title">按方案计算</div>
@@ -1827,13 +1827,14 @@ function recipePreview(planId){
 }
 
 function renderCurrentPlan(){
-  const profile = loadProfile();
-  const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
-  const id = getCurrentPlanId();
-  // 无完整信息时若残留当前方案，一并清理，保证「清空 = 全部重来」（沿用旧逻辑）
-  if(!hasProfile && id){
-    setCurrentPlan("");
-  }
+  /* ⚠ 这里原本有一句 setCurrentPlan("")：个人信息不全时把当前方案从存储里抹掉。
+     但本函数在首屏（文件末尾的初始化）和每次 go('home') 都会跑 —— 于是
+     「刚选好方案、正要去计算页填信息」的用户，只要回一次首页，方案就被清空了。
+     渲染函数不该改存储；真正的重置由 confirmClear() 负责（它显式清所有键）。
+
+     删掉这句还顺带兑现了 renderIntakeRing() 里的既有设计：那段空态特意分了
+     「!plan」与「!hasProfile」两种文案，但只要这句话在，「有方案但信息不全」
+     就永远不可达，第二个分支等于白写。 */
   renderIntakeRing();
 }
 
@@ -1866,7 +1867,7 @@ function renderIntakeRing(){
   if(!plan || !hasProfile){
     const tip = !plan
       ? `<div class="ring-empty">还没有选择饮食方案<br><a onclick="go('list')">去选方案</a> · <a onclick="goRecommend()">帮我推荐</a></div>`
-      : `<div class="ring-empty">先完善个人信息，才能计算每日目标<br><a onclick="go('me')">去「我的」填写</a></div>`;
+      : `<div class="ring-empty">先完善个人信息，才能计算每日目标<br><a onclick="showMe()">去「我的」填写</a></div>`;
     box.innerHTML = `<div class="ring-title">今日摄入</div>${tip}`;
     return;
   }
@@ -2297,6 +2298,20 @@ function goBackFromDetail(){
   go(detailFrom === "home" ? "home" : "list");
 }
 
+/* 计算页返回。
+   ⚠ 详情正文只由 openPlan() 渲染（go() 只切 .active 类，不碰正文），而计算页存在
+   「不经过详情页」的入口 —— openRecipe() 在个人信息不全时会直接跳计算页
+   （index.html 的 openRecipe() 里）。此时裸 go('detail') 会停在一个
+   只有标题栏 + 一个按钮的空壳详情页：detailBody 为空、切换按钮仍是 display:none、
+   也没有「✓ 已选择」角标。所以这里必须补上正文重建。 */
+function goBackFromCalc(){
+  if(curPlanId && PLANS.some(p=>p.id===curPlanId)){
+    openPlan(curPlanId, detailFrom);   // 会重建正文并 go('detail')
+  } else {
+    go("list");   // 没有来源方案时退回列表，同样不落在空壳页
+  }
+}
+
 function openPlan(id, from){
   const p = PLANS.find(x=>x.id===id);
   if(!p) return;
@@ -2398,7 +2413,7 @@ function buildFitHint(p){
   const needLevel = trainMap[train];
 
   if(!act){
-    return `<div class="fit-hint none"><span class="fh-ic">💡</span><div>还没填写你的活动水平。<a onclick="go('me')" style="color:var(--brand);font-weight:600;">去「我的」完善个人信息</a>，我会帮你判断这个方案适不适合你。</div></div>`;
+    return `<div class="fit-hint none"><span class="fh-ic">💡</span><div>还没填写你的活动水平。<a onclick="showMe()" style="color:var(--brand);font-weight:600;">去「我的」完善个人信息</a>，我会帮你判断这个方案适不适合你。</div></div>`;
   }
 
   const lv = {sed:0, light:1, mod:2, high:3};
@@ -4445,6 +4460,11 @@ function openRecipe(){
   }
   if(!hasProfile){
     alert("请先完善个人信息，才能为你推荐食谱");
+    // ⚠ 计算页正文由 renderCalc() 渲染，裸 go('calc') 会落到一个空白计算页。
+    //   与 pickPlan() 的「信息不齐」分支保持一致：补完信息后自动出食谱。
+    curPlanId = id;
+    pendingRecipeAfterInfo = true;
+    renderCalc(PLANS.find(x=>x.id===id), true);
     go('calc');
     return;
   }
