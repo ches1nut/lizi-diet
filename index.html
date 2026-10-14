@@ -3995,6 +3995,54 @@ const OUT_EAT_CATS = [
   "家常菜", "卤味", "沙县小吃", "黄焖鸡米饭", "麻辣烫",
   "米饭套餐", "兰州拉面", "炸鸡/小食", "煎饼/饼类",
 ];
+/* 分类筛选标签上的 emoji。用户已决定：emoji 只加在分类标签上，食物名保持纯文字。
+   ⚠ 不写死「41 项」的断言口径 —— 见门禁 I1：基准是「内置类目」（FOODS ∪ BRAND_FOODS），
+     用户自建分类与 saveCustomFood 的「自定义」回落一律走 🍽，这是设计不是缺陷。
+   基准双向等（⊇ 抓「库里新增类目却忘了配」、⊆ 抓「typo / 陈旧条目」）：
+     CAT_EMOJI 键集 === 内置类目集。 */
+const CAT_EMOJI = {
+  "主食": "🍚",
+  "蛋白质": "🍗",
+  "蔬菜": "🥬",
+  "水果": "🍎",
+  "坚果": "🥜",
+  "油脂": "🫒",
+  "零食": "🍪",
+  "饮料": "🥤",
+  "调味": "🧂",
+  "沙县小吃": "🥟",
+  "兰州拉面": "🍜",
+  "黄焖鸡米饭": "🍲",
+  "卤味": "🍖",
+  "炸鸡/小食": "🍟",
+  "麻辣烫": "🌶️",
+  "米饭套餐": "🍱",
+  "煎饼/饼类": "🥞",
+  "家常菜": "🍳",
+  "瑞幸咖啡": "☕",
+  "星巴克": "☕",
+  "麦当劳": "🍔",
+  "肯德基": "🐔",
+  "华莱士": "🍔",
+  "塔斯汀": "🍔",
+  "德克士": "🍔",
+  "汉堡王": "🍔",
+  "赛百味": "🥪",
+  "霸王茶姬": "🧋",
+  "喜茶": "🧋",
+  "奈雪的茶": "🧋",
+  "蜜雪冰城": "🧋",
+  "茶百道": "🧋",
+  "书亦烧仙草": "🧋",
+  "沪上阿姨": "🧋",
+  "古茗": "🧋",
+  "益禾堂": "🧋",
+  "CoCo都可": "🧋",
+  "一点点": "🧋",
+  "全家": "🏪",
+  "罗森": "🏪",
+  "7-11": "🏪"
+};
 function foodOrigin(f){
   if(!f || !f.name) return "basic";
   if(customNameSet().has(f.name)) return "custom";
@@ -6171,7 +6219,7 @@ function renderFoodCalc(){
     <button class="add-custom" onclick="openMyFood()">＋ 我的食物</button>
     <div class="food-cats">
       <span class="food-cat ${foodCat==="全部"?"on":""}" onclick="setFoodCat('全部')">全部</span>
-      ${shownCats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" data-cat="${escAttr(c)}" onclick="setFoodCat(this.dataset.cat)">${escText(c)}</span>`).join("")}
+      ${shownCats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" data-cat="${escAttr(c)}" onclick="setFoodCat(this.dataset.cat)">${CAT_EMOJI[c] || "🍽"} ${escText(c)}</span>`).join("")}
       ${hasMore ? `<span class="food-cat food-cat-more ${catsCollapsed?"":"on"}" onclick="toggleCats()">${catsCollapsed ? `展开全部 ${allCats.length} 个 ▾` : "收起 ▲"}</span>` : ""}
     </div>
     <div class="food-grid" id="foodGrid">
