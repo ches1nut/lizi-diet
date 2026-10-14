@@ -3790,11 +3790,20 @@ function saveMeProfile(){
 }
 
 function exportData(){
+  // v2 全量备份：键表来自唯一真源 LIZI_KEYS，9 个键一个不落
+  //（旧版只写 profile —— 恢复时自定义食物 / 每日记录 / 身体数据 / 执行状态全部无声消失）。
+  const keys = {};
+  LIZI_KEYS.filter(k=>k.inExport !== false).forEach(entry=>{
+    const raw = store.getItem(entry.key);
+    if(raw === null || raw === undefined) return;   // 缺键不写入 —— 备份里不留空壳
+    if(entry.kind === "string") keys[entry.key] = raw;
+    else { try{ keys[entry.key] = JSON.parse(raw); }catch(e){} }  // 坏 JSON 跳过，别因一个键毁整份导出
+  });
   const data = {
     app:"lizi-diet",
-    version:1,
+    version:2,
     exportedAt:new Date().toISOString(),
-    profile:loadProfile()
+    keys
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
   const url = URL.createObjectURL(blob);
@@ -3805,6 +3814,26 @@ function exportData(){
   URL.revokeObjectURL(url);
 }
 
+/* 导入后重放内存状态 —— 否则「存储已换新、界面还留着旧的」= 又一处不同源。
+   ⚠ 既有的 importData 只调 renderMe()，是因为它只导 profile；C-4 导全量后，必须把
+     散落各处的内存镜像（食谱 / segState / 今日缓冲 / 徽章缓存 / 主题）一并刷新，
+     判据是：导入后不刷新页面，三屏（我的 / 首页环 / 记录页）必须已经反映新数据。 */
+function replayAfterImport(){
+  recipeMeals = null;                 // 清过期食谱（照抄 confirmClear 的做法）
+  recipePlanId = "";
+  Object.keys(segState).forEach(k=>delete segState[k]);   // 先清空内存 seg
+  Object.assign(segState, loadSegState());                // 再从存储重新读
+  _customNames = null;                // 自定义食物变了，徽章判定缓存必须失效
+  curPlanId = null;                   // 让 currentPlanObj 回落到「存储里记住的方案」
+  foodList = loadTodayItems();        // 今日摄入编辑缓冲
+  recipePref = loadRecipePref();      // 食谱偏好内存镜像
+  applyTheme(getTheme());             // 主题：存储 → 界面
+  renderMe();
+  renderCurrentPlan();
+  renderIntakeRing();
+  go('home');
+}
+
 function importData(input){
   const file = input.files && input.files[0];
   if(!file) return;
@@ -3812,23 +3841,29 @@ function importData(input){
   reader.onload = function(e){
     try{
       const data = JSON.parse(e.target.result);
-      const profile = data.profile || data;
-      if(profile && typeof profile === "object"){
-        // 只导入合法的个人信息字段
-        const p = loadProfile();
-        PROFILE_FIELDS.forEach(f=>{
-          if(profile[f.key] !== undefined) p[f.key] = profile[f.key];
-        });
-        // 减脂专属字段 + 目标
-        ["goal","targetWeight","targetWeeks"].forEach(k=>{
-          if(profile[k] !== undefined) p[k] = profile[k];
-        });
-        saveProfile(p);
-        renderMe();
-        alert("导入成功，个人信息已更新。");
-      } else {
-        alert("文件格式不正确，未能导入。");
-      }
+      // v2：data.keys 是「键 → 值」的袋子。v1（只有 profile）⇒ 袋里只有 lizi_profile
+      // ⇒ 只导入 profile = 今天的行为。「向后兼容」因此是构造性质，不需要写迁移代码。
+      const bag = (data && data.keys && typeof data.keys === "object" && !Array.isArray(data.keys))
+        ? data.keys
+        : (data && data.profile !== undefined ? { [PROFILE_KEY]: data.profile } : null);
+      if(!bag){ alert("文件格式不正确，未能导入。"); return; }
+      // 逐键校验：只拒该键，其余键照常导入 —— 一条坏记录不该毁掉整份备份。
+      const skipped = [];
+      let imported = 0;
+      LIZI_KEYS.forEach(entry=>{
+        if(!(entry.key in bag)) return;          // 缺键不导入：老备份不会被新键的空值污染
+        const val = bag[entry.key];
+        if(!validateKey(entry, val)){ skipped.push(entry.label); return; }
+        try{
+          if(entry.kind === "string") store.setItem(entry.key, String(val));
+          else store.setItem(entry.key, JSON.stringify(val));
+          imported++;
+        }catch(err){ skipped.push(entry.label); }
+      });
+      replayAfterImport();
+      alert(skipped.length
+        ? `导入完成：成功 ${imported} 项，已跳过 ${skipped.length} 项（${skipped.join("、")}）。`
+        : `导入成功，已恢复 ${imported} 项数据。`);
     }catch(err){
       alert("文件解析失败，请确认是有效的 JSON 备份文件。");
     }
@@ -3842,14 +3877,11 @@ function confirmClear(){
     // ⚠ 存储不可用时（隐私模式 / 沙箱 iframe）不应中断清空流程 —— 本文件
     // 所有其它存储读写都已有 try/catch，这里是最后遗漏的一组。
     try{
-      store.removeItem(PROFILE_KEY);       // 个人信息
-      store.removeItem(CURRENT_PLAN_KEY);  // 当前方案
-      store.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
-      store.removeItem(BODY_LOG_KEY);      // 身体数据记录
-      store.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
-      store.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
-      store.removeItem(SEG_KEY);           // 方案档位/体型选择
+      // 键表来自唯一真源 LIZI_KEYS —— 按钮文案说「清空所有本地数据」，行为必须与之一致。
+      LIZI_KEYS.filter(k=>k.inClear !== false).forEach(entry=>store.removeItem(entry.key));
     }catch(e){}
+    // 主题：存储清了，界面必须同步回默认 —— 否则存储与显示不同源。
+    applyTheme(DEFAULT_THEME);
     // 重置会话内状态
     Object.keys(segState).forEach(k=>delete segState[k]);   // 方案档位选择
     compareSel = [];
@@ -3858,10 +3890,12 @@ function confirmClear(){
     detailFrom = "list";
     recipeMeals = null;    // 清空内存中的食谱，避免「今天吃什么」展示过期食谱
     recipePlanId = "";
+    _customNames = null;   // 自定义食物已清，徽章判定缓存必须失效
     foodList = [];         // 清空今日摄入缓冲
     pickedFood = null;
     renderMe();
     renderCurrentPlan();  // 刷新首页，回到「问卷 + 方案选择」状态
+    renderIntakeRing();   // 环 + 今日摄入明细同步回空
     go('home');           // 跳回首页
     alert("已清空本地数据，将回到初始状态。");
   }
@@ -6019,6 +6053,91 @@ function saveTodayItems(){
   else { log.push({date:t, items:foodList}); }
   saveDailyLog(log);
 }
+
+/* ==================================================================
+   本地存储键注册表（LIZI_KEYS）—— 唯一真源
+   ------------------------------------------------------------------
+   ⚠ 病根：导出只写 1 个键（profile）、清空只清 7 个键，两套键表各自维护、已经分叉；
+     `lizi_theme` 与 `lizi_recipe_pref` 既不在 clear 里、也不在 export 里。
+     ⇒ 收敛到这一张表，confirmClear / exportData / importData 三个消费者都从这里取：
+       新增键只改这里一处，「清空的键集 === 导出的键集 === 全部 9 键」由构造保证。
+   ================================================================== */
+// 逐键校验器：只判「该键的值是否可用」。不通过者由 importData 单独丢弃（只拒该键）。
+const isPlainObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
+const isFiniteNum = v => typeof v === "number" && isFinite(v);
+const isNutrient = v => {                       // 食物库营养值：数值 或 [lo,hi] 区间
+  if(isFiniteNum(v)) return true;
+  return Array.isArray(v) && v.length === 2 && isFiniteNum(v[0]) && isFiniteNum(v[1]);
+};
+// 从 PROFILE_FIELDS 派生「字段 → 合法枚举集」（type:"seg" 的字段天然自带 options），绝不写死。
+// ⚠ 不维护第二份枚举名单：否则 ACT_DESC 与 actLevel.options 会像病 #13 那样各改各的、静默漂移。
+function profileEnumValues(fieldKey){
+  const f = PROFILE_FIELDS.find(x => x.key === fieldKey);
+  if(!f || f.type !== "seg" || !Array.isArray(f.options)) return null;
+  return f.options.map(o => o.v);
+}
+// 个人信息：必须 obj；seg 字段（gender/actLevel…）若出现必须落在派生枚举内；
+// 数值字段若出现必须是有限 number（可选字段缺省不算错）。
+function vProfile(v){
+  if(!isPlainObj(v)) return false;
+  for(const f of PROFILE_FIELDS){
+    if(f.type === "seg" && v[f.key] !== undefined){
+      const enumv = profileEnumValues(f.key);
+      if(enumv && enumv.indexOf(v[f.key]) < 0) return false;
+    }
+  }
+  for(const f of PROFILE_FIELDS){
+    if(f.type !== "num" || v[f.key] === undefined) continue;
+    if(!isFiniteNum(v[f.key])) return false;
+  }
+  for(const k of ["targetWeight","targetWeeks"]){   // 减脂专属扩展数值字段
+    if(v[k] !== undefined && !isFiniteNum(v[k])) return false;
+  }
+  return true;
+}
+// 自定义食物：数组；每元素有非空 string name；营养字段若出现须为数值或 [lo,hi] 两元区间。
+function vCustomFoods(v){
+  if(!Array.isArray(v)) return false;
+  return v.every(f => {
+    if(!isPlainObj(f)) return false;
+    if(typeof f.name !== "string" || f.name.trim() === "") return false;
+    for(const k of ["kcal","protein","carb","fat"]){
+      if(f[k] !== undefined && !isNutrient(f[k])) return false;
+    }
+    return true;
+  });
+}
+// 每日记录：数组；每元素有 string date 与 array items；items 元素有非空 string name。
+function vDailyLog(v){
+  if(!Array.isArray(v)) return false;
+  return v.every(rec => {
+    if(!isPlainObj(rec)) return false;
+    if(typeof rec.date !== "string" || !Array.isArray(rec.items)) return false;
+    return rec.items.every(it => isPlainObj(it) && typeof it.name === "string" && it.name.trim() !== "");
+  });
+}
+// 综合校验：有专属校验器用专属；否则按 kind 做结构兜底（一个键都别放进明显不对的东西）。
+function validateKey(entry, val){
+  if(typeof entry.validate === "function") return entry.validate(val);
+  if(entry.kind === "string") return typeof val === "string";
+  if(entry.kind === "array")  return Array.isArray(val);
+  if(entry.kind === "object") return isPlainObj(val);
+  return true;
+}
+const LIZI_KEYS = [
+  // ⚠ label 是给用户看的，一律取应用自己的 UI 词汇（与页面标题同名），不许另起一套命名：
+  //   「我的食物」= :1400 屏标题（C-2 命名）·「今日摄入」= :1411 页标题 / :2065 环标题 ·
+  //   「食谱偏好（含忌口）」必须点出 avoid —— 导入被跳过时用户要一眼看出「忌口没进来」（健康相关）。
+  { key: PROFILE_KEY,      label:"个人信息",        kind:"object", inExport:true, inClear:true, validate: vProfile },
+  { key: CURRENT_PLAN_KEY, label:"当前方案",        kind:"string", inExport:true, inClear:true },
+  { key: SEG_KEY,          label:"方案档位/体型",    kind:"object", inExport:true, inClear:true },
+  { key: CUSTOM_FOOD_KEY,  label:"我的食物",        kind:"array",  inExport:true, inClear:true, validate: vCustomFoods },
+  { key: BODY_LOG_KEY,     label:"身体数据记录",    kind:"array",  inExport:true, inClear:true },
+  { key: DAILY_LOG_KEY,    label:"今日摄入",        kind:"array",  inExport:true, inClear:true, validate: vDailyLog },
+  { key: RECIPE_DONE_KEY,  label:"今日执行状态",    kind:"object", inExport:true, inClear:true },
+  { key: RECIPE_PREF_KEY,  label:"食谱偏好（含忌口）", kind:"object", inExport:true, inClear:true },
+  { key: THEME_KEY,        label:"主题",            kind:"string", inExport:true, inClear:true },
+];
 
 function openFoodCalc(){
   foodList = loadTodayItems();  // 打开时载入今天已记录的食物
