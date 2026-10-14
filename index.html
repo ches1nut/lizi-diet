@@ -3903,6 +3903,11 @@ function showNameOf(name){
   return fd ? showName(fd) : String(name || "");
 }
 function foodKcal(f, grams){
+  // ⚠ 食物被改名/删除后，记录里仍留着旧名字 → findFood 返回 undefined。
+  //   这里不能抛（抛了会让整个记录页渲染中断，用户点 tab 没反应），
+  //   也不能悄悄当 0 算完就走（那会把「这条失效了」伪装成一个正常数字）。
+  //   返回带 missing 标记的零值，由渲染层显式显示占位行。
+  if(!f) return { kcal:0, protein:0, carb:0, fat:0, missing:true };
   // 按份产品（店面品牌）：grams 参数传的是「份数」，直接乘单份营养值
   if(isServingFood(f)){
     const servings = grams;  // 此时 grams 语义为份数
@@ -5999,6 +6004,7 @@ function renderFoodPickerBox(){
     return;
   }
   const fd = findFood(pickedFood);
+  if(!fd){ box.innerHTML = ""; return; }   // 食物已被删/改名 → 弹层无法渲染，直接收起
   const isSrv = isServingFood(fd);
   const unitLabel = isSrv ? (fd.unit||"份") : "克";
   const unitShow = isSrv ? (fd.unit||"份") : "100g";
@@ -6170,6 +6176,17 @@ function renderFoodListSummary(){
     <div class="fls-t">已选食物（${foodList.length} 项）</div>
     ${foodList.map((it,i)=>{
       const fd = findFood(it.name);
+      // 失效条目必须自己现形，不能静默消失、也不能被当成 0 kcal 的正常条目
+      if(!fd){
+        return `
+        <div class="food-row" style="padding:10px 14px;opacity:.6;">
+          <div style="flex:1;">
+            <div class="fr-name" style="font-size:13px;">${it.name}</div>
+            <div class="fr-meta">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
+          </div>
+          <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+        </div>`;
+      }
       const qty = (it.servings !== undefined) ? it.servings : it.grams;
       const v = foodKcal(fd, qty);
       if(it.kcalAdj) v.kcal += it.kcalAdj;
@@ -6206,6 +6223,7 @@ function renderFoodTotal(){
   let kcal=0, p=0, c=0, f=0;
   foodList.forEach(it=>{
     const fd = findFood(it.name);
+    if(!fd) return;   // 失效条目不计入汇总（否则会把「这条没了」伪装成 0 kcal）
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
     const v = foodKcal(fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
