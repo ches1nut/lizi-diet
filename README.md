@@ -4,6 +4,14 @@
 
 一个纯前端、零依赖的健身饮食规划工具。打开网页就能用，数据只存在你自己的浏览器里（localStorage），不上传任何服务器。
 
+<p align="center">
+  <img src="screenshots/01-home.png" width="19%" alt="首页 · 今日摄入进度环" />
+  <img src="screenshots/02-plans.png" width="19%" alt="方案库 · 按目标筛选与对比" />
+  <img src="screenshots/03-calc.png" width="19%" alt="营养计算 · BMR / TDEE / 三大营养素" />
+  <img src="screenshots/04-recipe.png" width="19%" alt="食谱自由组合 · 按偏好与餐次" />
+  <img src="screenshots/05-record.png" width="19%" alt="食物热量计算 · 搜索与份量输入" />
+</p>
+
 ## 核心功能
 
 - **方案库**：按目标（增肌 / 减脂 / 日常健康）筛选方案、查看详情、最多 3 个方案横向对比
@@ -67,9 +75,10 @@ npx http-server -p 9120 -c-1
 
 ```
 fit-diet/
-├── index.html    # 主程序（结构 + 样式 + 逻辑，单文件）
-├── foods.js      # 内置食物数据库 + 份量换算表 + 组合引擎配置
-├── LICENSE       # MIT
+├── index.html      # 主程序（结构 + 样式 + 逻辑，单文件）
+├── foods.js        # 内置食物数据库 + 份量换算表 + 组合引擎配置
+├── screenshots/    # README 展示图（5 张，430×932 @2x）
+├── LICENSE         # MIT
 ├── README.md
 └── .gitignore
 ```
