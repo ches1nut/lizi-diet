@@ -5536,7 +5536,7 @@ function renderRecipeMeals(){
             <div class="fr-meta">${fd ? humanizeGrams(it.n, it.g) : ("约 "+roundish(it.g)+"g")} · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
           </div>
           <div class="fr-kcal">${Math.round(v.kcal)} kcal</div>
-          <div class="fr-del" onclick="removeMealItem('${m}','${it.n}')" title="移除">
+          <div class="fr-del" data-meal="${escAttr(m)}" data-name="${escAttr(it.n)}" onclick="removeMealItem(this.dataset.meal, this.dataset.name)" title="移除">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </div>
         </div>`;
