@@ -3822,6 +3822,17 @@ function fmtRange(v){
   return String(v);
 }
 
+// 把字符串安全地放进 HTML 属性值：属性层与代码层都要挡住。
+// ⚠ 病根：名字一旦被内联进 onclick 的 JS 字符串（如 onclick="f('${name}')"），
+//   名字里含单引号就会把那段代码截断 —— 合法输入导致「点了没反应」+ Unexpected identifier。
+//   加转义只能治标（HTML 先解实体、JS 再解析，单引号照样断）。
+//   根治办法是不再把名字放进代码字符串：渲染时 escAttr 进 data-*，handler 里用 this.dataset.* 取回。
+function escAttr(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 /* ===== 数据来源分级：让用户知道这个数字有多可信 =====
    1112 种食物的可信度并不一样，但此前 UI 上完全没区分 ——
    用户看到「187 kcal」会当成实测值，这是虚假的确定感。
@@ -5591,7 +5602,7 @@ function renderFoodPicker(meal){
       </div>
       <div id="mealFoodOptions" style="max-height:200px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         ${foods.slice(0,40).map(f=>`
-          <div class="food-item" onclick="pickMealFood('${meal}','${f.name}')">
+          <div class="food-item" data-food="${escAttr(f.name)}" onclick="pickMealFood('${meal}', this.dataset.food)">
             <div class="fi-name">${showName(f)}${originBadge(f)}</div>
             <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
           </div>`).join("")}
@@ -5623,7 +5634,7 @@ function renderMealFoodOptions(meal){
   const kw = document.getElementById("mealFoodSearch").value.trim();
   const foods = allFoods().filter(f=>foodMatchKw(f, kw));
   document.getElementById("mealFoodOptions").innerHTML = foods.slice(0,40).map(f=>`
-    <div class="food-item ${pickedMealFood===f.name?"sel":""}" onclick="pickMealFood('${meal}','${f.name}')">
+    <div class="food-item ${pickedMealFood===f.name?"sel":""}" data-food="${escAttr(f.name)}" onclick="pickMealFood('${meal}', this.dataset.food)">
       <div class="fi-name">${showName(f)}${originBadge(f)}</div>
       <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
     </div>`).join("");
@@ -5891,7 +5902,7 @@ function renderFoodCalc(){
           ? (f.protein!=null ? `蛋白${f.protein}g · 碳水${f.carb}g · 脂肪${f.fat}g` : `热量 ${f.kcal} kcal/${unitShow}`)
           : `蛋白${fmtRange(f.protein)} · 碳水${fmtRange(f.carb)} · 脂肪${fmtRange(f.fat)}`;
         return `
-        <div class="food-item ${pickedFood===f.name?"sel":""}" data-food="${f.name}" onclick="pickFoodItem('${f.name}')">
+        <div class="food-item ${pickedFood===f.name?"sel":""}" data-food="${escAttr(f.name)}" onclick="pickFoodItem(this.dataset.food)">
           <div class="fi-name">${showName(f)}${originBadge(f)}</div>
           <div class="fi-kcal"><b>${kcalShow}</b> kcal/${unitShow}</div>
           <div class="fi-kcal" style="font-size:11px;">${macroShow}</div>
@@ -6226,6 +6237,9 @@ function renderFoodTotal(){
 /* 自定义食物 */
 let customFormOpen = false;
 let editingName = null;   // 非空 = 正在编辑「我的食物」里的这一条（表单以它为草稿）；空 = 新建
+// 「编辑」入口：名字经 data-edit 传递（escAttr 编码），不再内联进 JS 字符串。
+// ⚠ 不改 toggleCustomForm 的签名/行为 —— 它不在本批次白名单里。
+function startEditCustom(name){ editingName = name; customFormOpen = true; renderFoodCalc(); }
 function toggleCustomForm(){
   customFormOpen = !customFormOpen;
   renderFoodCalc();
@@ -6245,7 +6259,7 @@ function renderCustomForm(){
         <div class="fr-name" style="font-size:13px;">${f.name}<span style="font-weight:400;color:var(--sub);"> · ${fmtRange(f.kcal)} kcal/100g</span></div>
         ${shadowed ? `<div class="fr-meta">⚠ 与内置食物同名，正在遮蔽内置的 ${fmtRange(shadowed.kcal)} kcal/100g</div>` : ""}
       </div>
-      <div style="font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;padding:0 8px;" onclick="editingName='${f.name}'; customFormOpen=true; renderFoodCalc()">编辑</div>
+      <div style="font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;padding:0 8px;" data-edit="${escAttr(f.name)}" onclick="startEditCustom(this.dataset.edit)">编辑</div>
     </div>`;
   }).join("") : "";
   if(!customFormOpen){ box.innerHTML = listHtml; return; }
@@ -6253,8 +6267,8 @@ function renderCustomForm(){
   box.innerHTML = `
     <div class="custom-form">
       <div class="cf-t">${cur ? "编辑自定义食物（每 100g）" : "添加自定义食物（每 100g）"}</div>
-      <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" value="${cur ? cur.name : ""}" /></div>
-      <div class="cf-row"><label>分类</label><input id="cfCat" placeholder="如：蛋白质" value="${cur ? (cur.category || "") : "自定义"}" /></div>
+      <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" value="${escAttr(cur ? cur.name : "")}" /></div>
+      <div class="cf-row"><label>分类</label><input id="cfCat" placeholder="如：蛋白质" value="${escAttr(cur ? (cur.category || "") : "自定义")}" /></div>
       <div class="cf-grid">
         <div class="cf-row"><label>热量 kcal</label><input id="cfKcal" type="number" placeholder="0" value="${cur ? cur.kcal : ""}" /></div>
         <div class="cf-row"><label>蛋白质 g</label><input id="cfProtein" type="number" placeholder="0" value="${cur ? cur.protein : ""}" /></div>
