@@ -1883,16 +1883,21 @@ function setCurrentPlan(id){
 // 计算「今天」已记录食物的摄入总和
 function dailyIntakeSummary(){
   const items = loadTodayItems();
-  let kcal=0, p=0, c=0, f=0;
+  let kcal=0, p=0, c=0, f=0, valid=0, missing=0;
   items.forEach(it=>{
     const fd = findFood(it.name);
-    if(!fd) return;
+    if(!fd){ missing++; return; }   // 失效条目：不计热量，但要计数（否则「被热量排除」这件事会隐形）
+    valid++;
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
     const v = foodKcal(fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
     kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
   });
-  return {kcal, protein:p, carb:c, fat:f, count:items.length};
+  /* ⚠ count 必须 = items.length，且在语义上表示「今天有没有任何记录」——
+     :4440 if(eaten.count === 0) 是它的唯一消费者，改它会破坏空态分支。
+     与热量「同源」的那条腿是 validCount / missingCount：两者都基于同一次 findFood 判定，
+     于是「已吃 N 项」与热量不会再各说各话。 */
+  return {kcal, protein:p, carb:c, fat:f, count:items.length, validCount:valid, missingCount:missing};
 }
 
 // 生成「今日推荐食谱」紧凑预览（取模板第一套，按体重缩放）
@@ -1976,7 +1981,17 @@ function renderIntakeRing(){
     <div class="ring-detail">
       ${items.length===0 ? `<div class="ring-detail-empty">今天还没有记录，去「记录食物」添加</div>` : items.map((it,i)=>{
         const fd = findFood(it.name);
-        if(!fd) return "";
+        // 失效条目不能静默消失：渲染一条可见占位行（形制对齐记录页 :6194-6203）
+        if(!fd){
+          return `
+          <div class="ring-detail-row" style="opacity:.6;">
+            <div class="rd-info">
+              <div class="rd-name">${it.name}</div>
+              <div style="font-size:12px;color:var(--sub);">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
+            </div>
+            <div class="rd-del" onclick="removeHomeIntake(${i})">删除</div>
+          </div>`;
+        }
         const qty = (it.servings !== undefined) ? it.servings : it.grams;
         const isSrv = isServingFood(fd);
         const v = foodKcal(fd, qty);
@@ -2036,7 +2051,7 @@ function renderIntakeRing(){
       <span>已吃 <b>${pct}</b>%</span>
     </div>
     <div class="ring-toggle" onclick="toggleHomeIntake()">
-      今日已吃 <b>${items.length}</b> 项
+      今日已吃 <b>${intake.validCount}</b> 项${intake.missingCount>0 ? ` · <span style="color:var(--sub);">${intake.missingCount} 项已失效</span>` : ""}
       <span class="rt-arrow">${homeIntakeOpen ? "收起 ▲" : "管理 ▼"}</span>
     </div>
     ${detailHtml}`;
@@ -2105,10 +2120,22 @@ function renderIntakeDetail(){
   const target = (plan && hasProfile) ? computeTarget(id, profile) : null;
 
   const items = loadTodayItems();
-  let kcal=0, p=0, c=0, f=0;
+  let kcal=0, p=0, c=0, f=0, validCount=0, missingCount=0;
   const rows = items.map((it,i)=>{
     const fd = findFood(it.name);
-    if(!fd) return "";
+    // 失效条目不能静默消失：渲染一条可见占位行（形制对齐记录页 :6194-6203）
+    if(!fd){
+      missingCount++;
+      return `
+      <div class="intake-row" style="opacity:.6;">
+        <div class="ir-info">
+          <div class="ir-name">${it.name}</div>
+          <div class="ir-meta">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
+        </div>
+        <div class="ir-del" onclick="removeIntakeDetail(${i})">删除</div>
+      </div>`;
+    }
+    validCount++;
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
     const isSrv = isServingFood(fd);
     const v = foodKcal(fd, qty);
@@ -2165,7 +2192,7 @@ function renderIntakeDetail(){
     ${targetBar}
     ${summary}
     <div class="intake-head">
-      <span>今天吃了 <b>${items.length}</b> 项</span>
+      <span>今天吃了 <b>${validCount}</b> 项${missingCount>0 ? ` · <span style="color:var(--sub);">${missingCount} 项已失效</span>` : ""}</span>
       <a onclick="openFoodCalc()">＋ 添加食物</a>
     </div>
     ${items.length===0
