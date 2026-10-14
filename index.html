@@ -1391,6 +1391,17 @@
     <div class="food-body" id="foodBody"></div>
   </div>
 
+  <!-- ============ 我的食物页 ============ -->
+  <div class="screen" id="screen-myfood">
+    <header class="list-head">
+      <button class="back-btn" onclick="openFoodCalc()" aria-label="返回">
+        <svg class="ic-brand" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="title">我的食物</div>
+    </header>
+    <div class="food-body" id="myfoodBody"></div>
+  </div>
+
   <!-- ============ 今日摄入详情页 ============ -->
   <div class="screen" id="screen-intake">
     <header class="list-head">
@@ -1800,7 +1811,7 @@ function go(name){
 const SCREEN_BODY_ID = {
   detail:"detailBody", calc:"calcBody", quiz:"quizBody", me:"meBody",
   recipe:"recipeBody", food:"foodBody", bodylog:"bodylogBody", intake:"intakeBody",
-  compare:"compareBody",
+  compare:"compareBody", myfood:"myfoodBody",
 };
 /* 取「此刻该展示的方案」：先看本次会话选中的 curPlanId，再看存储里记住的那一个
    （首屏 reload 后内存里的 curPlanId 还是空的，只有存储里知道用户上次选了谁）。
@@ -1818,6 +1829,7 @@ const SCREEN_RENDER = {
   me:      () => renderMe(),
   bodylog: () => renderBodyLog(),
   food:    () => renderFoodCalc(),
+  myfood:  () => renderMyFood(),
   intake:  () => renderIntakeDetail(),
   // 食谱必须走完整守卫（无方案要去选方案、无信息要去计算页），不能只渲染正文
   recipe:  () => openRecipe(),
@@ -1846,7 +1858,7 @@ function ensureScreenContent(name){
 }
 
 /* ===== 底部固定 TabBar ===== */
-const TAB_MAP = { home:"home", food:"record", recipe:"recipe", me:"me" };
+const TAB_MAP = { home:"home", food:"record", myfood:"record", recipe:"recipe", me:"me" };
 
 function renderTab(){
   const cur = TAB_MAP[curScreen];
@@ -5930,8 +5942,7 @@ function renderFoodCalc(){
   // 「记食物」分段主体
   const foodSection = `
     ${searchBox}
-    <button class="add-custom" onclick="editingName=null; toggleCustomForm()">＋ 添加自定义食物</button>
-    <div id="customFormBox"></div>
+    <button class="add-custom" onclick="openMyFood()">＋ 我的食物</button>
     <div class="food-cats">
       <span class="food-cat ${foodCat==="全部"?"on":""}" onclick="setFoodCat('全部')">全部</span>
       ${shownCats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" data-cat="${escAttr(c)}" onclick="setFoodCat(this.dataset.cat)">${escText(c)}</span>`).join("")}
@@ -5986,7 +5997,6 @@ function renderFoodCalc(){
   renderFoodPickerBox();
   renderFoodListSummary();
   renderFoodTotal();
-  renderCustomForm();
 }
 
 function setFoodMode(m){ foodMode = m; renderFoodCalc(); }
@@ -6282,14 +6292,19 @@ function renderFoodTotal(){
 let customFormOpen = false;
 let editingName = null;   // 非空 = 正在编辑「我的食物」里的这一条（表单以它为草稿）；空 = 新建
 // 「编辑」入口：名字经 data-edit 传递（escAttr 编码），不再内联进 JS 字符串。
-// ⚠ 不改 toggleCustomForm 的签名/行为 —— 它不在本批次白名单里。
-function startEditCustom(name){ editingName = name; customFormOpen = true; renderFoodCalc(); }
+// ⚠ 下面几个重画目标已随 C-2 改指向独立屏 renderMyFood()：自定义食物已从记录页 #foodBody
+//   搬到 #screen-myfood，再调 renderFoodCalc() 会把内容画到错误的容器上。
+//   toggleCustomForm 的签名 / 无参 保持不变。
+function startEditCustom(name){ editingName = name; customFormOpen = true; renderMyFood(); }
 function toggleCustomForm(){
   customFormOpen = !customFormOpen;
-  renderFoodCalc();
+  renderMyFood();
 }
-function renderCustomForm(){
-  const box = document.getElementById("customFormBox");
+// 进入「我的食物」独立屏：进屏即落列表态（清空 editingName、收起表单）。
+// 遵守 openX() = renderX() + go('x') 的既有约定（#3d1f697）。
+function openMyFood(){ editingName = null; customFormOpen = false; renderMyFood(); go('myfood'); }
+function renderMyFood(){
+  const box = document.getElementById("myfoodBody");
   if(!box) return;
   const customs = loadCustomFoods();
   // 「我的食物」列表：始终可见 —— 让用户看得到自己录过什么、能改、能一眼发现「同名遮蔽内置」。
@@ -6306,9 +6321,12 @@ function renderCustomForm(){
       <div style="font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;padding:0 8px;" data-edit="${escAttr(f.name)}" onclick="startEditCustom(this.dataset.edit)">编辑</div>
     </div>`;
   }).join("") : "";
-  if(!customFormOpen){ box.innerHTML = listHtml; return; }
+  // 「＋ 添加自定义食物」按钮：列表态与表单态**都**渲染 —— 拆分前它与列表容器并列、
+  // 始终可见；不能做成「仅表单未展开时才有」，那是没人要求的行为变化。
+  const addBtn = `<button class="add-custom" onclick="editingName=null; toggleCustomForm()">＋ 添加自定义食物</button>`;
+  if(!customFormOpen){ box.innerHTML = addBtn + listHtml; return; }
   const cur = editingName ? customs.find(f=>f && f.name===editingName) : null;
-  box.innerHTML = `
+  box.innerHTML = addBtn + `
     <div class="custom-form">
       <div class="cf-t">${cur ? "编辑自定义食物（每 100g）" : "添加自定义食物（每 100g）"}</div>
       <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" value="${escAttr(cur ? cur.name : "")}" /></div>
@@ -6349,7 +6367,7 @@ function saveCustomFood(){
   customFormOpen = false;
   editingName = null;
   alert(`已保存自定义食物「${name}」`);
-  renderFoodCalc();
+  renderMyFood();
 }
 
 /* ===== 数字输入框体验优化 =====
