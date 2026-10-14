@@ -1246,7 +1246,7 @@
    这里只处理需要在 :root 默认值之外覆盖的两套（A / C）；B 就是 :root 默认。 */
 (function(){
   try{
-    var t = localStorage.getItem("lizi_theme");
+    var t = localStorage.getItem("lizi_theme");   // 首屏脚本，在 store 之前，自带 try/catch
     if(t === "A" || t === "C") document.documentElement.setAttribute("data-theme", t);
   }catch(e){}
 })();
@@ -1478,6 +1478,49 @@
 </div>
 
 <script src="foods.js"></script>
+<script>
+/* ============================================================
+   存储适配层 store —— 为什么需要它（本项目的头号故障源）
+   ------------------------------------------------------------
+   本 App 的全部 UI 状态（个人信息 / 当前方案 / 档位 / 主题 / 记录）都存在
+   localStorage 里，且「先写入、再重渲染读回」是每个交互的固定套路。
+
+   但在预览面板的 sandbox iframe、浏览器隐私模式、部分内嵌 WebView 下，
+   访问 localStorage 会直接抛 SecurityError。此时若只是把写入 try/catch 掉，
+   写入被静默丢弃 → 重渲染读回仍然是空 → 选项永远回显不出「已选中」，
+   用户看到的就是「点了没反应」。这类故障在正常浏览器里完全复现不出来。
+
+   所以这里做一层适配：能用 localStorage 就用（保持持久化行为不变）；
+   不能用就退化为会话内存 —— 功能全部可用，只是关掉页面不再保留。
+   全文件所有存储读写都必须走 store，不要再直接用 localStorage。
+   ============================================================ */
+const store = (() => {
+  const mem = new Map();
+  let real = null;
+  try{
+    const k = "__lizi_probe__";
+    localStorage.setItem(k, "1");
+    localStorage.removeItem(k);
+    real = localStorage;
+  }catch(e){ real = null; }
+  if(real){
+    return {
+      kind: "localStorage",
+      getItem: k => real.getItem(k),
+      setItem: (k, v) => real.setItem(k, v),
+      removeItem: k => real.removeItem(k),
+      clear: () => real.clear(),
+    };
+  }
+  return {
+    kind: "memory",
+    getItem: k => (mem.has(k) ? mem.get(k) : null),
+    setItem: (k, v) => { mem.set(k, String(v)); },
+    removeItem: k => { mem.delete(k); },
+    clear: () => mem.clear(),
+  };
+})();
+</script>
 <script>
 /* ===== 方案数据（6 个可执行方案） =====
    goal 目标标签：增肌 / 减脂 / 日常健康 */
@@ -1757,6 +1800,56 @@ function go(name){
   if(name==="list") renderFilters();
   if(name==="home") renderCurrentPlan();
   renderTab();
+  ensureScreenContent(name);
+}
+
+/* ============================================================
+   空壳页兜底 —— go(name) 只切 .active 类，不负责装正文。
+   ------------------------------------------------------------
+   正文由各自的渲染函数负责，约定是 openX() = renderX() + go('x')。
+   但历史上反复出现「某条入口只写了裸 go('x')」，结果落到一个
+   只有标题栏和底部按钮、中间整块空白的空壳页（详情 / 计算 / 我的
+   都中过招）。这里把「哪个屏幕的正文由谁渲染」显式登记下来，
+   go() 切屏时顺手检查一次：正文空着就补渲染 —— 把约定变成不变量。
+   以后谁再写裸 go('x') 也不会落到空白页。
+   home / list 不登记，因为 go() 内部已经会渲染它们。
+   ============================================================ */
+const SCREEN_BODY_ID = {
+  detail:"detailBody", calc:"calcBody", quiz:"quizBody", me:"meBody",
+  recipe:"recipeBody", food:"foodBody", bodylog:"bodylogBody", intake:"intakeBody",
+};
+/* 取「此刻该展示的方案」：先看本次会话选中的 curPlanId，再看存储里记住的那一个
+   （首屏 reload 后内存里的 curPlanId 还是空的，只有存储里知道用户上次选了谁）。
+   两个都没有 = 真的没有来源方案 —— 调用方必须退回列表，不能停在空壳上。 */
+function currentPlanObj(){
+  return PLANS.find(x=>x.id===curPlanId) || PLANS.find(x=>x.id===getCurrentPlanId()) || null;
+}
+const SCREEN_RENDER = {
+  // 详情正文只在 openPlan() 里构建；没有来源方案时退回列表，别停在空壳上
+  detail:  () => { const p = currentPlanObj(); if(p) openPlan(p.id, detailFrom); else go("list"); },
+  // 计算页同理：renderCalc 在 p 为空时会静默 return，屏切过去了、正文却是空的
+  //（实测：全新加载直接 go('calc') → active=screen-calc 但 calcBody=0 字符）
+  calc:    () => { const p = currentPlanObj(); if(p) renderCalc(p, calcToRecipe); else go("list"); },
+  quiz:    () => renderQuiz(),
+  me:      () => renderMe(),
+  bodylog: () => renderBodyLog(),
+  food:    () => renderFoodCalc(),
+  intake:  () => renderIntakeDetail(),
+  // 食谱必须走完整守卫（无方案要去选方案、无信息要去计算页），不能只渲染正文
+  recipe:  () => openRecipe(),
+};
+let ensureDepth = 0;
+function ensureScreenContent(name){
+  const bodyId = SCREEN_BODY_ID[name];
+  if(!bodyId) return;
+  const box = document.getElementById(bodyId);
+  if(!box || box.innerHTML.trim() !== "") return;   // 正文已有内容 → 什么都不做
+  const render = SCREEN_RENDER[name];
+  if(!render) return;
+  if(ensureDepth > 2) return;                       // 渲染函数内部又 go() 回来时防递归
+  ensureDepth++;
+  try{ render(); }catch(e){}                        // 兜底失败也不能把导航打断
+  finally{ ensureDepth--; }
 }
 
 /* ===== 底部固定 TabBar ===== */
@@ -1788,10 +1881,10 @@ function goRecipe(){
 /* ===== 当前选择方案 ===== */
 const CURRENT_PLAN_KEY = "lizi_current_plan";
 function getCurrentPlanId(){
-  try{ return localStorage.getItem(CURRENT_PLAN_KEY) || ""; }catch(e){ return ""; }
+  try{ return store.getItem(CURRENT_PLAN_KEY) || ""; }catch(e){ return ""; }
 }
 function setCurrentPlan(id){
-  try{ localStorage.setItem(CURRENT_PLAN_KEY, id); }catch(e){}
+  try{ store.setItem(CURRENT_PLAN_KEY, id); }catch(e){}
 }
 
 // 计算「今天」已记录食物的摄入总和
@@ -2430,10 +2523,10 @@ function buildFitHint(p){
 /* ===== 个人信息（全局一份，localStorage） ===== */
 const PROFILE_KEY = "lizi_profile";
 function loadProfile(){
-  try{ return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {}; }
+  try{ return JSON.parse(store.getItem(PROFILE_KEY)) || {}; }
   catch(e){ return {}; }
 }
-function saveProfile(p){ try{ localStorage.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
+function saveProfile(p){ try{ store.setItem(PROFILE_KEY, JSON.stringify(p)); }catch(e){} }
 
 // 基础个人信息字段定义
 const PROFILE_FIELDS = [
@@ -2733,6 +2826,13 @@ function pickPlan(id){
 }
 
 function renderCalc(p, toRecipe){
+  if(toRecipe !== undefined) calcToRecipe = !!toRecipe;   // 只传一个参数时沿用上次模式
+  const toR = calcToRecipe;
+  // ⚠ 调用点写的是 PLANS.find(x=>x.id===curPlanId)：curPlanId 可能是 null（首屏、
+  //   清空之后），find 返回 undefined → 下面 p.detail 直接抛 TypeError，
+  //   表现为「点了选项整页没反应、也不报错到界面上」。这里兜一层。
+  if(!p) p = PLANS.find(x=>x.id===getCurrentPlanId());
+  if(!p) return;
   const profile = loadProfile();
   const d = p.detail;
   const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
@@ -2742,9 +2842,9 @@ function renderCalc(p, toRecipe){
   if(!hasProfile){
     profileHtml = `
       <div class="profile-tip">
-        ${toRecipe ? "先完善一下你的个人信息，马上为你生成推荐食谱：" : "请先完善你的个人信息（只需填一次，之后切换方案会自动带出）："}
+        ${toR ? "先完善一下你的个人信息，马上为你生成推荐食谱：" : "请先完善你的个人信息（只需填一次，之后切换方案会自动带出）："}
         <div style="margin-top:12px;">${renderProfileForm(profile)}</div>
-        <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">${toRecipe ? "保存并生成食谱" : "保存个人信息"}</button>
+        <button class="btn-primary" style="margin-top:12px;" onclick="saveProfileForm()">${toR ? "保存并生成食谱" : "保存个人信息"}</button>
       </div>`;
   } else {
     const al = profile.actLevel ? ACT_DESC[profile.actLevel] : "";
@@ -2777,13 +2877,18 @@ function renderCalc(p, toRecipe){
     <div class="calc-plan-source">参考来源：${p.source}</div>
     ${profileHtml}
     ${inputHtml}
-    ${toRecipe ? "" : `<button class="btn-primary" onclick="calcResult('${p.id}')">计算我的营养素</button>`}
+    ${toR ? "" : `<button class="btn-primary" onclick="calcResult('${p.id}')">计算我的营养素</button>`}
     <div id="calcResult"></div>
   `;
 }
 
 // 未提交输入暂存：切换 segment 重渲染时，保留用户已输入但未保存的数字值
 let profileDraft = {};
+/* 计算页当前是否处于「补完信息就出食谱」模式。
+   ⚠ renderCalc 的重渲染调用点（pickProfileSeg / saveProfileForm）只传了方案、丢了第二个参数，
+   于是用户在「今天吃什么 → 补信息」流程里点一下性别，整页就从「保存并生成食谱」
+   悄悄翻回「保存个人信息 + 计算我的营养素」。记住模式，让重渲染不改变页面语义。 */
+let calcToRecipe = false;
 
 // 从当前 DOM 表单收集未提交的输入值（num 字段 + 减脂专属字段）
 function collectProfileDraft(){
@@ -2872,7 +2977,7 @@ function pickProfileSeg(key, v){
   if(curScreen === "me"){
     editMeProfile();
   } else {
-    renderCalc(PLANS.find(x=>x.id===curPlanId));
+    renderCalc(PLANS.find(x=>x.id===curPlanId), calcToRecipe);
   }
 }
 
@@ -2906,7 +3011,7 @@ function saveProfileForm(){
     const hasProfile = p.gender && p.age && p.height && p.weight;
     if(hasProfile){ openRecipe(); return; }
   }
-  renderCalc(PLANS.find(x=>x.id===curPlanId));
+  renderCalc(PLANS.find(x=>x.id===curPlanId), calcToRecipe);
 }
 
 function editProfile(){
@@ -2944,7 +3049,7 @@ const SEG_ALLOWED = (()=>{
 })();
 function loadSegState(){
   try{
-    const raw = JSON.parse(localStorage.getItem(SEG_KEY));
+    const raw = JSON.parse(store.getItem(SEG_KEY));
     if(!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
     const out = {};
     Object.keys(raw).forEach(k=>{
@@ -2955,7 +3060,7 @@ function loadSegState(){
 }
 const segState = Object.assign({}, loadSegState());
 function saveSegState(){
-  try{ localStorage.setItem(SEG_KEY, JSON.stringify(segState)); }catch(e){}
+  try{ store.setItem(SEG_KEY, JSON.stringify(segState)); }catch(e){}
 }
 function pickSeg(key, v){
   segState[key] = v;
@@ -3477,7 +3582,7 @@ const THEMES = [
 ];
 function getTheme(){
   try{
-    const t = localStorage.getItem(THEME_KEY);
+    const t = store.getItem(THEME_KEY);
     return THEMES.some(x=>x.id===t) ? t : DEFAULT_THEME;
   }catch(e){ return DEFAULT_THEME; }
 }
@@ -3489,7 +3594,7 @@ function applyTheme(id){
 }
 function setTheme(id){
   if(!THEMES.some(x=>x.id===id)) return;
-  try{ localStorage.setItem(THEME_KEY, id); }catch(e){}
+  try{ store.setItem(THEME_KEY, id); }catch(e){}
   applyTheme(id);
   renderMe();
   // 主题色被写进了 JS 生成的 SVG 属性（进度环渐变），必须重渲染才跟着变
@@ -3659,13 +3764,13 @@ function confirmClear(){
     // ⚠ 存储不可用时（隐私模式 / 沙箱 iframe）不应中断清空流程 —— 本文件
     // 所有其它存储读写都已有 try/catch，这里是最后遗漏的一组。
     try{
-      localStorage.removeItem(PROFILE_KEY);       // 个人信息
-      localStorage.removeItem(CURRENT_PLAN_KEY);  // 当前方案
-      localStorage.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
-      localStorage.removeItem(BODY_LOG_KEY);      // 身体数据记录
-      localStorage.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
-      localStorage.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
-      localStorage.removeItem(SEG_KEY);           // 方案档位/体型选择
+      store.removeItem(PROFILE_KEY);       // 个人信息
+      store.removeItem(CURRENT_PLAN_KEY);  // 当前方案
+      store.removeItem(CUSTOM_FOOD_KEY);   // 自定义食物
+      store.removeItem(BODY_LOG_KEY);      // 身体数据记录
+      store.removeItem(DAILY_LOG_KEY);     // 每日摄入记录（今日摄入明细）
+      store.removeItem(RECIPE_DONE_KEY);   // 今日执行状态（每餐完成勾选）
+      store.removeItem(SEG_KEY);           // 方案档位/体型选择
     }catch(e){}
     // 重置会话内状态
     Object.keys(segState).forEach(k=>delete segState[k]);   // 方案档位选择
@@ -3693,11 +3798,11 @@ function showMePlaceholder(){}
 /* ---- 食物数据（内置 FOODS + 用户自定义） ---- */
 const CUSTOM_FOOD_KEY = "lizi_custom_foods";
 function loadCustomFoods(){
-  try{ return JSON.parse(localStorage.getItem(CUSTOM_FOOD_KEY)) || []; }
+  try{ return JSON.parse(store.getItem(CUSTOM_FOOD_KEY)) || []; }
   catch(e){ return []; }
 }
 function saveCustomFoods(list){
-  try{ localStorage.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }catch(e){}
+  try{ store.setItem(CUSTOM_FOOD_KEY, JSON.stringify(list)); }catch(e){}
   _customNames = null;   // 自定义食物变了，「自定义」徽章的判定缓存必须失效
 }
 function allFoods(){
@@ -3993,7 +4098,7 @@ let recipePref = Object.assign({}, DEFAULT_RECIPE_PREF);
 
 function loadRecipePref(){
   try{
-    const raw = localStorage.getItem(RECIPE_PREF_KEY);
+    const raw = store.getItem(RECIPE_PREF_KEY);
     if(!raw) return Object.assign({}, DEFAULT_RECIPE_PREF);
     const p = Object.assign({}, DEFAULT_RECIPE_PREF, JSON.parse(raw) || {});
     if(!Array.isArray(p.avoid)) p.avoid = [];
@@ -4001,7 +4106,7 @@ function loadRecipePref(){
   }catch(e){ return Object.assign({}, DEFAULT_RECIPE_PREF); }
 }
 function saveRecipePref(){
-  try{ localStorage.setItem(RECIPE_PREF_KEY, JSON.stringify(recipePref)); }catch(e){}
+  try{ store.setItem(RECIPE_PREF_KEY, JSON.stringify(recipePref)); }catch(e){}
 }
 
 /* 忌口选项：关键词命中食物名即排除。
@@ -4125,7 +4230,7 @@ const RECIPE_DONE_KEY = "lizi_recipe_done";
 function loadRecipeDone(){
   const fresh = { date: todayStr(), meals:{} };
   try{
-    const raw = localStorage.getItem(RECIPE_DONE_KEY);
+    const raw = store.getItem(RECIPE_DONE_KEY);
     if(!raw) return fresh;
     const d = JSON.parse(raw);
     // 日期不符（昨天的勾）或结构损坏 → 一律当全新的一天
@@ -4134,7 +4239,7 @@ function loadRecipeDone(){
   }catch(e){ return fresh; }
 }
 function saveRecipeDone(d){
-  try{ localStorage.setItem(RECIPE_DONE_KEY, JSON.stringify(d)); }catch(e){}
+  try{ store.setItem(RECIPE_DONE_KEY, JSON.stringify(d)); }catch(e){}
 }
 function isMealDone(meal){ return !!loadRecipeDone().meals[meal]; }
 function markMealDone(meal, on){
@@ -5536,10 +5641,10 @@ function confirmAddMealFood(){
 /* ---- 身体数据记录页 ---- */
 const BODY_LOG_KEY = "lizi_body_log";
 function loadBodyLog(){
-  try{ return JSON.parse(localStorage.getItem(BODY_LOG_KEY)) || []; }
+  try{ return JSON.parse(store.getItem(BODY_LOG_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveBodyLog(list){ try{ localStorage.setItem(BODY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
+function saveBodyLog(list){ try{ store.setItem(BODY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
 
 function openBodyLog(){
   renderBodyLog();
@@ -5722,10 +5827,10 @@ function showToast(msg){
 /* ---- 每日摄入记录（持久化） ---- */
 const DAILY_LOG_KEY = "lizi_daily_log";
 function loadDailyLog(){
-  try{ return JSON.parse(localStorage.getItem(DAILY_LOG_KEY)) || []; }
+  try{ return JSON.parse(store.getItem(DAILY_LOG_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveDailyLog(list){ try{ localStorage.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
+function saveDailyLog(list){ try{ store.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
 // 读取「今天」已记录的食物清单
 function loadTodayItems(){
   const log = loadDailyLog();
@@ -6204,6 +6309,9 @@ document.addEventListener("input", function(e){
 });
 
 /* ===== 初始化 ===== */
+/* 首屏那段主题脚本跑在 store 之前，localStorage 被禁时它读不到东西；
+   这里按 store（可能来自内存兜底）再套用一次，保证主题在两种环境下都跟手。 */
+applyTheme(getTheme());
 renderFilters();
 renderCurrentPlan();
 renderTab();
