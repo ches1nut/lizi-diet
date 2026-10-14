@@ -3806,7 +3806,15 @@ function saveCustomFoods(list){
   _customNames = null;   // 自定义食物变了，「自定义」徽章的判定缓存必须失效
 }
 function allFoods(){
-  return FOODS.concat(BRAND_FOODS).concat(loadCustomFoods());
+  // ⚠ 重名同源：同名时「自定义」必须胜出，且「徽章判定的依据」与「营养值的来源」必须是同一条。
+  // 做法：先把内置（FOODS / BRAND_FOODS）里与自定义同名的条目滤掉，自定义依旧 concat 在最后。
+  // 于是 allFoods() 里任一同名只有一条（自定义），findFood 的 .find() 自然命中它；
+  // 而徽章走 customNameSet()，同一个名字也必然命中 → 两条路径收口到同一个对象。
+  // （此前这里是「内置在前 + 自定义在后」且不去重：界面打「自定义」徽章，数字却来自内置那条。）
+  const customNames = customNameSet();
+  return FOODS.concat(BRAND_FOODS)
+    .filter(f => !customNames.has(f && f.name))
+    .concat(loadCustomFoods());
 }
 function findFood(name){
   return allFoods().find(f=>f.name===name);
