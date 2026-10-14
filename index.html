@@ -1895,21 +1895,29 @@ function setCurrentPlan(id){
 // 计算「今天」已记录食物的摄入总和
 function dailyIntakeSummary(){
   const items = loadTodayItems();
-  let kcal=0, p=0, c=0, f=0, valid=0, missing=0;
+  let kcal=0, p=0, c=0, f=0, valid=0, missing=0, stale=0;
   items.forEach(it=>{
-    const fd = findFood(it.name);
-    if(!fd){ missing++; return; }   // 失效条目：不计热量，但要计数（否则「被热量排除」这件事会隐形）
-    valid++;
+    const r = resolveEntry(it);
+    // 算不出数值的（既不在库、也无快照）不计热量，但要计数（否则「被热量排除」这件事会隐形）
+    if(!r.fd){ missing++; return; }
+    valid++;                              // ⭐ 「有数值」的条数（含 stale）
+    if(r.stale) stale++;
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
-    const v = foodKcal(fd, qty);
+    const v = foodKcal(r.fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
     kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
   });
   /* ⚠ count 必须 = items.length，且在语义上表示「今天有没有任何记录」——
      :4440 if(eaten.count === 0) 是它的唯一消费者，改它会破坏空态分支。
-     与热量「同源」的那条腿是 validCount / missingCount：两者都基于同一次 findFood 判定，
-     于是「已吃 N 项」与热量不会再各说各话。 */
-  return {kcal, protein:p, carb:c, fat:f, count:items.length, validCount:valid, missingCount:missing};
+
+     ⭐ C-3 起 validCount 的**定义扩张**（显式声明，别当隐含假设）：
+        validCount = 「算得出数值」的条数 = live 条数 + stale 条数（有快照但食物已下架）。
+        旧定义只是「findFood 命中」，C-3 后 stale 也进了热量，必须一并计入，否则
+        「已吃 N 项」会与热量各说各话（C-1 治过的病）。
+        ⇒ 闭合式：**validCount + missingCount === count**。
+        staleCount ⊆ validCount，是其中「食物已下架」的那部分（新增字段）。
+        注：无快照的旧条目仍走 live 判定 ⇒ 老数据语义不变（C-1 的两条门禁前提不受影响）。 */
+  return {kcal, protein:p, carb:c, fat:f, count:items.length, validCount:valid, missingCount:missing, staleCount:stale};
 }
 
 // 生成「今日推荐食谱」紧凑预览（取模板第一套，按体重缩放）
@@ -1992,7 +2000,8 @@ function renderIntakeRing(){
   const detailHtml = homeIntakeOpen ? `
     <div class="ring-detail">
       ${items.length===0 ? `<div class="ring-detail-empty">今天还没有记录，去「记录食物」添加</div>` : items.map((it,i)=>{
-        const fd = findFood(it.name);
+        const r = resolveEntry(it);
+        const fd = r.fd;
         // 失效条目不能静默消失：渲染一条可见占位行（形制对齐记录页 :6194-6203）
         if(!fd){
           return `
@@ -2001,6 +2010,22 @@ function renderIntakeRing(){
               <div class="rd-name">${escText(it.name)}</div>
               <div style="font-size:12px;color:var(--sub);">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
             </div>
+            <div class="rd-del" onclick="removeHomeIntake(${i})">删除</div>
+          </div>`;
+        }
+        // 有快照但食物已下架：数值照算（热量不凭空少一截），但**不给输入框** ——
+        // 三个数量 handler 的守门都只认 findFood，给 stale 行输入框 = 点了没反应的哑输入。
+        if(r.stale){
+          const qty = (it.servings !== undefined) ? it.servings : it.grams;
+          const v = foodKcal(fd, qty);
+          if(it.kcalAdj) v.kcal += it.kcalAdj;
+          return `
+          <div class="ring-detail-row" style="opacity:.6;">
+            <div class="rd-info">
+              <div class="rd-name">${escText(showName(fd))}</div>
+              <div style="font-size:12px;color:var(--sub);">⚠ 该食物已下架，按记录时的数据计算</div>
+            </div>
+            <div class="rd-kcal">${Math.round(v.kcal)} kcal</div>
             <div class="rd-del" onclick="removeHomeIntake(${i})">删除</div>
           </div>`;
         }
@@ -2063,7 +2088,7 @@ function renderIntakeRing(){
       <span>已吃 <b>${pct}</b>%</span>
     </div>
     <div class="ring-toggle" onclick="toggleHomeIntake()">
-      今日已吃 <b>${intake.validCount}</b> 项${intake.missingCount>0 ? ` · <span style="color:var(--sub);">${intake.missingCount} 项已失效</span>` : ""}
+      今日已吃 <b>${intake.validCount}</b> 项${intake.missingCount>0 ? ` · <span style="color:var(--sub);">${intake.missingCount} 项已失效</span>` : ""}${intake.staleCount>0 ? ` · <span style="color:var(--sub);">${intake.staleCount} 项已下架</span>` : ""}
       <span class="rt-arrow">${homeIntakeOpen ? "收起 ▲" : "管理 ▼"}</span>
     </div>
     ${detailHtml}`;
@@ -2132,12 +2157,16 @@ function renderIntakeDetail(){
   const target = (plan && hasProfile) ? computeTarget(id, profile) : null;
 
   const items = loadTodayItems();
-  let kcal=0, p=0, c=0, f=0, validCount=0, missingCount=0;
+  // ⚠ C-3：宏量与计数**不再自算** —— 直接消费 dailyIntakeSummary()，两边同源就不可能分叉。
+  //    （这里原本把 :1900 那段累加整段重写了一遍：同一 qty 取法、同一 foodKcal、同一 kcalAdj、同一加序。
+  //      两处都改只是把分叉推迟到下一次改动；去重后 C-3 只需在一个地方扩展口径。）
+  //    行内仍要 fd/stale 决定形制，故循环里保留 resolveEntry；只去掉累加器。
+  const S = dailyIntakeSummary();
   const rows = items.map((it,i)=>{
-    const fd = findFood(it.name);
+    const r = resolveEntry(it);
+    const fd = r.fd;
     // 失效条目不能静默消失：渲染一条可见占位行（形制对齐记录页 :6194-6203）
     if(!fd){
-      missingCount++;
       return `
       <div class="intake-row" style="opacity:.6;">
         <div class="ir-info">
@@ -2147,12 +2176,29 @@ function renderIntakeDetail(){
         <div class="ir-del" onclick="removeIntakeDetail(${i})">删除</div>
       </div>`;
     }
-    validCount++;
+    // 有快照但食物已下架：数值照算（热量不凭空少一截），但**不给输入框** + 显式提示。
+    // ⚠ 此处**不调 originBadge**：快照可能缺 category、名字还可能以「（估）」结尾 —— 那会被
+    //   foodOrigin 误判成 estimated「估算」徽章。那不是估算，是**冻结**；同一槽不装两种语义。
+    if(r.stale){
+      const qty = (it.servings !== undefined) ? it.servings : it.grams;
+      const v = foodKcal(fd, qty);
+      if(it.kcalAdj) v.kcal += it.kcalAdj;
+      return `
+      <div class="intake-row" style="opacity:.6;">
+        <div class="ir-info">
+          <div class="ir-name">${escText(showName(fd))}</div>
+          <div class="ir-meta">⚠ 该食物已下架，按记录时的数据计算</div>
+        </div>
+        <div class="ir-kcal">${Math.round(v.kcal)}<span> kcal</span></div>
+        <div class="ir-del" onclick="removeIntakeDetail(${i})">删除</div>
+      </div>`;
+    }
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
     const isSrv = isServingFood(fd);
     const v = foodKcal(fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
-    kcal+=v.kcal; p+=v.protein; c+=v.carb; f+=v.fat;
+    // （此处原有 kcal+=/p+=/c+=/f+= 累加 —— C-3 起由上方 dailyIntakeSummary() 统一的 S 提供，不再自算。
+    //   `v` 必须保留：本行的 ir-kcal 还在用它。）
     const qtyInput = (()=>{
       const pt = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[it.name] || null) : null;
       const usePortion = pt && pt.unit !== "克";
@@ -2182,15 +2228,15 @@ function renderIntakeDetail(){
 
   const summary = `
     <div class="intake-sum">
-      <div class="is-item"><div class="n">${Math.round(c)}</div><div class="u">碳水 g</div></div>
-      <div class="is-item"><div class="n">${Math.round(p)}</div><div class="u">蛋白 g</div></div>
-      <div class="is-item"><div class="n">${Math.round(f)}</div><div class="u">脂肪 g</div></div>
-      <div class="is-item is-kcal"><div class="n">${Math.round(kcal)}</div><div class="u">总热量 kcal</div></div>
+      <div class="is-item"><div class="n">${Math.round(S.carb)}</div><div class="u">碳水 g</div></div>
+      <div class="is-item"><div class="n">${Math.round(S.protein)}</div><div class="u">蛋白 g</div></div>
+      <div class="is-item"><div class="n">${Math.round(S.fat)}</div><div class="u">脂肪 g</div></div>
+      <div class="is-item is-kcal"><div class="n">${Math.round(S.kcal)}</div><div class="u">总热量 kcal</div></div>
     </div>`;
 
   // 剩余额度语言：默认说「还能吃」，超出时才说「已超」——
   // 「已摄入 1033 kcal（56%）」只描述过程，用户要的是「我还能吃多少」
-  const rem = target ? remainingOf(target.kcal, kcal) : null;
+  const rem = target ? remainingOf(target.kcal, S.kcal) : null;
   const targetBar = target ? `
     <div class="intake-target">
       <span>今日目标 <b>${Math.round(target.kcal)} kcal</b></span>
@@ -2198,13 +2244,13 @@ function renderIntakeDetail(){
         ? `<span class="it-over">已超 <b>${rem.abs} kcal</b></span>`
         : `<span class="it-remain">还能吃 <b>${rem.abs} kcal</b></span>`}
     </div>
-    <div class="intake-progress"><i class="${rem.over?"over":""}" style="width:${target.kcal>0?Math.min(100, Math.round(kcal/target.kcal*100)):0}%;"></i></div>` : "";
+    <div class="intake-progress"><i class="${rem.over?"over":""}" style="width:${target.kcal>0?Math.min(100, Math.round(S.kcal/target.kcal*100)):0}%;"></i></div>` : "";
 
   box.innerHTML = `
     ${targetBar}
     ${summary}
     <div class="intake-head">
-      <span>今天吃了 <b>${validCount}</b> 项${missingCount>0 ? ` · <span style="color:var(--sub);">${missingCount} 项已失效</span>` : ""}</span>
+      <span>今天吃了 <b>${S.validCount}</b> 项${S.missingCount>0 ? ` · <span style="color:var(--sub);">${S.missingCount} 项已失效</span>` : ""}${S.staleCount>0 ? ` · <span style="color:var(--sub);">${S.staleCount} 项已下架</span>` : ""}</span>
       <a onclick="openFoodCalc()">＋ 添加食物</a>
     </div>
     ${items.length===0
@@ -3983,6 +4029,50 @@ function foodKcal(f, grams){
     carb: mid(f.carb) * grams / 100,
     fat: mid(f.fat) * grams / 100
   };
+}
+
+/* ===== C-3：记录条目的「营养快照」 =====
+   记录一条食物时，把当时的营养值冻进条目（it.snap），**形状与食物对象一致**：
+     {name, kcal, protein, carb, fat, serving?, unit?}
+   目的：食物日后被删除 / 改名时，已记录的热量**不再凭空少一截**，而是保留记录时的数值 + 显式提示。
+
+   ⚠ 三条已知取舍（是设计，不是疏漏）：
+   1) **live 优先** —— 食物仍在库时一律走库里的现值。用户编辑自己的自定义食物后，今日记录应跟着变；
+      钉死在旧值会让人「刚改完自己的数据、记录却不跟」。snap 只在 findFood 未命中时兜底。
+   2) **snap = 「记录那一刻」的值，不随后续编辑刷新**（数量更新式只改数量、不动 snap）。
+      可观测条件：**仅当「记录后编辑过该自定义食物、且删除前未再保存」**时，数值回落到插入时快照。
+      （不做「每次保存顺带刷新 snap」—— 那会把 snap 的语义偷偷改成「最后一次保存的值」。）
+   3) **跳过缺失（缺 snap 的旧条目）** ⇒ 向后兼容由构造保证：没有 snap 就回落 live = 老行为。
+      因此**不需要版本号、不需要迁移、不需要写回**（不给历史天用今天的库伪造过去的值）。
+
+   为什么用「食物形状」而不是自己一套数值：兜底路径直接是 `fd = findFood(...) || it.snap`，
+   之后原样调既有的 foodKcal / isServingFood / showName —— 字段形状一样，走的就是同一段代码，
+   ⇒ **数值逐位相同是构造性质**，不依赖任何「数学等价」的论证。 */
+function snapOf(fd){
+  if(!fd) return null;
+  // 范围值（内置食物的 [lo,hi]）原样浅拷贝，**不取中值** —— 让兜底与 live 走同一段 mid()/foodKcal。
+  const cp = v => Array.isArray(v) ? v.slice() : v;
+  const s = {
+    name: fd.name,
+    kcal: cp(fd.kcal), protein: cp(fd.protein), carb: cp(fd.carb), fat: cp(fd.fat),
+  };
+  // serving + unit 必须成对携带：isServingFood 要求两者都在，缺一个就会走错分支
+  if(fd.serving !== undefined) s.serving = fd.serving;
+  if(fd.unit !== undefined) s.unit = fd.unit;
+  return s;
+}
+
+/* 条目 → {fd, stale}：
+     live 命中  → 用库里现值，stale=false
+     仅快照兜底 → 用快照值，  stale=true（食物已下架，但数值照算）
+     两者都无   → fd=null（= missing：算不出数值）
+   ⚠ **失效判据只此一处** —— 所有渲染行 / 计数 / 守门都消费它，
+     不再「一处用 findFood、另一处用别的」各判各的（C-1 治过的「两条腿各说各话」）。 */
+function resolveEntry(it){
+  const live = findFood(it && it.name);
+  if(live) return {fd: live, stale: false};
+  if(it && it.snap) return {fd: it.snap, stale: true};
+  return {fd: null, stale: false};
 }
 
 /* ---- 去脂体重（瘦体重）----
@@ -5895,7 +5985,24 @@ function loadDailyLog(){
   try{ return JSON.parse(store.getItem(DAILY_LOG_KEY)) || []; }
   catch(e){ return []; }
 }
-function saveDailyLog(list){ try{ store.setItem(DAILY_LOG_KEY, JSON.stringify(list)); }catch(e){} }
+// ⚠ C-3 的**唯一**快照写入点 —— 挂在「底层写日志」这一处，而不是 7 个创建点撒一遍：
+//   创建点有 4 个函数 / 7 处 push，而底层写入路径只有 saveTodayItems / saveTodayItemsRaw /
+//   首页三个 handler 内联的那段——它们**全部**最终走 saveDailyLog。「第 8 个创建点忘了加 snap」
+//   是迟早的事，挂在唯一出口就没有第 8 个。三条不变量各一行：
+function saveDailyLog(list){
+  try{
+    const t = todayStr();
+    (list||[]).forEach(rec=>{
+      if(!rec || rec.date !== t) return;        // ① 只补「今天」——给历史天回填 = 用今天的库伪造过去的值
+      (rec.items||[]).forEach(it=>{
+        if(!it || it.snap) return;              // ② 已有快照不覆盖 —— 保住 snap =「记录时的值」的语义
+        const fd = findFood(it.name);
+        if(fd) it.snap = snapOf(fd);            // ③ 只在食物**健在**时写入（当前都找不到的，别冻成快照）
+      });
+    });
+    store.setItem(DAILY_LOG_KEY, JSON.stringify(list));
+  }catch(e){}
+}
 // 读取「今天」已记录的食物清单
 function loadTodayItems(){
   const log = loadDailyLog();
@@ -6226,7 +6333,8 @@ function renderFoodListSummary(){
   box.innerHTML = `
     <div class="fls-t">已选食物（${foodList.length} 项）</div>
     ${foodList.map((it,i)=>{
-      const fd = findFood(it.name);
+      const r = resolveEntry(it);
+      const fd = r.fd;
       // 失效条目必须自己现形，不能静默消失、也不能被当成 0 kcal 的正常条目
       if(!fd){
         return `
@@ -6235,6 +6343,22 @@ function renderFoodListSummary(){
             <div class="fr-name" style="font-size:13px;">${escText(it.name)}</div>
             <div class="fr-meta">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
           </div>
+          <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
+        </div>`;
+      }
+      // 有快照但食物已下架：数值照算 + 显式提示，但**不给数量输入**（守门 handler 只认 findFood）。
+      // ⚠ 同样**不调 originBadge**（见 renderIntakeDetail 处同款说明）。
+      if(r.stale){
+        const qty = (it.servings !== undefined) ? it.servings : it.grams;
+        const v = foodKcal(fd, qty);
+        if(it.kcalAdj) v.kcal += it.kcalAdj;
+        return `
+        <div class="food-row" style="padding:10px 14px;opacity:.6;">
+          <div style="flex:1;">
+            <div class="fr-name" style="font-size:13px;">${escText(showName(fd))}</div>
+            <div class="fr-meta">⚠ 该食物已下架，按记录时的数据计算</div>
+          </div>
+          <div class="fr-kcal" style="font-size:13px;">${Math.round(v.kcal)} kcal</div>
           <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
         </div>`;
       }
@@ -6273,8 +6397,9 @@ function renderFoodTotal(){
   if(!box) return;
   let kcal=0, p=0, c=0, f=0;
   foodList.forEach(it=>{
-    const fd = findFood(it.name);
-    if(!fd) return;   // 失效条目不计入汇总（否则会把「这条没了」伪装成 0 kcal）
+    const r = resolveEntry(it);
+    if(!r.fd) return;   // 算不出数值的（既不在库、也无快照）不计入汇总（否则会把「这条没了」伪装成 0 kcal）
+    const fd = r.fd;    // C-3：live 或快照兜底都计入 —— 食物下架后热量不凭空少一截
     const qty = (it.servings !== undefined) ? it.servings : it.grams;
     const v = foodKcal(fd, qty);
     if(it.kcalAdj) v.kcal += it.kcalAdj;
