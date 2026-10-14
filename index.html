@@ -923,11 +923,14 @@
   }
   .food-search input:focus{border-color:var(--brand); box-shadow:0 0 0 3px var(--brand-soft);}
   .food-cats{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
-  .food-cat{
+  /* fq-chip 复用 food-cat 的外观，但**不共用 class 名** —— C-6 的类目行不变式按 .food-cat 计数，
+     并（分开地）断言「非类目 chip 不带类目 emoji」；两处语义不同，不能图省事合并成一个 class。 */
+  .food-cat, .fq-chip{
     font-size:12px; padding:6px 14px; border-radius:16px; cursor:pointer;
     border:1px solid var(--border); background:var(--card); color:var(--sub); transition:.15s;
   }
-  .food-cat.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .food-cat.on, .fq-chip.on{background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:#fff; border-color:transparent; font-weight:600;}
+  .food-quick{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
   .food-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:18px; max-height:360px; overflow-y:auto;}
   .food-item{
     border:1px solid var(--border); border-radius:13px; padding:12px 14px;
@@ -964,6 +967,9 @@
   @keyframes fpFade{from{opacity:0;} to{opacity:1;}}
   .fp-sheet .sheet-grab{width:40px; height:4px; border-radius:2px; background:var(--border); margin:8px auto 14px;}
   .fp-sheet .fp-name{font-size:16px; font-weight:700; color:var(--brand-deep); margin-bottom:14px;}
+  /* 收藏星标：C-5 的**唯一**收藏入口（只在食物选择弹层的标题行里） */
+  .fp-fav{float:right; font-size:20px; line-height:1; cursor:pointer; color:var(--sub); font-weight:400; user-select:none;}
+  .fp-fav.on{color:var(--brand);}
   .fp-sheet .fp-row{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
   .fp-sheet .fp-row input{
     flex:1; padding:12px 14px; border-radius:11px; border:1px solid var(--border);
@@ -6011,6 +6017,7 @@ let foodList = [];        // {name, grams} —— 作为「今天」的摄入编
 let comboTag = "全部";    // 套餐分类筛选
 let foodMode = "food";     // 记录页顶部分段：food（记食物）| combo（一键套餐）
 let catsCollapsed = true;  // 分类 tag 是否折叠（默认收起只显示常用分类）
+let quickMode = null;      // 快捷清单：null（无）| "freq"（常吃）| "recent"（最近）| "fav"（收藏）
 
 // 模糊搜索别名：口语词 → 命中的品牌/分类关键词（搜「奶茶」「咖啡」等品类词也能找到对应品牌食物）
 const SEARCH_ALIASES = {
@@ -6103,12 +6110,65 @@ function saveTodayItems(){
 }
 
 /* ==================================================================
+   C-5 常用度 / 收藏（两枚新键，两个**唯一**写入点）
+   ------------------------------------------------------------------
+   FREQ_KEY = { [食物名]: { n:出现次数(int≥0), t:最近使用 epoch ms } }
+   FAV_KEY  = [ 食物名, … ]（按收藏先后顺序，去重）
+
+   ⚠ 刻意**不做模块级缓存**：每次调用都直读 store。于是导入/清空之后，
+     「界面用的是内存镜像、存储里已是新值」这处不同源**天然不存在** ——
+     无需在 replayAfterImport / confirmClear 里补任何重放逻辑（C-4 函数体零改动）。
+   ================================================================== */
+const FREQ_KEY = "lizi_food_freq";
+const FAV_KEY  = "lizi_food_fav";
+
+function loadFoodFreq(){
+  try{
+    const v = JSON.parse(store.getItem(FREQ_KEY));
+    return (v && typeof v === "object" && !Array.isArray(v)) ? v : {};
+  }catch(e){ return {}; }
+}
+function loadFoodFav(){
+  try{
+    const v = JSON.parse(store.getItem(FAV_KEY));
+    return Array.isArray(v) ? v : [];
+  }catch(e){ return []; }
+}
+
+// 唯一写入点 ①：记录一次使用（出现次数 +1、时间戳刷新）。
+// ⚠ 全文件只有这里写 FREQ_KEY —— 写入点收敛到一处，「第 3 个 recordFoodUse 忘了加」无从发生。
+function recordFoodUse(name){
+  if(!name || typeof name !== "string") return;
+  try{
+    const freq = loadFoodFreq();
+    const rec = freq[name] && typeof freq[name] === "object" ? freq[name] : {};
+    rec.n = (typeof rec.n === "number" && isFinite(rec.n) ? rec.n : 0) + 1;
+    rec.t = Date.now();
+    freq[name] = rec;
+    store.setItem(FREQ_KEY, JSON.stringify(freq));
+  }catch(e){}
+}
+// 唯一写入点 ②：收藏开关（存在则移除、不存在则追加 ⇒ 天然去重，绝不出现两份同名）。
+// ⚠ 全文件只有这里写 FAV_KEY。
+function toggleFav(name){
+  if(!name || typeof name !== "string") return;
+  try{
+    const fav = loadFoodFav();
+    const i = fav.indexOf(name);
+    if(i >= 0) fav.splice(i, 1);
+    else fav.push(name);
+    store.setItem(FAV_KEY, JSON.stringify(fav));
+  }catch(e){}
+}
+
+/* ==================================================================
    本地存储键注册表（LIZI_KEYS）—— 唯一真源
    ------------------------------------------------------------------
    ⚠ 病根：导出只写 1 个键（profile）、清空只清 7 个键，两套键表各自维护、已经分叉；
      `lizi_theme` 与 `lizi_recipe_pref` 既不在 clear 里、也不在 export 里。
      ⇒ 收敛到这一张表，confirmClear / exportData / importData 三个消费者都从这里取：
-       新增键只改这里一处，「清空的键集 === 导出的键集 === 全部 9 键」由构造保证。
+       新增键只改这里一处，「清空的键集 === 导出的键集 === 全部键」由构造保证
+       （C-4 时为 9 键；C-5 加常吃/收藏两键 ⇒ 现为 11 键，数值随表自动成立，不写死）。
    ================================================================== */
 // 逐键校验器：只判「该键的值是否可用」。不通过者由 importData 单独丢弃（只拒该键）。
 const isPlainObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -6164,6 +6224,22 @@ function vDailyLog(v){
     return rec.items.every(it => isPlainObj(it) && typeof it.name === "string" && it.name.trim() !== "");
   });
 }
+// 常吃/最近记录：obj；每值为 obj，n 是 int≥0（出现次数）、t 是有限数（epoch ms 时间戳）。
+function vFoodFreq(v){
+  if(!isPlainObj(v)) return false;
+  return Object.keys(v).every(k => {
+    const r = v[k];
+    if(!isPlainObj(r)) return false;
+    if(!(typeof r.n === "number" && isFinite(r.n) && r.n >= 0 && Math.floor(r.n) === r.n)) return false;
+    if(!(typeof r.t === "number" && isFinite(r.t))) return false;
+    return true;
+  });
+}
+// 收藏的食物：数组；每元素为 string（食物名）。
+function vFoodFav(v){
+  if(!Array.isArray(v)) return false;
+  return v.every(x => typeof x === "string");
+}
 // 综合校验：有专属校验器用专属；否则按 kind 做结构兜底（一个键都别放进明显不对的东西）。
 function validateKey(entry, val){
   if(typeof entry.validate === "function") return entry.validate(val);
@@ -6184,6 +6260,8 @@ const LIZI_KEYS = [
   { key: DAILY_LOG_KEY,    label:"今日摄入",        kind:"array",  inExport:true, inClear:true, validate: vDailyLog },
   { key: RECIPE_DONE_KEY,  label:"今日执行状态",    kind:"object", inExport:true, inClear:true },
   { key: RECIPE_PREF_KEY,  label:"食谱偏好（含忌口）", kind:"object", inExport:true, inClear:true },
+  { key: FREQ_KEY,         label:"常吃/最近记录",   kind:"object", inExport:true, inClear:true, validate: vFoodFreq },
+  { key: FAV_KEY,          label:"收藏的食物",      kind:"array",  inExport:true, inClear:true, validate: vFoodFav },
   { key: THEME_KEY,        label:"主题",            kind:"string", inExport:true, inClear:true },
 ];
 
@@ -6192,6 +6270,32 @@ function openFoodCalc(){
   renderFoodCalc();
   go('food');
 }
+
+/* 快捷清单的**派生**口径（不额外存储）—— 三种模式各返回一个名字数组，顺序即渲染顺序：
+     常吃：n ≥ 2，按 n 降序，tie-break 食物名升序；最多 12 条
+     最近：按 t 降序，tie-break 食物名升序；最多 12 条
+     收藏：按 FAV_KEY 里的收藏先后顺序；不设上限
+   ⚠ 名字已下架（findFood 取不到）→ 从清单里**跳过**渲染，但**绝不**自动删记录：
+     提示词的语义是「取回常用/收藏」，不是「清理无效项」；删了会让用户升级后无声丢数据。 */
+const QUICK_CAP = 12;
+function quickFoodNames(mode){
+  const byNameAsc = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  if(mode === "fav") return loadFoodFav().filter(n => !!findFood(n));
+  const freq = loadFoodFreq();
+  const rows = Object.keys(freq)
+    .map(name => ({ name, n:(freq[name] && freq[name].n) || 0, t:(freq[name] && freq[name].t) || 0 }))
+    .filter(r => !!findFood(r.name));                    // 下架食物跳过（记录仍留在 FREQ_KEY 里）
+  if(mode === "recent"){
+    return rows.slice()
+      .sort((a, b) => (b.t - a.t) || byNameAsc(a.name, b.name))
+      .slice(0, QUICK_CAP).map(r => r.name);
+  }
+  return rows.filter(r => r.n >= 2)                      // 常吃：至少真正用过 2 次
+    .sort((a, b) => (b.n - a.n) || byNameAsc(a.name, b.name))
+    .slice(0, QUICK_CAP).map(r => r.name);
+}
+// 点击快捷 chip：切到该清单（不 toggle ——「关掉」的入口是点任意类目 chip）。
+function setQuickMode(m){ quickMode = m; pickedFood = null; renderFoodCalc(); }
 
 function renderFoodCalc(){
   const allCats = Array.from(new Set(allFoods().map(f=>f.category)));
@@ -6202,20 +6306,36 @@ function renderFoodCalc(){
   const shownCats = catsCollapsed ? topCats : allCats;
   const hasMore = allCats.length > topCats.length;
 
-  const foods = allFoods().filter(f=>{
-    const okCat = foodCat==="全部" || f.category===foodCat;
-    const okKw = foodMatchKw(f, foodKw);
-    return okCat && okKw;
-  });
+  // 快捷清单（常吃 / 最近 / 收藏）—— 三个名字数组，用于决定「哪些 chip 渲染」以及「当前清单点哪条」
+  const quickLists = {
+    freq:   quickFoodNames("freq"),
+    recent: quickFoodNames("recent"),
+    fav:    quickFoodNames("fav"),
+  };
+  const anyQuick = quickLists.freq.length > 0 || quickLists.recent.length > 0 || quickLists.fav.length > 0;
+
+  const foods = (quickMode
+    ? quickLists[quickMode].map(n=>findFood(n)).filter(Boolean)          // 快捷清单：按派生顺序取食物对象
+    : allFoods().filter(f=>foodCat==="全部" || f.category===foodCat)     // 常规：按类目
+  ).filter(f=>foodMatchKw(f, foodKw));                                   // 搜索词在两种模式下都生效
 
   const searchBox = `
     <div class="food-search">
       <input id="foodSearchInput" placeholder="搜索食物名称..." value="${escAttr(foodKw)}" oninput="foodKw=this.value;renderFoodCalc()" />
     </div>`;
 
+  // 快捷行：整行只在「三个清单至少一个非空」时出现；每条 chip 也各自只在**本清单**非空时出现。
+  const quickChip = (mode, label) => quickLists[mode].length
+    ? `<span class="fq-chip ${quickMode===mode?"on":""}" onclick="setQuickMode('${mode}')">${label}</span>`
+    : "";
+  const quickRow = anyQuick
+    ? `<div class="food-quick">${quickChip("freq","常吃")}${quickChip("recent","最近")}${quickChip("fav","收藏")}</div>`
+    : "";
+
   // 「记食物」分段主体
   const foodSection = `
     ${searchBox}
+    ${quickRow}
     <button class="add-custom" onclick="openMyFood()">＋ 我的食物</button>
     <div class="food-cats">
       <span class="food-cat ${foodCat==="全部"?"on":""}" onclick="setFoodCat('全部')">全部</span>
@@ -6275,7 +6395,7 @@ function renderFoodCalc(){
 
 function setFoodMode(m){ foodMode = m; renderFoodCalc(); }
 function toggleCats(){ catsCollapsed = !catsCollapsed; renderFoodCalc(); }
-function setFoodCat(c){ foodCat = c; pickedFood = null; renderFoodCalc(); }
+function setFoodCat(c){ foodCat = c; quickMode = null; pickedFood = null; renderFoodCalc(); }
 
 /* ---- 一键套餐（组合餐） ---- */
 function comboKcal(combo){
@@ -6301,8 +6421,10 @@ function addCombo(idx){
     if(!fd) return;
     if(it.servings !== undefined){
       foodList.push({name:fd.name, servings:it.servings});
+      recordFoodUse(fd.name);                          // C-5：套餐里的每一项也算「用过一次」
     } else {
       foodList.push({name:fd.name, grams:it.g || 100});
+      recordFoodUse(fd.name);
     }
   });
   saveTodayItems();
@@ -6335,6 +6457,11 @@ function renderFoodPickerBox(){
   const unitShow = isSrv ? (fd.unit||"份") : "100g";
   const kcalShow = isSrv ? fd.kcal : fmtRange(fd.kcal);
   const p = (!isSrv && typeof PORTIONS!=="undefined") ? (PORTIONS[pickedFood] || null) : null;
+
+  // C-5 收藏入口：**只**在这一处（食物选择弹层标题行）。用全局 pickedFood 作参数，
+  // 不把食物名内联进 onclick 代码串（否则名字里的引号会截断语句 —— 见 escAttr 那段病根）。
+  const isFav = loadFoodFav().indexOf(pickedFood) >= 0;
+  const favBtn = `<span class="fp-fav ${isFav?"on":""}" role="button" title="${isFav?"取消收藏":"收藏"}" onclick="toggleFav(pickedFood);renderFoodCalc();">${isFav?"★":"☆"}</span>`;
 
   // 按份店面产品：提供「规格备注 + 热量微调」，供用户手动记录糖度/加酱等差异
   const adjBox = isSrv ? `
@@ -6371,7 +6498,7 @@ function renderFoodPickerBox(){
     <div class="fp-mask" onclick="closeFoodPicker()"></div>
     <div class="fp-sheet">
       <div class="sheet-grab"></div>
-      <div class="fp-name">${escText(showName(fd))}${originBadge(fd)} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
+      <div class="fp-name">${escText(showName(fd))}${originBadge(fd)} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span>${favBtn}</div>
       ${originNote(fd)}
       ${portionBox}
       ${gramsRow}
@@ -6442,8 +6569,10 @@ function addFoodToList(){
     if(note) item.note = note;
     if(kcalAdj) item.kcalAdj = kcalAdj;
     foodList.push(item);
+    recordFoodUse(fd.name);                            // C-5：加入清单 = 用过一次
   } else {
     foodList.push({name:fd.name, grams:qty});
+    recordFoodUse(fd.name);
   }
   saveTodayItems();
   const qtyShow = isSrv ? `${qty}${fd.unit||"份"}` : humanizeGrams(fd.name, qty);
