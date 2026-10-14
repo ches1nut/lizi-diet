@@ -1986,7 +1986,7 @@ function renderIntakeRing(){
           return `
           <div class="ring-detail-row" style="opacity:.6;">
             <div class="rd-info">
-              <div class="rd-name">${it.name}</div>
+              <div class="rd-name">${escText(it.name)}</div>
               <div style="font-size:12px;color:var(--sub);">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
             </div>
             <div class="rd-del" onclick="removeHomeIntake(${i})">删除</div>
@@ -2009,7 +2009,7 @@ function renderIntakeRing(){
         return `
         <div class="ring-detail-row">
           <div class="rd-info">
-            <div class="rd-name">${it.name}</div>
+            <div class="rd-name">${escText(it.name)}</div>
             <div class="rd-edit">${qtyInput}</div>
           </div>
           <div class="rd-kcal">${Math.round(v.kcal)} kcal</div>
@@ -2129,7 +2129,7 @@ function renderIntakeDetail(){
       return `
       <div class="intake-row" style="opacity:.6;">
         <div class="ir-info">
-          <div class="ir-name">${it.name}</div>
+          <div class="ir-name">${escText(it.name)}</div>
           <div class="ir-meta">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
         </div>
         <div class="ir-del" onclick="removeIntakeDetail(${i})">删除</div>
@@ -2159,7 +2159,7 @@ function renderIntakeDetail(){
     return `
       <div class="intake-row">
         <div class="ir-info">
-          <div class="ir-name">${showName(fd)}${originBadge(fd)}</div>
+          <div class="ir-name">${escText(showName(fd))}${originBadge(fd)}</div>
           <div class="ir-meta">${meta}</div>
           <div class="ir-edit">${qtyInput}</div>
         </div>
@@ -4555,7 +4555,7 @@ function renderFillSuggest(){
         ${fillSuggestItems.map((it, i)=>`
           <div class="fs-item">
             <div class="fsi-main">
-              <div class="fsi-name">${showNameOf(it.name)}${originBadge(it.origin)}</div>
+              <div class="fsi-name">${escText(showNameOf(it.name))}${originBadge(it.origin)}</div>
               <div class="fsi-meta">${humanizeGrams(it.name, it.g)} · ${it.kcal} kcal · 蛋白 ${it.protein}g</div>
             </div>
             <div class="fsi-add" onclick="addSuggestToIntake(${i})">加入</div>
@@ -5566,7 +5566,7 @@ function renderRecipeMeals(){
         return `
         <div class="food-row">
           <div style="flex:1;">
-            <div class="fr-name">${showNameOf(it.n)}${originBadge(fd)}</div>
+            <div class="fr-name">${escText(showNameOf(it.n))}${originBadge(fd)}</div>
             <div class="fr-meta">${fd ? humanizeGrams(it.n, it.g) : ("约 "+roundish(it.g)+"g")} · 蛋白${Math.round(v.protein)}g · 碳水${Math.round(v.carb)}g · 脂肪${Math.round(v.fat)}g</div>
           </div>
           <div class="fr-kcal">${Math.round(v.kcal)} kcal</div>
@@ -5647,7 +5647,7 @@ function renderFoodPicker(meal){
       <div id="mealFoodOptions" style="max-height:200px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         ${foods.slice(0,40).map(f=>`
           <div class="food-item" data-food="${escAttr(f.name)}" onclick="pickMealFood('${meal}', this.dataset.food)">
-            <div class="fi-name">${showName(f)}${originBadge(f)}</div>
+            <div class="fi-name">${escText(showName(f))}${originBadge(f)}</div>
             <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
           </div>`).join("")}
       </div>
@@ -5679,7 +5679,7 @@ function renderMealFoodOptions(meal){
   const foods = allFoods().filter(f=>foodMatchKw(f, kw));
   document.getElementById("mealFoodOptions").innerHTML = foods.slice(0,40).map(f=>`
     <div class="food-item ${pickedMealFood===f.name?"sel":""}" data-food="${escAttr(f.name)}" onclick="pickMealFood('${meal}', this.dataset.food)">
-      <div class="fi-name">${showName(f)}${originBadge(f)}</div>
+      <div class="fi-name">${escText(showName(f))}${originBadge(f)}</div>
       <div class="fi-kcal"><b>${fmtRange(f.kcal)}</b> kcal/100g</div>
     </div>`).join("");
 }
@@ -5947,7 +5947,7 @@ function renderFoodCalc(){
           : `蛋白${fmtRange(f.protein)} · 碳水${fmtRange(f.carb)} · 脂肪${fmtRange(f.fat)}`;
         return `
         <div class="food-item ${pickedFood===f.name?"sel":""}" data-food="${escAttr(f.name)}" onclick="pickFoodItem(this.dataset.food)">
-          <div class="fi-name">${showName(f)}${originBadge(f)}</div>
+          <div class="fi-name">${escText(showName(f))}${originBadge(f)}</div>
           <div class="fi-kcal"><b>${kcalShow}</b> kcal/${unitShow}</div>
           <div class="fi-kcal" style="font-size:11px;">${macroShow}</div>
         </div>`;
@@ -6087,7 +6087,7 @@ function renderFoodPickerBox(){
     <div class="fp-mask" onclick="closeFoodPicker()"></div>
     <div class="fp-sheet">
       <div class="sheet-grab"></div>
-      <div class="fp-name">${showName(fd)}${originBadge(fd)} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
+      <div class="fp-name">${escText(showName(fd))}${originBadge(fd)} <span style="font-size:12px;color:var(--sub);font-weight:400;">（${kcalShow} kcal / ${unitShow}）</span></div>
       ${originNote(fd)}
       ${portionBox}
       ${gramsRow}
@@ -6222,7 +6222,7 @@ function renderFoodListSummary(){
         return `
         <div class="food-row" style="padding:10px 14px;opacity:.6;">
           <div style="flex:1;">
-            <div class="fr-name" style="font-size:13px;">${it.name}</div>
+            <div class="fr-name" style="font-size:13px;">${escText(it.name)}</div>
             <div class="fr-meta">⚠ 该食物已不在库中（被删除或改名），请删除本条</div>
           </div>
           <div class="fr-del" onclick="removeFoodFromList(${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div>
@@ -6247,7 +6247,7 @@ function renderFoodListSummary(){
       return `
       <div class="food-row" style="padding:10px 14px;">
         <div style="flex:1;">
-          <div class="fr-name" style="font-size:13px;">${showNameOf(it.name)}${originBadge(fd)}</div>
+          <div class="fr-name" style="font-size:13px;">${escText(showNameOf(it.name))}${originBadge(fd)}</div>
           <div class="fr-meta">${metaShow}</div>
           <div class="fls-qty-row">${qtyInput}</div>
         </div>
@@ -6300,7 +6300,7 @@ function renderCustomForm(){
     return `
     <div class="food-row" style="padding:10px 14px;">
       <div style="flex:1;">
-        <div class="fr-name" style="font-size:13px;">${f.name}<span style="font-weight:400;color:var(--sub);"> · ${fmtRange(f.kcal)} kcal/100g</span></div>
+        <div class="fr-name" style="font-size:13px;">${escText(f.name)}<span style="font-weight:400;color:var(--sub);"> · ${fmtRange(f.kcal)} kcal/100g</span></div>
         ${shadowed ? `<div class="fr-meta">⚠ 与内置食物同名，正在遮蔽内置的 ${fmtRange(shadowed.kcal)} kcal/100g</div>` : ""}
       </div>
       <div style="font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;padding:0 8px;" data-edit="${escAttr(f.name)}" onclick="startEditCustom(this.dataset.edit)">编辑</div>
