@@ -990,23 +990,6 @@
     background:var(--card); font-size:15px; outline:none; color:var(--text);
   }
   .food-picker .fp-unit{font-size:13px; color:var(--sub); white-space:nowrap;}
-  .food-photo-btn{
-    width:100%; padding:13px; border-radius:12px; border:1.5px dashed var(--brand-mid);
-    background:var(--card); color:var(--brand); font-size:14px; font-weight:600; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; gap:8px; transition:.15s; margin-bottom:14px;
-  }
-  .food-photo-btn:hover{border-color:var(--brand); background:var(--brand-soft);}
-  .food-photo-btn svg{width:18px; height:18px;}
-  .photo-previews{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
-  .photo-previews .pp{
-    position:relative; width:72px; height:72px; border-radius:12px; overflow:hidden;
-    border:1px solid var(--border);
-  }
-  .photo-previews .pp img{width:100%; height:100%; object-fit:cover;}
-  .photo-previews .pp .pp-x{
-    position:absolute; right:3px; top:3px; width:20px; height:20px; border-radius:50%;
-    background:rgba(0,0,0,.55); color:#fff; font-size:12px; line-height:20px; text-align:center; cursor:pointer;
-  }
   .food-list-summary{
     border-radius:14px; background:var(--brand-soft); padding:14px 16px; margin-bottom:16px;
   }
@@ -5783,7 +5766,6 @@ let foodCat = "全部";
 let foodKw = "";
 let pickedFood = null;
 let foodList = [];        // {name, grams} —— 作为「今天」的摄入编辑缓冲，变更即持久化到每日记录
-let foodPhotos = [];      // 拍照存档（dataURL）
 let comboTag = "全部";    // 套餐分类筛选
 let foodMode = "food";     // 记录页顶部分段：food（记食物）| combo（一键套餐）
 let catsCollapsed = true;  // 分类 tag 是否折叠（默认收起只显示常用分类）
@@ -5912,12 +5894,6 @@ function renderFoodCalc(){
       }).join("")}
     </div>
     <div id="foodPickerBox"></div>
-    <button class="food-photo-btn" onclick="document.getElementById('photoInput').click()">
-      <svg class="ic-brand" viewBox="0 0 24 24" fill="none" stroke="#26215C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-      拍照 / 上传食物图片（存档，暂不自动识别）
-    </button>
-    <input type="file" id="photoInput" accept="image/*" multiple style="display:none" onchange="addFoodPhotos(this)" />
-    <div class="photo-previews" id="photoPreviews"></div>
     <button class="add-custom" onclick="toggleCustomForm()">＋ 添加自定义食物</button>
     <div id="customFormBox"></div>`;
 
@@ -5952,7 +5928,6 @@ function renderFoodCalc(){
   renderFoodPickerBox();
   renderFoodListSummary();
   renderFoodTotal();
-  renderPhotoPreviews();
   renderCustomForm();
 }
 
@@ -6244,30 +6219,6 @@ function renderFoodTotal(){
     <div class="ft-kcal"><div class="n">${Math.round(kcal)}</div><div class="u">总热量 kcal</div></div>
   `;
 }
-
-/* 拍照存档 */
-function addFoodPhotos(input){
-  const files = Array.from(input.files || []);
-  files.forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = function(e){
-      foodPhotos.push(e.target.result);
-      renderPhotoPreviews();
-    };
-    reader.readAsDataURL(file);
-  });
-  input.value = "";
-}
-function renderPhotoPreviews(){
-  const box = document.getElementById("photoPreviews");
-  if(!box) return;
-  box.innerHTML = foodPhotos.map((src,i)=>`
-    <div class="pp">
-      <img src="${src}" />
-      <span class="pp-x" onclick="removePhoto(${i})">×</span>
-    </div>`).join("");
-}
-function removePhoto(i){ foodPhotos.splice(i,1); renderPhotoPreviews(); }
 
 /* 自定义食物 */
 let customFormOpen = false;
