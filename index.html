@@ -4836,9 +4836,12 @@ function seededRand(seed){
     return s / 233280;
   };
 }
-// 从 FOODS 中按分类取食材，排除命中 exclude 的
+// 从食物库（内置 + 自定义）中按分类取食材
+// ⚠ 改走 allFoods() 让自定义食物也能进配餐池；过滤条件保持不变（f.category===cat && f.name）。
+// 自定义食物若没有 category 字段 → 它本来就不等于任何 cat，自然不会匹配任何池（即「有 category 才进池」），
+// 这里不额外发明归类规则、也不放行无 category 的条目。
 function poolByCategory(cat){
-  return FOODS.filter(f=>f.category===cat && f.name);
+  return allFoods().filter(f=>f.category===cat && f.name);
 }
 // 按偏好标签从「蛋白质/主食」池里筛选食材名
 function filterByPref(cat, tag){
@@ -5872,6 +5875,8 @@ function renderFoodCalc(){
   // 「记食物」分段主体
   const foodSection = `
     ${searchBox}
+    <button class="add-custom" onclick="editingName=null; toggleCustomForm()">＋ 添加自定义食物</button>
+    <div id="customFormBox"></div>
     <div class="food-cats">
       <span class="food-cat ${foodCat==="全部"?"on":""}" onclick="setFoodCat('全部')">全部</span>
       ${shownCats.map(c=>`<span class="food-cat ${c===foodCat?"on":""}" onclick="setFoodCat('${c}')">${c}</span>`).join("")}
@@ -5893,9 +5898,7 @@ function renderFoodCalc(){
         </div>`;
       }).join("")}
     </div>
-    <div id="foodPickerBox"></div>
-    <button class="add-custom" onclick="toggleCustomForm()">＋ 添加自定义食物</button>
-    <div id="customFormBox"></div>`;
+    <div id="foodPickerBox"></div>`;
 
   // 「一键套餐」分段主体
   const comboTags = ["全部"].concat(Array.from(new Set(MEAL_COMBOS.map(c=>c.tag))));
@@ -6222,6 +6225,7 @@ function renderFoodTotal(){
 
 /* 自定义食物 */
 let customFormOpen = false;
+let editingName = null;   // 非空 = 正在编辑「我的食物」里的这一条（表单以它为草稿）；空 = 新建
 function toggleCustomForm(){
   customFormOpen = !customFormOpen;
   renderFoodCalc();
@@ -6229,23 +6233,40 @@ function toggleCustomForm(){
 function renderCustomForm(){
   const box = document.getElementById("customFormBox");
   if(!box) return;
-  if(!customFormOpen){ box.innerHTML = ""; return; }
+  const customs = loadCustomFoods();
+  // 「我的食物」列表：始终可见 —— 让用户看得到自己录过什么、能改、能一眼发现「同名遮蔽内置」。
+  // 遮蔽判据：这条自定义食物的名字也出现在内置库（FOODS / BRAND_FOODS）里。
+  // 按 ② 的规则此时数字以自定义为准、内置被遮蔽 —— 必须让它现形，不能静默。
+  const listHtml = customs.length ? customs.map(f=>{
+    const shadowed = (f && f.name) ? FOODS.concat(BRAND_FOODS).find(b=>b && b.name===f.name) : null;
+    return `
+    <div class="food-row" style="padding:10px 14px;">
+      <div style="flex:1;">
+        <div class="fr-name" style="font-size:13px;">${f.name}<span style="font-weight:400;color:var(--sub);"> · ${fmtRange(f.kcal)} kcal/100g</span></div>
+        ${shadowed ? `<div class="fr-meta">⚠ 与内置食物同名，正在遮蔽内置的 ${fmtRange(shadowed.kcal)} kcal/100g</div>` : ""}
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--brand);cursor:pointer;padding:0 8px;" onclick="editingName='${f.name}'; customFormOpen=true; renderFoodCalc()">编辑</div>
+    </div>`;
+  }).join("") : "";
+  if(!customFormOpen){ box.innerHTML = listHtml; return; }
+  const cur = editingName ? customs.find(f=>f && f.name===editingName) : null;
   box.innerHTML = `
     <div class="custom-form">
-      <div class="cf-t">添加自定义食物（每 100g）</div>
-      <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" /></div>
-      <div class="cf-row"><label>分类</label><input id="cfCat" placeholder="如：蛋白质" value="自定义" /></div>
+      <div class="cf-t">${cur ? "编辑自定义食物（每 100g）" : "添加自定义食物（每 100g）"}</div>
+      <div class="cf-row"><label>食物名称</label><input id="cfName" placeholder="如：红烧鸡腿" value="${cur ? cur.name : ""}" /></div>
+      <div class="cf-row"><label>分类</label><input id="cfCat" placeholder="如：蛋白质" value="${cur ? (cur.category || "") : "自定义"}" /></div>
       <div class="cf-grid">
-        <div class="cf-row"><label>热量 kcal</label><input id="cfKcal" type="number" placeholder="0" /></div>
-        <div class="cf-row"><label>蛋白质 g</label><input id="cfProtein" type="number" placeholder="0" /></div>
-        <div class="cf-row"><label>碳水 g</label><input id="cfCarb" type="number" placeholder="0" /></div>
-        <div class="cf-row"><label>脂肪 g</label><input id="cfFat" type="number" placeholder="0" /></div>
+        <div class="cf-row"><label>热量 kcal</label><input id="cfKcal" type="number" placeholder="0" value="${cur ? cur.kcal : ""}" /></div>
+        <div class="cf-row"><label>蛋白质 g</label><input id="cfProtein" type="number" placeholder="0" value="${cur ? cur.protein : ""}" /></div>
+        <div class="cf-row"><label>碳水 g</label><input id="cfCarb" type="number" placeholder="0" value="${cur ? cur.carb : ""}" /></div>
+        <div class="cf-row"><label>脂肪 g</label><input id="cfFat" type="number" placeholder="0" value="${cur ? cur.fat : ""}" /></div>
       </div>
       <div class="fp-btns" style="margin-top:14px;">
         <button class="fp-add" onclick="saveCustomFood()">保存</button>
-        <button class="fp-cancel" onclick="toggleCustomForm()">取消</button>
+        <button class="fp-cancel" onclick="editingName=null; toggleCustomForm()">取消</button>
       </div>
-    </div>`;
+    </div>
+    ${listHtml}`;
 }
 function saveCustomFood(){
   const name = document.getElementById("cfName").value.trim();
@@ -6256,9 +6277,19 @@ function saveCustomFood(){
   const fat = parseFloat(document.getElementById("cfFat").value) || 0;
   if(!name){ alert("请填写食物名称"); return; }
   const list = loadCustomFoods();
-  list.push({name, category:cat, kcal, protein, carb, fat});
+  const item = {name, category:cat, kcal, protein, carb, fat};
+  if(editingName){
+    // 编辑已有：按「进入编辑前的那条名字」定位并整体替换（允许改名）。
+    // ⚠ 改名会让历史记录里按旧名引用的条目静默回落（见本次 commit 的「已知残留」）。
+    const idx = list.findIndex(f=>f && f.name===editingName);
+    if(idx >= 0) list[idx] = item; else list.push(item);
+  } else {
+    // 新建：直接追加（与内置同名时，按 ② 的规则同名自定义会遮蔽内置）
+    list.push(item);
+  }
   saveCustomFoods(list);
   customFormOpen = false;
+  editingName = null;
   alert(`已保存自定义食物「${name}」`);
   renderFoodCalc();
 }
