@@ -6160,6 +6160,20 @@ function toggleFav(name){
     store.setItem(FAV_KEY, JSON.stringify(fav));
   }catch(e){}
 }
+// 点★的就地更新：只翻这个元素自身的 class / 文本，不重画整屏。
+// ⚠ 不能调 renderFoodCalc()：整屏替换会把弹层里的备注 / 热量输入框一起销毁（缺陷 ②）。
+//   刷新快捷行用 renderFoodResults() —— 它只换 #foodResults，而弹层留在 #foodResults 之外。
+function toggleFavUI(el){
+  if(!pickedFood) return;
+  toggleFav(pickedFood);
+  const isFav = loadFoodFav().indexOf(pickedFood) >= 0;
+  if(el){
+    el.classList.toggle("on", isFav);
+    el.textContent = isFav ? "★" : "☆";
+    el.setAttribute("title", isFav ? "取消收藏" : "收藏");
+  }
+  renderFoodResults();
+}
 
 /* ==================================================================
    本地存储键注册表（LIZI_KEYS）—— 唯一真源
@@ -6483,7 +6497,9 @@ function renderFoodPickerBox(){
   // C-5 收藏入口：**只**在这一处（食物选择弹层标题行）。用全局 pickedFood 作参数，
   // 不把食物名内联进 onclick 代码串（否则名字里的引号会截断语句 —— 见 escAttr 那段病根）。
   const isFav = loadFoodFav().indexOf(pickedFood) >= 0;
-  const favBtn = `<span class="fp-fav ${isFav?"on":""}" role="button" title="${isFav?"取消收藏":"收藏"}" onclick="toggleFav(pickedFood);renderFoodCalc();">${isFav?"★":"☆"}</span>`;
+  // 点★：不能走 renderFoodCalc()（整屏替换会把本弹层连同备注 / 热量输入框一起重建掉 → 备注被清空）。
+  // 改为就地翻该元素自身的 class / 文本，再 renderFoodResults() 刷新快捷行（收藏 chip 的出现 / 消失）。
+  const favBtn = `<span class="fp-fav ${isFav?"on":""}" role="button" title="${isFav?"取消收藏":"收藏"}" onclick="toggleFavUI(this)">${isFav?"★":"☆"}</span>`;
 
   // 按份店面产品：提供「规格备注 + 热量微调」，供用户手动记录糖度/加酱等差异
   const adjBox = isSrv ? `
