@@ -1263,8 +1263,8 @@
       <!-- 第一层：今日摄入进度环 -->
       <div class="intake-ring-card" id="homeIntakeRing"></div>
 
-      <!-- 第二层：主 CTA「今天吃什么」 -->
-      <button class="home-cta" onclick="goRecipe()">
+      <!-- 第二层：主 CTA「今天吃什么」 —— 文案与去向随状态切换，见 renderIntakeRing() -->
+      <button class="home-cta" id="homeCta" onclick="goRecipe()">
         <span class="hc-emoji">🍱</span>
         <span class="hc-t">今天吃什么</span>
         <span class="hc-d">按你的目标，自由组合一日三餐</span>
@@ -1979,6 +1979,28 @@ function renderIntakeRing(){
   const hasProfile = profile.gender && profile.age && profile.height && profile.weight;
 
   renderHomeReco(id);
+
+  // 首页主 CTA 随状态切换文案与去向：新用户点下去的第一个按钮不该是一次 alert 拦截。
+  // ⚠ 必须在下面的提前 return 之前 —— 否则空态（正是缺陷发生的场景）下 CTA 根本不会被更新。
+  // 三种状态共用同一个 .home-cta 与同样的子元素结构，只换文字与 onclick，外观零变化。
+  const cta = document.getElementById("homeCta");
+  if(cta){
+    const ctaT = cta.querySelector(".hc-t");
+    const ctaD = cta.querySelector(".hc-d");
+    if(!plan){
+      if(ctaT) ctaT.textContent = "选一个方案，开始记录";
+      if(ctaD) ctaD.textContent = "先挑一个适合你的饮食方案";
+      cta.setAttribute("onclick", "go('list')");
+    } else if(!hasProfile){
+      if(ctaT) ctaT.textContent = "补 4 项信息，看今天该吃多少";
+      if(ctaD) ctaD.textContent = "填一下性别体重，就能算出你的每日目标";
+      cta.setAttribute("onclick", "go('calc')");
+    } else {
+      if(ctaT) ctaT.textContent = "今天吃什么";
+      if(ctaD) ctaD.textContent = "按你的目标，自由组合一日三餐";
+      cta.setAttribute("onclick", "goRecipe()");
+    }
+  }
 
   // 空态：未选方案 / 信息不完整，无法计算目标
   if(!plan || !hasProfile){
