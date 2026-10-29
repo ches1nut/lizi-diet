@@ -6297,7 +6297,11 @@ function quickFoodNames(mode){
 // 点击快捷 chip：切到该清单（不 toggle ——「关掉」的入口是点任意类目 chip）。
 function setQuickMode(m){ quickMode = m; pickedFood = null; renderFoodCalc(); }
 
-function renderFoodCalc(){
+/* 结果区 HTML（纯函数、无副作用）：只含「随 foodKw / 类目 / 快捷清单变化」的部分。
+   ⚠ renderFoodCalc() 与 renderFoodResults() 共用它 —— 严禁两处各算一遍 foodKw 过滤（病 #13）。
+   搜索框 (#foodSearchInput) 与食物弹层 (#foodPickerBox) 都不在这里面：
+   前者要在输入时存活、后者要留在 #foodResults 之外（点★重建时不能丢掉备注输入框）。 */
+function foodResultsHtml(){
   const allCats = Array.from(new Set(allFoods().map(f=>f.category)));
   // 常用分类：按食物数量降序取前 7 个（排除「全部」）
   const catCount = {};
@@ -6319,11 +6323,6 @@ function renderFoodCalc(){
     : allFoods().filter(f=>foodCat==="全部" || f.category===foodCat)     // 常规：按类目
   ).filter(f=>foodMatchKw(f, foodKw));                                   // 搜索词在两种模式下都生效
 
-  const searchBox = `
-    <div class="food-search">
-      <input id="foodSearchInput" placeholder="搜索食物名称..." value="${escAttr(foodKw)}" oninput="foodKw=this.value;renderFoodCalc()" />
-    </div>`;
-
   // 快捷行：整行只在「三个清单至少一个非空」时出现；每条 chip 也各自只在**本清单**非空时出现。
   const quickChip = (mode, label) => quickLists[mode].length
     ? `<span class="fq-chip ${quickMode===mode?"on":""}" onclick="setQuickMode('${mode}')">${label}</span>`
@@ -6332,9 +6331,7 @@ function renderFoodCalc(){
     ? `<div class="food-quick">${quickChip("freq","常吃")}${quickChip("recent","最近")}${quickChip("fav","收藏")}</div>`
     : "";
 
-  // 「记食物」分段主体
-  const foodSection = `
-    ${searchBox}
+  return `
     ${quickRow}
     <button class="add-custom" onclick="openMyFood()">＋ 我的食物</button>
     <div class="food-cats">
@@ -6357,7 +6354,20 @@ function renderFoodCalc(){
           <div class="fi-kcal" style="font-size:11px;">${macroShow}</div>
         </div>`;
       }).join("")}
-    </div>
+    </div>`;
+}
+
+function renderFoodCalc(){
+  const searchBox = `
+    <div class="food-search">
+      <input id="foodSearchInput" placeholder="搜索食物名称..." value="${escAttr(foodKw)}" oninput="foodKw=this.value;renderFoodResults()" />
+    </div>`;
+
+  // 「记食物」分段主体：#foodResults 是最小的「随输入变化」单元（只换它，保搜索框存活）；
+  // #foodPickerBox 留在它之外 —— 点★只刷结果区，弹层与备注/热量输入框不被销毁。
+  const foodSection = `
+    ${searchBox}
+    <div id="foodResults">${foodResultsHtml()}</div>
     <div id="foodPickerBox"></div>`;
 
   // 「一键套餐」分段主体
@@ -6389,6 +6399,18 @@ function renderFoodCalc(){
   `;
 
   renderFoodPickerBox();
+  renderFoodListSummary();
+  renderFoodTotal();
+}
+
+/* 只刷新「结果区」(#foodResults)：搜索框正在输入的 input 节点不被销毁 ⇒ 连续输入不丢字符，
+   中文输入法的拼音组合也不会被 renderFoodCalc() 的整屏替换打断（缺陷 ①）。
+   ⚠ 不在此调 renderFoodPickerBox()：弹层必须留在 #foodResults 之外，
+     否则点★刷新快捷行时会把备注/热量输入框一起重建掉（缺陷 ②）。 */
+function renderFoodResults(){
+  const box = document.getElementById("foodResults");
+  if(!box) return;
+  box.innerHTML = foodResultsHtml();
   renderFoodListSummary();
   renderFoodTotal();
 }
